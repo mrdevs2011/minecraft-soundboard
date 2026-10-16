@@ -292,10 +292,14 @@ html[data-theme-early="light"] .splash-bar,
   border:var(--px) solid var(--border);
   box-shadow:inset var(--px) var(--px) 0 var(--accent-hi), inset calc(-1*var(--px)) calc(-1*var(--px)) 0 #2a5a1a;
 }
+.player-ico:active{
+  box-shadow:inset var(--px) var(--px) 0 #2a5a1a, inset calc(-1*var(--px)) calc(-1*var(--px)) 0 var(--accent-hi);
+  filter:brightness(.92);
+}
 .player-ico svg{width:16px;height:16px}
 .spin-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff}
 .spin-wrap.hidden{display:none}
-.spin-ring{width:20px;height:20px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;position:absolute}
+.spin-ring{width:18px;height:18px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:0;animation:spin .55s steps(8) infinite;position:absolute;image-rendering:pixelated}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin-pct{font-family:var(--font-mono);font-size:12px;font-weight:600;position:relative;z-index:1}
 .player-meta{flex:1;min-width:0}
