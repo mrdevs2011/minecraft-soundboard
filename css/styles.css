@@ -445,8 +445,8 @@ html[data-theme-early="light"] .splash-bar,
   top:50%;
   left:0;
   z-index:3;
-  width:16px;
-  height:16px;
+  width:18px;
+  height:18px;
   margin:0;
   transform:translate(-50%,-50%);
   background:var(--surface);
@@ -499,9 +499,20 @@ html[data-theme-early="light"] .splash-bar,
   -webkit-appearance:none;
   appearance:none;
   width:88px;
-  height:10px;
+  height:18px; /* matches thumb so browser centers it */
   outline:none;
   cursor:pointer;
+  border:none;
+  border-radius:0;
+  background:transparent;
+  vertical-align:middle;
+  margin:0;
+  padding:0;
+}
+/* visual track strip (10px) centered inside 18px input */
+.vol::-webkit-slider-runnable-track{
+  -webkit-appearance:none;
+  height:10px;
   border:var(--px) solid;
   border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
   box-shadow:inset 1px 1px 0 rgba(0,0,0,.35);
@@ -512,9 +523,24 @@ html[data-theme-early="light"] .splash-bar,
     var(--bg) var(--vol-pct, 70%),
     var(--bg) 100%
   );
-  vertical-align:middle;
+  border-radius:0;
 }
-[data-theme="light"] .vol{
+.vol::-moz-range-track{
+  height:10px;
+  border:var(--px) solid;
+  border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
+  box-shadow:inset 1px 1px 0 rgba(0,0,0,.35);
+  background:var(--bg);
+  border-radius:0;
+}
+.vol::-moz-range-progress{
+  height:10px;
+  background:var(--accent);
+  border-radius:0;
+  border:none;
+}
+[data-theme="light"] .vol::-webkit-slider-runnable-track{
+  box-shadow:inset 1px 1px 0 rgba(0,0,0,.12);
   background:linear-gradient(
     to right,
     var(--accent) 0%,
@@ -522,18 +548,16 @@ html[data-theme-early="light"] .splash-bar,
     var(--bg2) var(--vol-pct, 70%),
     var(--bg2) 100%
   );
+}
+[data-theme="light"] .vol::-moz-range-track{
+  background:var(--bg2);
   box-shadow:inset 1px 1px 0 rgba(0,0,0,.12);
-}
-.vol::-webkit-slider-runnable-track{
-  height:10px;background:transparent;border:none;
-}
-.vol::-moz-range-track{
-  height:10px;background:transparent;border:none;
 }
 .vol::-webkit-slider-thumb{
   -webkit-appearance:none;
   appearance:none;
-  width:16px;height:16px;
+  width:16px;
+  height:16px;
   border-radius:0;
   background:var(--surface);
   border:2px solid var(--accent);
@@ -543,10 +567,13 @@ html[data-theme-early="light"] .splash-bar,
     0 0 0 1px rgba(0,0,0,.25);
   cursor:pointer;
   image-rendering:pixelated;
-  margin-top:-3px; /* center on 10px track */
+  /* center 16px thumb on 10px track: (10-16)/2 = -3, but track has 2px borders
+     total track outer ~14px inside 18px input → margin-top: (10-16)/2 = -3 works for content box */
+  margin-top:-5px;
 }
 .vol::-moz-range-thumb{
-  width:16px;height:16px;
+  width:16px;
+  height:16px;
   border-radius:0;
   background:var(--surface);
   border:2px solid var(--accent);
@@ -555,6 +582,7 @@ html[data-theme-early="light"] .splash-bar,
     inset -1px -1px 0 var(--bevel-dark),
     0 0 0 1px rgba(0,0,0,.25);
   cursor:pointer;
+  /* Firefox centers relative to track automatically better */
 }
 [data-theme="light"] .vol::-webkit-slider-thumb,
 [data-theme="light"] .vol::-moz-range-thumb{
@@ -591,7 +619,7 @@ html[data-theme-early="light"] .splash-bar,
   .player-ctrls .vol{width:52px}
   .player-path{display:none} /* save space on tiny screens */
   .prog{grid-template-columns:34px 1fr 34px;gap:6px}
-  .thumb{width:14px;height:14px}
+  .thumb{width:16px;height:16px}
   .vol::-webkit-slider-thumb,
   .vol::-moz-range-thumb{width:14px;height:14px}
 }
