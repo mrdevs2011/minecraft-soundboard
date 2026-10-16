@@ -1,377 +1,227 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minecraft Soundboard — 4961 Sounds</title>
+<title>Minecraft Soundboard — 4961 Sounds + Groq AI</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a0e14;
-  --bg2: #111820;
-  --card: #1a2332;
-  --card-hover: #243044;
-  --accent: #55c57a;
-  --accent2: #3d9e5f;
-  --text: #e8f0e9;
-  --muted: #8b9bab;
-  --border: #2a3548;
-  --glow: 0 0 20px rgba(85, 197, 122, 0.25);
+  --bg: #0a0e14; --bg2: #111820; --card: #1a2332; --card-hover: #243044;
+  --accent: #55c57a; --accent2: #3d9e5f; --text: #e8f0e9; --muted: #8b9bab;
+  --border: #2a3548; --glow: 0 0 20px rgba(85,197,122,.25); --ai: #7c9cff;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: 'Inter', system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  overflow-x: hidden;
+  font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text);
+  min-height: 100vh; overflow-x: hidden;
 }
 body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background:
-    radial-gradient(ellipse at 20% 20%, rgba(85,197,122,0.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 80%, rgba(61,158,95,0.05) 0%, transparent 50%),
-    linear-gradient(180deg, #0a0e14 0%, #0d1219 100%);
-  z-index: -1;
-  pointer-events: none;
+    radial-gradient(ellipse at 20% 20%, rgba(85,197,122,.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(124,156,255,.05) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0e14, #0d1219);
 }
 header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: rgba(10,14,20,0.92);
-  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(10,14,20,.92); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
 }
 .logo {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 14px;
-  color: var(--accent);
-  text-shadow: 0 0 12px rgba(85,197,122,0.5);
-  white-space: nowrap;
+  font-family: 'Press Start 2P', monospace; font-size: 13px; color: var(--accent);
+  text-shadow: 0 0 12px rgba(85,197,122,.5); white-space: nowrap;
 }
 .logo span { color: #fff; }
-.search-box {
-  flex: 1;
-  min-width: 180px;
-  max-width: 420px;
-  position: relative;
-}
+.search-box { flex: 1; min-width: 160px; max-width: 360px; position: relative; }
 .search-box input {
-  width: 100%;
-  padding: 10px 14px 10px 40px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 14px;
-  outline: none;
-  transition: border-color .2s, box-shadow .2s;
+  width: 100%; padding: 9px 12px 9px 36px; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 10px; color: var(--text);
+  font-size: 13px; outline: none;
 }
-.search-box input:focus {
-  border-color: var(--accent);
-  box-shadow: var(--glow);
-}
+.search-box input:focus { border-color: var(--accent); box-shadow: var(--glow); }
 .search-box::before {
-  content: '🔍';
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  opacity: 0.6;
+  content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: .6; font-size: 13px;
 }
-.controls {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
+.controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .btn {
-  padding: 8px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all .15s;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: .15s; display: flex; align-items: center; gap: 5px;
 }
 .btn:hover { background: var(--card-hover); border-color: var(--accent); }
-.stats {
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-}
+.btn.ai-btn { border-color: rgba(124,156,255,.4); color: var(--ai); }
+.btn.ai-btn:hover, .btn.ai-btn.active { background: rgba(124,156,255,.15); border-color: var(--ai); }
+.btn.primary { background: var(--accent); color: #0a0e14; border-color: var(--accent); font-weight: 600; }
+.stats { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
 .layout {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  min-height: calc(100vh - 60px);
+  display: grid; grid-template-columns: 200px 1fr;
+  min-height: calc(100vh - 54px);
 }
-@media (max-width: 768px) {
-  .layout { grid-template-columns: 1fr; }
+.layout.chat-open { grid-template-columns: 200px 1fr 340px; }
+@media (max-width: 900px) {
+  .layout, .layout.chat-open { grid-template-columns: 1fr; }
   .sidebar { display: none; }
+  .chat-panel { position: fixed; right: 0; top: 54px; bottom: 0; width: min(340px,100%); z-index: 90; }
 }
 .sidebar {
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-  padding: 16px 12px;
-  overflow-y: auto;
-  max-height: calc(100vh - 60px);
-  position: sticky;
-  top: 60px;
+  background: var(--bg2); border-right: 1px solid var(--border);
+  padding: 12px 8px; overflow-y: auto; max-height: calc(100vh - 54px); position: sticky; top: 54px;
 }
 .cat-btn {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 10px 12px;
-  margin-bottom: 4px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-  cursor: pointer;
-  text-align: left;
-  transition: all .15s;
+  display: flex; justify-content: space-between; align-items: center; width: 100%;
+  padding: 8px 10px; margin-bottom: 3px; border: none; border-radius: 8px;
+  background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; text-align: left;
 }
 .cat-btn:hover { background: var(--card); color: var(--text); }
-.cat-btn.active {
-  background: rgba(85,197,122,0.15);
-  color: var(--accent);
-  font-weight: 600;
-}
+.cat-btn.active { background: rgba(85,197,122,.15); color: var(--accent); font-weight: 600; }
 .cat-btn .count {
-  font-size: 11px;
-  opacity: 0.7;
-  background: rgba(0,0,0,0.3);
-  padding: 2px 7px;
-  border-radius: 10px;
+  font-size: 10px; opacity: .7; background: rgba(0,0,0,.3); padding: 1px 6px; border-radius: 8px;
 }
-.main {
-  padding: 20px;
-  overflow-y: auto;
-}
+.main { padding: 16px; overflow-y: auto; }
 
-/* ===== NOW PLAYING + PROGRESS ===== */
 .now-playing {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  background: linear-gradient(135deg, rgba(85,197,122,0.12), rgba(61,158,95,0.06));
-  border: 1px solid rgba(85,197,122,0.3);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-bottom: 20px;
-  display: none;
-  flex-direction: column;
-  gap: 10px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  position: sticky; top: 0; z-index: 50;
+  background: linear-gradient(135deg, rgba(85,197,122,.12), rgba(61,158,95,.06));
+  border: 1px solid rgba(85,197,122,.3); border-radius: 14px; padding: 12px 16px;
+  margin-bottom: 16px; display: none; flex-direction: column; gap: 8px;
+  backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,.25);
 }
 .now-playing.visible { display: flex; }
-.np-top {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+.np-top { display: flex; align-items: center; gap: 12px; }
 .np-icon {
-  width: 42px; height: 42px;
-  background: var(--accent);
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px;
-  flex-shrink: 0;
-  animation: pulse 1.5s infinite;
-  color: #0a0e14;
-  font-weight: 700;
+  width: 38px; height: 38px; background: var(--accent); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 14px;
+  flex-shrink: 0; animation: pulse 1.5s infinite; color: #0a0e14; font-weight: 700;
 }
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(85,197,122,0.45); }
+  0%,100% { box-shadow: 0 0 0 0 rgba(85,197,122,.45); }
   50% { box-shadow: 0 0 0 10px rgba(85,197,122,0); }
 }
 .np-info { flex: 1; min-width: 0; }
-.np-name {
-  font-weight: 600;
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.np-cat {
-  font-size: 12px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.np-controls {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-shrink: 0;
-}
-.vol-slider {
-  width: 80px;
-  accent-color: var(--accent);
-}
-
-/* Progress bar */
-.progress-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-}
-.time {
-  font-size: 11px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  min-width: 36px;
-}
+.np-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-cat { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-controls { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.vol-slider { width: 70px; accent-color: var(--accent); }
+.progress-row { display: flex; align-items: center; gap: 8px; width: 100%; }
+.time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; }
 .time.end { text-align: right; }
 .progress-track {
-  flex: 1;
-  height: 8px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 99px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: height .15s;
+  flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 99px;
+  cursor: pointer; position: relative; overflow: hidden;
 }
-.progress-track:hover { height: 10px; }
+.progress-track:hover { height: 9px; }
 .progress-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--accent2), var(--accent));
-  border-radius: 99px;
-  position: relative;
-  transition: width 0.1s linear;
+  height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 99px; position: relative;
 }
 .progress-fill::after {
-  content: '';
-  position: absolute;
-  right: -5px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(85,197,122,0.8);
-  opacity: 0;
-  transition: opacity .15s;
+  content: ''; position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
+  width: 11px; height: 11px; background: #fff; border-radius: 50%;
+  box-shadow: 0 0 8px rgba(85,197,122,.8); opacity: 0;
 }
 .progress-track:hover .progress-fill::after { opacity: 1; }
 
-/* Loading progress (initial) */
-.loading-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 40vh;
-  gap: 16px;
-}
-.loading-bar {
-  width: min(320px, 80%);
-  height: 6px;
-  background: var(--border);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.loading-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--accent2), var(--accent));
-  border-radius: 99px;
-  transition: width .25s ease;
-}
-.loading-text {
-  font-size: 13px;
-  color: var(--muted);
-}
-
 #grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px;
 }
 .sound-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: all .15s;
-  user-select: none;
+  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: .15s; user-select: none;
 }
 .sound-card:hover {
-  background: var(--card-hover);
-  border-color: var(--accent);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  background: var(--card-hover); border-color: var(--accent); transform: translateY(-1px);
 }
 .sound-card.playing {
-  border-color: var(--accent);
-  background: rgba(85,197,122,0.1);
-  box-shadow: var(--glow);
+  border-color: var(--accent); background: rgba(85,197,122,.1); box-shadow: var(--glow);
 }
 .play-btn {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  background: rgba(85,197,122,0.15);
-  border: 1px solid rgba(85,197,122,0.3);
-  color: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 14px;
-  flex-shrink: 0;
-  transition: all .15s;
+  width: 32px; height: 32px; border-radius: 50%; background: rgba(85,197,122,.15);
+  border: 1px solid rgba(85,197,122,.3); color: var(--accent);
+  display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;
 }
-.sound-card:hover .play-btn,
-.sound-card.playing .play-btn {
-  background: var(--accent);
-  color: #0a0e14;
+.sound-card:hover .play-btn, .sound-card.playing .play-btn {
+  background: var(--accent); color: #0a0e14;
 }
 .sound-info { min-width: 0; flex: 1; }
-.sound-name {
-  font-size: 13px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.sound-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sound-path { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.empty { text-align: center; padding: 50px 16px; color: var(--muted); grid-column: 1 / -1; }
+.empty h2 { font-size: 16px; margin-bottom: 6px; color: var(--text); }
+.loading-wrap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 36vh; gap: 14px; grid-column: 1 / -1;
 }
-.sound-path {
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-top: 2px;
+.loading-bar { width: min(280px, 80%); height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
+.loading-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .25s; }
+.loading-text { font-size: 12px; color: var(--muted); }
+
+/* ===== CHAT PANEL ===== */
+.chat-panel {
+  display: none; flex-direction: column; background: var(--bg2);
+  border-left: 1px solid var(--border); max-height: calc(100vh - 54px);
+  position: sticky; top: 54px;
 }
-.empty {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--muted);
-  grid-column: 1 / -1;
+.layout.chat-open .chat-panel { display: flex; }
+.chat-header {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
-.empty h2 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+.chat-header h3 { font-size: 13px; color: var(--ai); display: flex; align-items: center; gap: 6px; }
+.chat-key-row {
+  padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px;
+}
+.chat-key-row label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.chat-key-row input, .chat-key-row select {
+  width: 100%; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 12px; outline: none;
+}
+.chat-key-row input:focus, .chat-key-row select:focus { border-color: var(--ai); }
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+.msg {
+  max-width: 95%; padding: 9px 12px; border-radius: 12px; font-size: 13px; line-height: 1.45;
+  word-break: break-word;
+}
+.msg.user {
+  align-self: flex-end; background: rgba(85,197,122,.18); border: 1px solid rgba(85,197,122,.25);
+  border-bottom-right-radius: 4px;
+}
+.msg.ai {
+  align-self: flex-start; background: rgba(124,156,255,.12); border: 1px solid rgba(124,156,255,.22);
+  border-bottom-left-radius: 4px;
+}
+.msg.ai .search-hint {
+  margin-top: 8px; padding: 7px 10px; background: rgba(0,0,0,.25); border-radius: 8px;
+  font-size: 12px; color: var(--accent); cursor: pointer; border: 1px dashed rgba(85,197,122,.35);
+}
+.msg.ai .search-hint:hover { background: rgba(85,197,122,.12); }
+.msg.sys { align-self: center; font-size: 11px; color: var(--muted); background: transparent; border: none; }
+.msg .play-links { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+.msg .play-chip {
+  font-size: 11px; padding: 4px 9px; border-radius: 99px; cursor: pointer;
+  background: rgba(85,197,122,.15); border: 1px solid rgba(85,197,122,.35); color: var(--accent);
+}
+.msg .play-chip:hover { background: var(--accent); color: #0a0e14; }
+.chat-input-row {
+  padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;
+}
+.chat-input-row input {
+  flex: 1; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); font-size: 13px; outline: none;
+}
+.chat-input-row input:focus { border-color: var(--ai); }
+.chat-input-row button {
+  padding: 9px 14px; border-radius: 10px; border: none; background: var(--ai);
+  color: #0a0e14; font-weight: 600; font-size: 13px; cursor: pointer;
+}
+.chat-input-row button:disabled { opacity: .5; cursor: not-allowed; }
+.typing { font-size: 12px; color: var(--muted); padding: 4px 8px; }
 </style>
 </head>
 <body>
@@ -381,13 +231,14 @@ header {
     <input type="search" id="search" placeholder="Search 4961 Minecraft sounds..." autocomplete="off">
   </div>
   <div class="controls">
-    <button class="btn" id="btn-random" title="Play random sound">🎲 Random</button>
-    <button class="btn" id="btn-stop" title="Stop all">⏹ Stop</button>
+    <button class="btn" id="btn-random">🎲 Random</button>
+    <button class="btn" id="btn-stop">⏹ Stop</button>
+    <button class="btn ai-btn" id="btn-chat" title="Groq AI">🤖 AI Chat</button>
   </div>
   <div class="stats" id="stats">Loading...</div>
 </header>
 
-<div class="layout">
+<div class="layout" id="layout">
   <aside class="sidebar" id="sidebar"></aside>
   <main class="main">
     <div class="now-playing" id="nowPlaying">
@@ -398,16 +249,14 @@ header {
           <div class="np-cat" id="npCat">—</div>
         </div>
         <div class="np-controls">
-          <input type="range" class="vol-slider" id="volume" min="0" max="1" step="0.05" value="0.7" title="Volume">
+          <input type="range" class="vol-slider" id="volume" min="0" max="1" step="0.05" value="0.7">
           <button class="btn" id="npPause">⏸</button>
           <button class="btn" id="npStop">⏹</button>
         </div>
       </div>
       <div class="progress-row">
         <span class="time" id="timeCurrent">0:00</span>
-        <div class="progress-track" id="progressTrack">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
+        <div class="progress-track" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
         <span class="time end" id="timeTotal">0:00</span>
       </div>
     </div>
@@ -418,16 +267,45 @@ header {
       </div>
     </div>
   </main>
+
+  <aside class="chat-panel" id="chatPanel">
+    <div class="chat-header">
+      <h3>🤖 Groq AI</h3>
+      <button class="btn" id="btn-chat-close" style="padding:4px 8px">✕</button>
+    </div>
+    <div class="chat-key-row">
+      <label>Groq API Key</label>
+      <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off">
+      <label>Model</label>
+      <select id="groqModel">
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B (tez)</option>
+        <option value="openai/gpt-oss-120b">GPT OSS 120B</option>
+        <option value="openai/gpt-oss-20b">GPT OSS 20B</option>
+        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
+        <option value="gemma2-9b-it">Gemma2 9B</option>
+      </select>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="msg sys">API key kiriting va so‘rang — masalan: «molning ovozi kerak»</div>
+    </div>
+    <div class="chat-input-row">
+      <input type="text" id="chatInput" placeholder="Qanday ovoz kerak?" autocomplete="off">
+      <button id="chatSend">Yubor</button>
+    </div>
+  </aside>
 </div>
 
 <script>
 const SOUNDS_BASE = 'sounds/';
 let data = null;
+let allPaths = [];
 let currentAudio = null;
 let currentCard = null;
 let activeCategory = 'all';
 let isSeeking = false;
 let rafId = null;
+let chatHistory = [];
 
 function fmt(sec) {
   if (!isFinite(sec) || sec < 0) return '0:00';
@@ -445,20 +323,31 @@ function setLoadProgress(pct, text) {
 
 async function init() {
   try {
-    setLoadProgress(15, 'Fetching sounds.json...');
+    setLoadProgress(20, 'Fetching sounds.json...');
     const res = await fetch('sounds.json');
-    setLoadProgress(55, 'Parsing library...');
+    setLoadProgress(60, 'Parsing library...');
     data = await res.json();
-    setLoadProgress(80, 'Building categories...');
+    allPaths = [];
+    for (const c of data.categories) {
+      for (const p of data.sounds[c] || []) allPaths.push({ path: p, cat: c });
+    }
+    setLoadProgress(85, 'Building UI...');
     document.getElementById('stats').textContent = data.total.toLocaleString() + ' sounds';
     buildSidebar();
     setLoadProgress(100, 'Ready!');
-    setTimeout(() => renderSounds('all'), 180);
+    setTimeout(() => renderSounds('all'), 150);
     setupEvents();
+    loadKey();
   } catch (e) {
-    document.getElementById('grid').innerHTML =
-      '<div class="empty"><h2>Failed to load</h2><p>' + e.message + '</p></div>';
+    document.getElementById('grid').innerHTML = '<div class="empty"><h2>Failed</h2><p>' + e.message + '</p></div>';
   }
+}
+
+function loadKey() {
+  const k = localStorage.getItem('groq_api_key');
+  const m = localStorage.getItem('groq_model');
+  if (k) document.getElementById('groqKey').value = k;
+  if (m) document.getElementById('groqModel').value = m;
 }
 
 function buildSidebar() {
@@ -481,26 +370,77 @@ function buildSidebar() {
 }
 
 function getFilteredList(cat, query) {
-  let list = [];
-  if (cat === 'all') {
-    for (const c of data.categories) {
-      for (const path of data.sounds[c] || []) list.push({ path, cat: c });
-    }
-  } else {
-    for (const path of data.sounds[cat] || []) list.push({ path, cat });
-  }
+  let list = cat === 'all' ? allPaths.slice() : allPaths.filter(s => s.cat === cat);
   if (query) {
-    const q = query.toLowerCase();
-    list = list.filter(s => s.path.toLowerCase().includes(q));
+    const q = query.toLowerCase().trim();
+    const tokens = q.split(/\s+/).filter(Boolean);
+    list = list.filter(s => tokens.every(t => s.path.toLowerCase().includes(t)));
   }
   return list;
+}
+
+function searchLibrary(query, limit = 40) {
+  const q = query.toLowerCase();
+  // Uzbek/Russian common aliases → english minecraft terms
+  const aliases = {
+    mol: 'cow', sigir: 'cow', cow: 'cow',
+    tovuq: 'chicken', chicken: 'chicken',
+    cho'chqa: 'pig', chochqa: 'pig', pig: 'pig',
+    qo'y: 'sheep', qoy: 'sheep', sheep: 'sheep',
+    ot: 'horse', horse: 'horse',
+    it: 'wolf', wolf: 'wolf', kuchuk: 'wolf',
+    mushuk: 'cat', cat: 'cat',
+    zombi: 'zombie', zombie: 'zombie',
+    skelet: 'skeleton', skeleton: 'skeleton',
+    kriper: 'creeper', creeper: 'creeper',
+    enderman: 'enderman', ender: 'enderman',
+    o'rgimchak: 'spider', orgimchak: 'spider', spider: 'spider',
+    slime: 'slime',
+    ghast: 'ghast',
+    portal: 'portal',
+    momaqaldiroq: 'thunder', yomgir: 'rain', rain: 'rain',
+    port: 'portal', eshik: 'door', door: 'door',
+    suv: 'water', water: 'water', lava: 'lava',
+    o't: 'fire', otash: 'fire', fire: 'fire',
+    musiqa: 'music', music: 'music', nota: 'note',
+    qilich: 'sword', sword: 'sword',
+    blok: 'block', block: 'block',
+    yurish: 'step', step: 'step',
+    portlash: 'explode', explode: 'explode',
+    damage: 'damage', zarar: 'hurt', hurt: 'hurt',
+    olish: 'death', death: 'death', o'lim: 'death',
+    ambient: 'ambient', atrof: 'ambient',
+    baby: 'baby', bola: 'baby',
+    milk: 'milk', sut: 'milk',
+  };
+  let tokens = q.split(/[^a-zA-Z0-9'_\u0400-\u04FF]+/).filter(t => t.length > 1);
+  const expanded = new Set();
+  for (const t of tokens) {
+    expanded.add(t);
+    if (aliases[t]) expanded.add(aliases[t]);
+  }
+  // also add original phrase bits
+  const terms = [...expanded];
+  if (!terms.length) terms.push(q);
+
+  const scored = [];
+  for (const s of allPaths) {
+    const p = s.path.toLowerCase();
+    let score = 0;
+    for (const t of terms) {
+      if (p.includes(t)) score += t.length + (p.split('/').pop().includes(t) ? 5 : 0);
+    }
+    if (score > 0) scored.push({ ...s, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, limit);
 }
 
 function renderSounds(cat, query = '') {
   const grid = document.getElementById('grid');
   const list = getFilteredList(cat, query);
-  if (list.length === 0) {
-    grid.innerHTML = '<div class="empty"><h2>No sounds found</h2><p>Try another category or search</p></div>';
+  if (!list.length) {
+    grid.innerHTML = '<div class="empty"><h2>Topilmadi</h2><p>Boshqa so‘z yoki kategoriya sinab ko‘ring</p></div>';
     return;
   }
   const MAX = 400;
@@ -516,12 +456,10 @@ function renderSounds(cat, query = '') {
       </div>
     </div>`;
   }
-  if (list.length > MAX) {
-    html += `<div class="empty"><p>Showing first ${MAX} of ${list.length}. Use search to narrow down.</p></div>`;
-  }
+  if (list.length > MAX) html += `<div class="empty"><p>Birinchi ${MAX} / ${list.length}. Search bilan toraytiring.</p></div>`;
   grid.innerHTML = html;
   grid.querySelectorAll('.sound-card').forEach(card => {
-    card.addEventListener('click', () => playSound(card));
+    card.addEventListener('click', () => playPath(card.dataset.path, card.dataset.cat, card));
   });
 }
 
@@ -535,23 +473,19 @@ function updateProgress() {
   rafId = requestAnimationFrame(updateProgress);
 }
 
-function playSound(card) {
-  const path = card.dataset.path;
-  const cat = card.dataset.cat;
-  const name = path.split('/').pop();
-
+function playPath(path, cat, card) {
   stopAll(false);
-
+  const name = path.split('/').pop();
   const audio = new Audio(SOUNDS_BASE + path);
   audio.volume = parseFloat(document.getElementById('volume').value);
-  audio.play().catch(e => console.warn('Play failed', e));
+  audio.play().catch(() => {});
   currentAudio = audio;
-  currentCard = card;
-  card.classList.add('playing');
+  currentCard = card || null;
+  if (card) card.classList.add('playing');
 
   document.getElementById('nowPlaying').classList.add('visible');
   document.getElementById('npName').textContent = name;
-  document.getElementById('npCat').textContent = cat + ' • ' + path;
+  document.getElementById('npCat').textContent = (cat || '') + ' • ' + path;
   document.getElementById('npIcon').textContent = '▶';
   document.getElementById('npPause').textContent = '⏸';
   document.getElementById('progressFill').style.width = '0%';
@@ -562,22 +496,17 @@ function playSound(card) {
     document.getElementById('timeTotal').textContent = fmt(audio.duration);
   });
   audio.addEventListener('ended', () => {
-    card.classList.remove('playing');
+    if (card) card.classList.remove('playing');
     document.getElementById('nowPlaying').classList.remove('visible');
-    currentAudio = null;
-    currentCard = null;
+    currentAudio = null; currentCard = null;
     cancelAnimationFrame(rafId);
   });
-
   cancelAnimationFrame(rafId);
   rafId = requestAnimationFrame(updateProgress);
 }
 
 function stopAll(hide = true) {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-  }
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   if (currentCard) currentCard.classList.remove('playing');
   currentCard = null;
   cancelAnimationFrame(rafId);
@@ -609,34 +538,194 @@ function seek(e) {
   document.getElementById('timeCurrent').textContent = fmt(currentAudio.currentTime);
 }
 
+function applySearch(q) {
+  document.getElementById('search').value = q;
+  activeCategory = 'all';
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === 'all'));
+  renderSounds('all', q);
+}
+
+/* ===== GROQ CHAT ===== */
+function appendMsg(role, html) {
+  const box = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = html;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return div;
+}
+
+function parseAIResponse(text) {
+  // Extract SEARCH: and PLAY: lines
+  let search = null;
+  const plays = [];
+  const lines = text.split('\n');
+  const clean = [];
+  for (const line of lines) {
+    const s = line.match(/^SEARCH:\s*(.+)$/i);
+    const p = line.match(/^PLAY:\s*(.+)$/i);
+    if (s) { search = s[1].trim(); continue; }
+    if (p) {
+      p[1].split(',').map(x => x.trim()).filter(Boolean).forEach(path => {
+        // normalize
+        let pp = path.replace(/^sounds\//, '').replace(/^\//, '');
+        if (!pp.endsWith('.ogg')) {
+          // try find full path
+          const hit = allPaths.find(x => x.path.includes(pp) || x.path.endsWith(pp + '.ogg'));
+          if (hit) pp = hit.path;
+          else if (!pp.includes('/')) {
+            const hit2 = allPaths.find(x => x.path.split('/').pop().replace('.ogg','') === pp);
+            if (hit2) pp = hit2.path;
+          }
+        }
+        if (allPaths.some(x => x.path === pp)) plays.push(pp);
+      });
+      continue;
+    }
+    clean.push(line);
+  }
+  return { text: clean.join('\n').trim(), search, plays };
+}
+
+async function sendChat() {
+  const key = document.getElementById('groqKey').value.trim();
+  const model = document.getElementById('groqModel').value;
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  if (!key) {
+    appendMsg('sys', 'Avval Groq API key kiriting (console.groq.com)');
+    return;
+  }
+  localStorage.setItem('groq_api_key', key);
+  localStorage.setItem('groq_model', model);
+
+  input.value = '';
+  appendMsg('user', escapeHtml(msg));
+  const typing = appendMsg('sys', '⏳ O‘ylayapti...');
+  document.getElementById('chatSend').disabled = true;
+
+  // Local search for context
+  const matches = searchLibrary(msg, 35);
+  const matchList = matches.map(m => m.path).join('\n');
+
+  const system = `Sen Minecraft Soundboard yordamchisisan. Kutubxonada 4961 ta .ogg ovoz bor.
+Foydalanuvchi o'zbek/rus/ingliz tilida so'rashi mumkin.
+
+Vazifang:
+1) Qaysi ovoz(lar) kerakligini aniqlа.
+2) SEARCH: qatorida search maydoniga yoziladigan qisqa so'zni ber (inglizcha, masalan: cow yoki entity/cow).
+3) PLAY: qatorida aniq fayl yo'llarini vergul bilan ber (faqat ro'yxatdagi yo'llardan).
+4) Oddiy o'zbekcha qisqa javob yoz — nima topganingni ayt.
+
+Format (majburiy):
+...matn...
+SEARCH: soz
+PLAY: path1.ogg, path2.ogg
+
+Kategoriyalar: ${data.categories.join(', ')}
+
+Foydalanuvchi so'roviga mos topilgan ovozlar (shulardan tanla):
+${matchList || '(mos keladigan topilmadi — umumiy maslahat ber)'}
+
+Qoida: PLAY da faqat yuqoridagi ro'yxatdagi aniq path'larni yoz. 1-5 ta ovoz yetarli.`;
+
+  chatHistory.push({ role: 'user', content: msg });
+  // keep history short
+  if (chatHistory.length > 12) chatHistory = chatHistory.slice(-12);
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.3,
+        max_tokens: 600,
+        messages: [
+          { role: 'system', content: system },
+          ...chatHistory
+        ]
+      })
+    });
+    const json = await res.json();
+    typing.remove();
+    if (!res.ok) {
+      appendMsg('sys', 'Xato: ' + (json.error?.message || res.status));
+      document.getElementById('chatSend').disabled = false;
+      return;
+    }
+    const raw = json.choices?.[0]?.message?.content || '';
+    chatHistory.push({ role: 'assistant', content: raw });
+    const parsed = parseAIResponse(raw);
+
+    let html = escapeHtml(parsed.text || raw).replace(/\n/g, '<br>');
+    if (parsed.search) {
+      html += `<div class="search-hint" data-q="${escapeAttr(parsed.search)}">🔍 Search ga yoz: <b>${escapeHtml(parsed.search)}</b> (bosib qo‘llash)</div>`;
+    }
+    if (parsed.plays.length) {
+      html += '<div class="play-links">';
+      for (const p of parsed.plays) {
+        const short = p.split('/').pop();
+        html += `<span class="play-chip" data-path="${escapeAttr(p)}">▶ ${escapeHtml(short)}</span>`;
+      }
+      html += '</div>';
+    }
+    const el = appendMsg('ai', html);
+
+    // wire chips & search hint
+    el.querySelectorAll('.search-hint').forEach(h => {
+      h.addEventListener('click', () => applySearch(h.dataset.q));
+    });
+    el.querySelectorAll('.play-chip').forEach(c => {
+      c.addEventListener('click', () => {
+        const path = c.dataset.path;
+        const meta = allPaths.find(x => x.path === path);
+        playPath(path, meta?.cat || '', null);
+        // highlight in grid if visible
+        applySearch(parsed.search || path.split('/')[1] || path.split('/').pop().replace('.ogg',''));
+      });
+    });
+
+    // Auto-play first sound
+    if (parsed.plays.length) {
+      const path = parsed.plays[0];
+      const meta = allPaths.find(x => x.path === path);
+      playPath(path, meta?.cat || '', null);
+      if (parsed.search) applySearch(parsed.search);
+    } else if (parsed.search) {
+      applySearch(parsed.search);
+    }
+  } catch (e) {
+    typing.remove();
+    appendMsg('sys', 'Tarmoq xatosi: ' + e.message);
+  }
+  document.getElementById('chatSend').disabled = false;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"');
+}
+function escapeAttr(s) {
+  return escapeHtml(s).replace(/'/g,'&#39;');
+}
+
 function setupEvents() {
   let searchTimeout;
   document.getElementById('search').addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      renderSounds(activeCategory, e.target.value.trim());
-    }, 180);
+    searchTimeout = setTimeout(() => renderSounds(activeCategory, e.target.value.trim()), 160);
   });
 
   document.getElementById('btn-random').addEventListener('click', () => {
     const list = getFilteredList(activeCategory, document.getElementById('search').value.trim());
     if (!list.length) return;
     const item = list[Math.floor(Math.random() * list.length)];
-    let found = null;
-    document.querySelectorAll('.sound-card').forEach(c => {
-      if (c.dataset.path === item.path) found = c;
-    });
-    if (found) {
-      playSound(found);
-      found.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-      // temporary card-less play
-      const fake = document.createElement('div');
-      fake.dataset.path = item.path;
-      fake.dataset.cat = item.cat;
-      fake.classList.add('sound-card');
-      playSound(fake);
-    }
+    playPath(item.path, item.cat, null);
   });
 
   document.getElementById('btn-stop').addEventListener('click', () => stopAll(true));
@@ -649,16 +738,27 @@ function setupEvents() {
   const track = document.getElementById('progressTrack');
   track.addEventListener('click', seek);
   track.addEventListener('mousedown', (e) => {
-    isSeeking = true;
-    seek(e);
+    isSeeking = true; seek(e);
     const onMove = (ev) => seek(ev);
-    const onUp = () => {
-      isSeeking = false;
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
+    const onUp = () => { isSeeking = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
+  });
+
+  // Chat UI
+  const layout = document.getElementById('layout');
+  const chatBtn = document.getElementById('btn-chat');
+  document.getElementById('btn-chat').addEventListener('click', () => {
+    layout.classList.toggle('chat-open');
+    chatBtn.classList.toggle('active', layout.classList.contains('chat-open'));
+  });
+  document.getElementById('btn-chat-close').addEventListener('click', () => {
+    layout.classList.remove('chat-open');
+    chatBtn.classList.remove('active');
+  });
+  document.getElementById('chatSend').addEventListener('click', sendChat);
+  document.getElementById('chatInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendChat();
   });
 }
 
