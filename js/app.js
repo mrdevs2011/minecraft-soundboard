@@ -17,11 +17,11 @@ function getApiKey() {
 }
 
 function syncKeyIcon() {
-  const img = document.getElementById("keyIcon");
-  if (!img) return;
   const light = document.body.getAttribute("data-theme") === "light";
-  // light theme = light UI bg → black key; dark theme = dark UI bg → white key
-  img.src = light ? "/svg/key-light.svg" : "/svg/key-dark.svg";
+  const key = document.getElementById("keyIcon");
+  if (key) key.src = light ? "/svg/key-light.svg" : "/svg/key-dark.svg";
+  const panel = document.getElementById("panelIcon");
+  if (panel) panel.src = light ? "/svg/panel-light.svg" : "/svg/panel-dark.svg";
 }
 
 function syncKeyUI() {

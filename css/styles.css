@@ -1374,3 +1374,14 @@ body[data-theme="light"]{
   filter: none !important;
   image-rendering: pixelated;
 }
+
+
+/* Pixel panel icon — no CSS invert */
+.panel-icon,
+#panelIcon,
+.icon-btn .panel-icon,
+.icon-btn:hover .panel-icon,
+.icon-btn.on .panel-icon{
+  filter: none !important;
+  image-rendering: pixelated;
+}
