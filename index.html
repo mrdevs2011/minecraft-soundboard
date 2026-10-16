@@ -434,17 +434,7 @@ function renderStage(query) {
   const folders = Object.keys(node.folders).sort();
   $("stageTitle").textContent = navPath.length ? navPath.join(" / ") : "ROOT";
 
-  let fh = "";
-  folders.forEach(name => {
-    const n = countFiles(node.folders[name]);
-    fh += "<button class=\"folder-card\" type=\"button\" data-folder=\"" + esc(name) + "\">" +
-      "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\"><path d=\"M3 7h7l2 2h9v10H3z\"/></svg>" +
-      "<div class=\"fn\">" + esc(name) + "</div><div class=\"fc\">" + n + " sounds</div></button>";
-  });
-  folderGrid.innerHTML = fh;
-  folderGrid.querySelectorAll(".folder-card").forEach(btn => {
-    btn.addEventListener("click", () => goNav(navPath.concat([btn.dataset.folder])));
-  });
+  folderGrid.innerHTML = "";
 
   const files = node.files.map(p => ({ path: p, cat: p.split("/")[0] }));
   renderCards(files, files.length);
