@@ -168,12 +168,26 @@ body::after {
 /* MAIN */
 .stage { padding: clamp(12px, 2.5vw, 24px); overflow-y: auto; }
 
-/* player */
+/* player — fixed float, always on top while open */
 .player {
-  display: none; margin-bottom: 20px; border: 1px solid var(--border);
-  background: var(--surface); position: sticky; top: 0; z-index: 40;
+  display: none;
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  z-index: 200;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  max-width: 720px;
+  margin: 0 auto;
 }
 .player.show { display: block; }
+@media (min-width: 900px) {
+  .player { left: 50%; right: auto; transform: translateX(-50%); width: min(720px, calc(100vw - 24px)); }
+}
+.stage { padding-bottom: 120px; }
 .player-inner { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
 .player-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .player-ico {
@@ -628,23 +642,38 @@ function play(path, c, el) {
   a.addEventListener("loadedmetadata", () => { $("tTot").textContent = fmt(a.duration); });
   a.addEventListener("ended", () => {
     if (el) el.classList.remove("playing");
-    $("player").classList.remove("show");
-    audio = null; cardEl = null; cancelAnimationFrame(raf);
+    a.currentTime = 0;
+    $("fill").style.width = "0%";
+    $("tCur").textContent = "0:00";
+    $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+    cancelAnimationFrame(raf);
+    // keep player visible + audio object for replay via pause button
   });
   cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
 }
 
 function stop(hide) {
-  if (hide === undefined) hide = true;
-  if (audio) { audio.pause(); audio = null; }
+  if (hide === undefined) hide = false;
+  if (audio) {
+    try { audio.pause(); audio.currentTime = 0; } catch (e) {}
+  }
   if (cardEl) cardEl.classList.remove("playing");
   cardEl = null; cancelAnimationFrame(raf);
-  if (hide) $("player").classList.remove("show");
+  $("fill").style.width = "0%";
+  $("tCur").textContent = "0:00";
+  $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+  if (hide) {
+    if (audio) { audio.src = ""; audio = null; }
+    $("player").classList.remove("show");
+  }
 }
 
 function togglePause() {
   if (!audio) return;
   if (audio.paused) {
+    if (audio.ended || (audio.duration && audio.currentTime >= audio.duration - 0.05)) {
+      audio.currentTime = 0;
+    }
     audio.play();
     $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
     raf = requestAnimationFrame(tick);
@@ -790,8 +819,8 @@ function bind() {
     const item = list[Math.floor(Math.random() * list.length)];
     play(item.path, item.cat, null);
   });
-  $("btnStop").addEventListener("click", () => stop(true));
-  $("pStop").addEventListener("click", () => stop(true));
+  $("btnStop").addEventListener("click", () => stop(false));
+  $("pStop").addEventListener("click", () => stop(false));
   $("pPause").addEventListener("click", togglePause);
   $("vol").addEventListener("input", e => { if (audio) audio.volume = parseFloat(e.target.value); });
   $("track").addEventListener("click", seek);
