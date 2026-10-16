@@ -1200,35 +1200,190 @@ function seek(e) {
   // Do NOT auto-play here — pause stays pause until user hits play
 }
 
+/* ===== Smart sound retrieval: multilingual (uz/ru/en), folder-aware, diverse ===== */
+const Q_STOP = new Set(("menga bizga senga ni ning ga dan bilan va yoki ham kerak yana bitta boshqa qil qilib " +
+  "the an of for me my us give show find play get sound sounds all every some more another other please can you do have what which with and or to " +
+  "дай дайте мне звук звуки звука звуков все всех всё найди найти покажи еще ещё другой другие пожалуйста").split(/\s+/));
+const Q_STOP_RE = /^(ovoz|tovush|ber|top|qidir|korsat|barcha|hamma|звук)/;
+const Q_TYPES = new Set(["say", "hurt", "death", "step", "milk", "idle", "hit", "ambient"]);
+const Q_ALIAS = {
+  mol:"cow", sigir:"cow", korova:"cow", "корова":"cow", cow:"cow", moo:"cow", muu:"cow", mooshroom:"mooshroom",
+  tovuq:"chicken", jujja:"chicken", chicken:"chicken", "курица":"chicken", "цыплёнок":"chicken", "цыпленок":"chicken",
+  chochqa:"pig", tongiz:"pig", pig:"pig", "свинья":"pig",
+  qoy:"sheep", sheep:"sheep", "овца":"sheep",
+  echki:"goat", goat:"goat", "коза":"goat",
+  ot:"horse", horse:"horse", eshak:"horse", donkey:"horse", "лошадь":"horse", "конь":"horse", "осёл":"horse",
+  bori:"wolf", kuchuk:"wolf", wolf:"wolf", dog:"wolf", "волк":"wolf", "собака":"wolf",
+  mushuk:"cat", cat:"cat", "кошка":"cat", "кот":"cat",
+  quyon:"rabbit", rabbit:"rabbit", "кролик":"rabbit",
+  ari:"bee", bee:"bee", "пчела":"bee",
+  zombi:"zombie", zombie:"zombie", "зомби":"zombie",
+  skelet:"skeleton", skeleton:"skeleton", "скелет":"skeleton",
+  kriper:"creeper", creeper:"creeper", "крипер":"creeper",
+  orgimchak:"spider", spider:"spider", "паук":"spider",
+  enderman:"endermen", endermen:"endermen", ender:"endermen", "эндермен":"endermen",
+  ghast:"ghast", gast:"ghast", "гаст":"ghast",
+  blaze:"blaze", "блейз":"blaze",
+  slime:"slime", shilimshiq:"slime", "слизень":"slime", "слайм":"slime",
+  villager:"villager", qishloqlik:"villager", "житель":"villager", "селянин":"villager",
+  wither:"wither", "иссушитель":"wither",
+  dragon:"enderdragon", ajdaho:"enderdragon", "дракон":"enderdragon",
+  warden:"warden", "варден":"warden",
+  squid:"squid", kalmar:"squid", "кальмар":"squid",
+  dolphin:"dolphin", delfin:"dolphin", "дельфин":"dolphin",
+  turtle:"turtle", toshbaqa:"turtle", "черепаха":"turtle",
+  panda:"panda", "панда":"panda",
+  parrot:"parrot", toti:"parrot", "попугай":"parrot",
+  fox:"fox", tulki:"fox", "лиса":"fox",
+  frog:"frog", baqa:"frog", "лягушка":"frog",
+  bat:"bat", korshapalak:"bat", "летучая":"bat",
+  llama:"llama", lama:"llama", "лама":"llama",
+  bear:"polarbear", ayiq:"polarbear", "медведь":"polarbear",
+  phantom:"phantom", "фантом":"phantom",
+  witch:"witch", jodugar:"witch", "ведьма":"witch",
+  golem:"irongolem", "голем":"irongolem",
+  piglin:"piglin", hoglin:"hoglin", strider:"strider", axolotl:"axolotl", aksolotl:"axolotl",
+  camel:"camel", tuya:"camel", "верблюд":"camel",
+  zarar:"hurt", jarohat:"hurt", ogriq:"hurt", hurt:"hurt", damage:"hurt", "урон":"hurt", "боль":"hurt",
+  olim:"death", death:"death", die:"death", "смерть":"death",
+  qadam:"step", yurish:"step", step:"step", "шаг":"step", "шаги":"step",
+  sut:"milk", milk:"milk", "молоко":"milk",
+  qongiroq:"bell", bell:"bell", "колокол":"bell",
+  yomgir:"rain", rain:"rain", "дождь":"rain",
+  momaqaldiroq:"thunder", thunder:"thunder", "гром":"thunder",
+  eshik:"door", door:"door", "дверь":"door",
+  suv:"water", water:"water", "вода":"water",
+  otash:"fire", olov:"fire", fire:"fire", "огонь":"fire",
+  lava:"lava", "лава":"lava",
+  qilich:"sword", sword:"sword", "меч":"sword",
+  portlash:"explode", explosion:"explode", explode:"explode", "взрыв":"explode",
+  musiqa:"music", qoshiq:"music", song:"music", music:"music", "музыка":"music", "песня":"music",
+  sandiq:"chest", chest:"chest", "сундук":"chest"
+};
+const Q_KIND_ORDER = ["say", "idle", "ambient", "moody-ambient", "hurt", "hit", "moody-hit", "death", "moody-death", "milk", "eat", "drink", "step"];
+let _qIdx = null, _lastQ = null;
+
+function qNorm(s) {
+  return String(s || "").toLowerCase().replace(/[\u02bb\u02bc\u2018\u2019'`\u2032]/g, "");
+}
+function qKindRank(k) {
+  const i = Q_KIND_ORDER.indexOf(String(k || "").replace(/^[^|]*\|/, ""));
+  return i < 0 ? 50 : i;
+}
+function qIndex() {
+  if (_qIdx && _qIdx.src === all) return _qIdx.rows;
+  const rows = all.map(s => {
+    const p = s.path.toLowerCase();
+    const parts = p.replace(/\.ogg$/, "").split("/");
+    const file = parts.pop();
+    const dirs = parts;
+    const dirWords = [];
+    dirs.forEach(d => { d.split("_").forEach(w => dirWords.push(w)); });
+    const words = file.split(/[_\-.]+/).map(w => w.replace(/\d+$/, "")).filter(Boolean);
+    const kind = (dirs.includes("moody") ? "moody-" : "") + (words[0] || file);
+    return { s: s, p: p, dirs: dirs, dirWords: dirWords, words: words, kind: kind };
+  });
+  _qIdx = { src: all, rows: rows };
+  return rows;
+}
+function qAliasOf(tok) {
+  if (Q_ALIAS[tok]) return Q_ALIAS[tok];
+  if (tok.length < 4) return "";
+  let best = "";
+  for (const k in Q_ALIAS) {
+    if (k.length < 3 || k.length <= best.length || !tok.startsWith(k)) continue;
+    const suf = tok.slice(k.length);
+    const cyr = /[\u0400-\u04ff]/.test(k);
+    if (cyr ? suf.length <= 3 : /^(s|es|i|si|ni|ning|ga|da|dan|ini|lar|lari|larni|larini|larning|nikini)$/.test(suf)) best = k;
+  }
+  return best ? Q_ALIAS[best] : "";
+}
+function qParse(query) {
+  const q = qNorm(query);
+  const wantAll = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every|everything)([^a-z]|$)/.test(q) || /(все|всех|всё)/.test(q);
+  const terms = [];
+  q.split(/[^a-z0-9_\u0400-\u04ff]+/).filter(t => t.length > 1).forEach(tok => {
+    if (Q_STOP.has(tok) || Q_STOP_RE.test(tok)) return;
+    const al = qAliasOf(tok);
+    const t = al || (tok.length >= 3 ? tok : "");
+    if (t && !terms.includes(t)) terms.push(t);
+  });
+  return { terms: terms, wantAll: wantAll };
+}
+
 function searchLib(query, limit) {
   limit = limit || 50;
-  const aliases = {
-    mol:"cow", sigir:"cow", cow:"cow", moo:"say", muu:"say", maarashi:"say", marashi:"say",
-    sut:"milk", milk:"milk", tovuq:"chicken", chicken:"chicken", chochqa:"pig", pig:"pig",
-    qoy:"sheep", sheep:"sheep", ot:"horse", horse:"horse", it:"wolf", wolf:"wolf",
-    mushuk:"cat", cat:"cat", zombi:"zombie", zombie:"zombie", skelet:"skeleton",
-    kriper:"creeper", creeper:"creeper", orgimchak:"spider", spider:"spider",
-    musiqa:"music", qoshiq:"music", song:"music", music:"music", yomgir:"rain", eshik:"door", suv:"water", otash:"fire",
-    qilich:"sword", yurish:"step", olim:"death", zarar:"hurt"
-  };
-  const q = query.toLowerCase();
-  const tokens = q.split(/[^a-zA-Z0-9_\u0400-\u04FF]+/).filter(t => t.length > 1);
-  const terms = new Set();
-  tokens.forEach(t => { terms.add(t); if (aliases[t]) terms.add(aliases[t]); });
-  if (!terms.size) terms.add(q);
+  const parsed = qParse(query);
+  let terms = parsed.terms;
+  const out = [];
+  out.wantAll = parsed.wantAll;
+  out.strong = false;
+  if (!terms.length && _lastQ) terms = _lastQ.slice();        // follow-up like "yana boshqasini"
+  else if (terms.length) _lastQ = terms.slice();
+  out.terms = terms;
+  if (!terms.length) return out;
+
+  const rows = qIndex();
+  const music = terms.includes("music");
   const scored = [];
-  for (const s of all) {
-    const p = s.path.toLowerCase();
-    let score = 0;
-    for (const t of terms) if (p.includes(t)) score += t.length + (p.split("/").pop().includes(t) ? 5 : 0);
-    if (q.includes("qoshiq") || q.includes("musiqa") || q.includes("song") || q.includes("music")) {
-      if (p.startsWith("music/")) score += 40;
-      if (p.startsWith("note/")) score += 15;
+  let hasEnt = false;
+  for (const r of rows) {
+    let score = 0, hits = 0, ent = 0, g = "";
+    for (const t of terms) {
+      const isType = Q_TYPES.has(t);
+      let sc = 0, isEnt = false;
+      if (r.dirs.includes(t)) { sc = isType ? 10 : 40; isEnt = !isType; }
+      else if (r.dirWords.includes(t)) { sc = isType ? 8 : 25; isEnt = !isType; }
+      else if (r.words.includes(t)) sc = 14;
+      else if (t.length >= 4 && r.p.includes(t)) sc = 4;
+      if (!sc) continue;
+      hits++; score += sc;
+      if (isEnt) { ent++; if (!g) g = t; }
     }
-    if (score) scored.push(Object.assign({}, s, { score }));
+    if (music) {
+      if (r.p.startsWith("music/")) score += 40;
+      else if (r.p.startsWith("records/")) score += 20;
+    }
+    if (!score) continue;
+    if (hits > 1) score += 20 * (hits - 1);
+    if (ent) hasEnt = true;
+    scored.push({ path: r.s.path, cat: r.s.cat, score: score, ent: ent, hits: hits, kind: r.kind, g: g });
   }
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, limit);
+  // If a real mob/block/folder matched, drop accidental filename-only hits (e.g. note/cow_bell for "cow")
+  const pool = hasEnt ? scored.filter(x => x.ent > 0 || x.hits > 1) : scored;
+  pool.sort((a, b) => (b.score - a.score) || (qKindRank(a.kind) - qKindRank(b.kind)) ||
+    a.path.localeCompare(b.path, undefined, { numeric: true }));
+  const res = pool.slice(0, limit);
+  res.wantAll = parsed.wantAll;
+  res.strong = hasEnt;
+  res.terms = terms;
+  return res;
+}
+
+// Pick up to n results spread across entities and sound types (voice, hurt, death, steps, ambient...)
+function pickDiverse(list, n) {
+  const groups = new Map();
+  list.forEach(x => {
+    const k = (x.g || "") + "|" + (x.kind || "x");
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(x);
+  });
+  const bySubj = new Map();
+  Array.from(groups.keys()).forEach(k => { const sj = k.split("|")[0]; if (!bySubj.has(sj)) bySubj.set(sj, []); bySubj.get(sj).push(k); });
+  bySubj.forEach(arr => arr.sort((a, b) => qKindRank(a) - qKindRank(b)));
+  const lists = Array.from(bySubj.values());
+  const keys = [];
+  for (let i = 0; keys.length < groups.size; i++) lists.forEach(arr => { if (i < arr.length) keys.push(arr[i]); });
+  const out = [];
+  for (let round = 0; out.length < n; round++) {
+    let added = false;
+    for (const k of keys) {
+      const g = groups.get(k);
+      if (round < g.length && out.length < n) { out.push(g[round]); added = true; }
+    }
+    if (!added) break;
+  }
+  return out;
 }
 
 
@@ -1330,6 +1485,157 @@ function parseAI(text) {
   return { text: clean.join("\n").trim(), plays };
 }
 
+/* ===== AI planner: understands ANY request in ANY language, grounded in the library's real folder names ===== */
+let _vocab = null, _lastPlan = null, _lastPlanKey = "";
+const _shown = new Set();
+const Q_KIND_SYN = { voice: "say", speak: "say", talk: "say", pain: "hurt", damage: "hurt", die: "death", dying: "death",
+  footstep: "step", footsteps: "step", steps: "step", walk: "step", walking: "step" };
+
+function qVocab() {
+  if (_vocab && _vocab.src === all) return _vocab;
+  const rows = qIndex();
+  const areas = {}, names = new Set(), loose = new Set(), kindN = {}, looseN = {};
+  rows.forEach(r => {
+    const top = r.dirs[0];
+    if (!top) return;
+    if (r.dirs.length === 1) {
+      loose.add(top); names.add(top);
+      r.words.forEach(w => { if (w.length > 2 && !/\d/.test(w)) looseN[w] = (looseN[w] || 0) + 1; });
+    } else {
+      const n = r.dirs[1];
+      if (n === "moody") return;
+      (areas[top] = areas[top] || new Set()).add(n);
+      names.add(n);
+      const k = r.words[0];
+      if (k && k.length > 2 && !/\d/.test(k)) kindN[k] = (kindN[k] || 0) + 1;
+    }
+  });
+  const top = (o, n) => Object.keys(o).sort((a, b) => o[b] - o[a]).slice(0, n);
+  const text = Object.keys(areas).sort().map(a => a + "/: " + Array.from(areas[a]).sort().join(" ")).join("\n") +
+    "\nloose categories (sounds directly inside): " + Array.from(loose).sort().join(" ");
+  _vocab = { src: all, names: names, loose: loose, text: text, kinds: top(kindN, 40), words: top(looseN, 120) };
+  return _vocab;
+}
+
+function qResolveSubject(s) {
+  const V = qVocab();
+  const x = String(s || "").toLowerCase().trim().replace(/^(mob|entity|block|item|ambient)\//, "").replace(/[\s\-]+/g, "_");
+  if (V.names.has(x)) return x;
+  const flat = x.replace(/_/g, "");
+  if (!flat) return "";
+  for (const n of V.names) if (n.replace(/_/g, "") === flat) return n;
+  if (flat.endsWith("s")) for (const n of V.names) if (n.replace(/_/g, "") === flat.slice(0, -1)) return n;
+  return "";
+}
+
+function parsePlan(raw) {
+  const txt = String(raw || "").replace(/<think>[\s\S]*?<\/think>/g, "");
+  const m = txt.match(/\{[\s\S]*\}/);
+  if (!m) return null;
+  let j;
+  try { j = JSON.parse(m[0]); } catch (e) { return null; }
+  const arr = x => (Array.isArray(x) ? x : []).map(v => String(v).toLowerCase().trim()).filter(Boolean);
+  const subjects = [];
+  arr(j.subjects).forEach(s => { const r = qResolveSubject(s); if (r && !subjects.includes(r)) subjects.push(r); });
+  return {
+    subjects: subjects.slice(0, 6),
+    kinds: arr(j.kinds).map(k => Q_KIND_SYN[k] || k).slice(0, 6),
+    words: arr(j.words).map(w => w.replace(/\d+$/, "")).filter(w => w.length > 1).slice(0, 6),
+    all: !!j.all, more: !!j.more
+  };
+}
+
+async function aiPlan(msg, key) {
+  const V = qVocab();
+  const sys = "You turn a user's request about Minecraft sounds into a search plan. The user may write in ANY language (Uzbek, Russian, English, ...). " +
+    "Reply with ONLY one JSON object, no prose, no markdown: {\"subjects\":[],\"kinds\":[],\"words\":[],\"all\":false,\"more\":false}. " +
+    "subjects = up to 6 EXACT folder names from the folder list below that the user means. Translate the meaning, not the letters " +
+    "(a creature, block or item named in Uzbek or Russian -> its English folder name). " +
+    "For vague, mood or comparison requests (scary, calm, funny, epic, loud...) pick several fitting folders. " +
+    "kinds = wanted sound types, ONLY if the user specified one, from: " + V.kinds.join(" ") +
+    " (say = a creature's normal voice). Leave empty if unspecified. " +
+    "words = extra English filename words for loose sounds, preferably from: " + V.words.join(" ") + ". " +
+    "all = true if the user wants every/all sounds. " +
+    "more = true if the user asks for another/more/different ones, or continues the previous topic without naming a new subject; then repeat the previous subjects. " +
+    "If nothing in the library fits, return empty arrays.\nFolders:\n" + V.text;
+  const prev = hist.filter(h => h.role === "user").slice(-3).map(h => h.content);
+  const user = (prev.length ? "Earlier requests: " + prev.join(" | ") + "\n" : "") +
+    (_lastPlan ? "Previous plan: " + JSON.stringify({ subjects: _lastPlan.subjects, kinds: _lastPlan.kinds }) + "\n" : "") +
+    "New request: " + msg;
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 9000);
+  try {
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+      body: JSON.stringify({ model: MODEL, temperature: 0, max_tokens: 500,
+        messages: [{ role: "system", content: sys }, { role: "user", content: user }] }),
+      signal: ctl.signal
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return parsePlan(json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content);
+  } finally { clearTimeout(timer); }
+}
+
+function searchByPlan(plan, limit) {
+  limit = limit || 80;
+  const rows = qIndex();
+  const subs = plan.subjects, words = plan.words, kinds = plan.kinds;
+  const V = qVocab();
+  const K = kinds.reduce((a, k) => a.concat(k === "hurt" || k === "hit" ? ["hurt", "hit"] : [k]), []);
+  let pool = [];
+  for (const r of rows) {
+    let score = 0, g = "", ent = 0;
+    for (const s of subs) {
+      const top = V.loose.has(s) && r.dirs[0] === s;
+      if (top || r.dirs[1] === s) { score = 50; ent = 1; g = s; break; }
+      if (r.dirs[1] && r.dirs[1].startsWith(s + "_")) { score = 30; ent = 1; g = s; break; }
+    }
+    let wh = 0;
+    for (const w of words) {
+      if (r.words.includes(w)) wh += 1;
+      else if (r.dirWords.includes(w)) wh += 0.7;
+    }
+    if (subs.length && !ent) continue;
+    if (!subs.length && !wh) continue;
+    score += wh * (ent ? 6 : 16);
+    const km = K.length ? K.some(k => r.words.includes(k) || r.kind.endsWith(k)) : false;
+    pool.push({ path: r.s.path, cat: r.s.cat, score: score + (km ? 25 : 0), ent: ent, hits: 1 + wh, kind: r.kind, g: g, km: km });
+  }
+  if (K.length) {   // user asked for a specific sound type: filter per subject, keep subjects that have no such type
+    const has = new Set(pool.filter(x => x.km).map(x => x.g));
+    pool = pool.filter(x => x.km || !has.has(x.g));
+  }
+  if (plan.more) {
+    const fresh = pool.filter(x => !_shown.has(x.path));
+    if (fresh.length >= 3) pool = fresh; else _shown.clear();
+  }
+  pool.sort((a, b) => (b.score - a.score) || (qKindRank(a.kind) - qKindRank(b.kind)) ||
+    a.path.localeCompare(b.path, undefined, { numeric: true }));
+  const res = pool.slice(0, limit);
+  res.wantAll = !!plan.all;
+  res.strong = subs.length > 0 && pool.some(x => x.ent);
+  res.terms = subs.concat(words);
+  return res;
+}
+
+async function smartSearch(msg, key, limit) {
+  let plan = null;
+  try { plan = await aiPlan(msg, key); } catch (e) { plan = null; }
+  if (plan) {
+    const k = plan.subjects.join(",") + "|" + plan.kinds.join(",");
+    if (!plan.more && k !== _lastPlanKey) _shown.clear();
+    const res = searchByPlan(plan, limit);
+    if (res.length) {
+      _lastPlan = plan; _lastPlanKey = k;
+      if (/(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/.test(qNorm(msg))) res.wantAll = true;
+      return res;
+    }
+  }
+  return searchLib(msg, limit);   // offline / planner-failed fallback
+}
+
 async function sendChat() {
   const key = getApiKey() || ($("groqKey") && $("groqKey").value.trim()) || "";
   const msg = $("chatInput").value.trim();
@@ -1346,15 +1652,22 @@ async function sendChat() {
   wait.classList.add("typing");
   $("chatSend").disabled = true;
 
-  const matches = searchLib(msg, 28);
+  const matches = await smartSearch(msg, key, 90);
+  const maxPlays = matches.wantAll ? 48 : 12;
   const matchList = matches.map(m => m.path).join("\n");
+  const mobList = matches.length ? "" : Array.from(new Set(all.filter(x => x.path.startsWith("mob/")).map(x => x.path.split("/")[1]))).join(", ");
 
-  const system = "You are a Minecraft sound finder for MCSOUNDS. " +
-    "Always reply in the same language the user writes in (Uzbek, Russian, English, or any other). Match their language exactly for the short sentence. " +
-    "For song/music requests prefer music/* first. Multi-topic: cover each word. " +
-    "Reply with 1 short sentence in the user's language, then lines starting with PLAY: path (max 8 paths from Candidates only). No SEARCH. " +
+  const system = "You are MCAI, an expert Minecraft sound designer inside MCSOUNDS, a library of about 5000 official Minecraft .ogg sounds. " +
+    "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). " +
+    "Library hints: mob/<mob>/say* = the mob's normal voice, hurt* = pain, death* = dying, step* = footsteps, idle*/ambient* = idle noises, moody/* = newer variant sounds; " +
+    "entity/cow/milk* = milking; note/* = note-block instruments (instrument names such as cow_bell are NOT animals); music/* = songs. " +
+    "Task: choose the best and most varied matches from Candidates ONLY, covering different sound types (voice, hurt, death, steps, ambient) and several variants. The candidates were pre-selected by a search planner and are real matches, so trust them; for vague or mood-based requests briefly say why the picks fit. " +
+    (matches.wantAll ? "The user wants ALL of them, so list as many as fit. " : "") +
+    "Never pick a candidate that matches only by a coincidence of name. Never invent paths. " +
+    "Format: 1-2 short sentences saying what you found and what the sound types are, then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first). No markdown, no SEARCH. " +
     (navPath.length ? "Current folder: " + navPath.join("/") + ". " : "") +
-    "Candidates:\n" + (matchList || "(none)");
+    "Candidates:\n" + (matchList || "(none)") +
+    (mobList ? "\nAvailable mob folders under mob/: " + mobList : "");
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 10) hist = hist.slice(-10);
@@ -1365,8 +1678,8 @@ async function sendChat() {
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0.2,
-        max_tokens: 400,
+        temperature: 0.3,
+        max_tokens: 900,
         messages: [{ role: "system", content: system }].concat(hist)
       })
     });
@@ -1386,29 +1699,14 @@ async function sendChat() {
     hist.push({ role: "assistant", content: raw });
     const parsed = parseAI(raw);
 
-    const low = msg.toLowerCase();
-    const wantSong = /\b(music|song|track|melody)\b/.test(low);
-    const topicMap = [
-      { re: /\b(cow|moo)\b/, test: p => p.includes("cow") && /say|moody\/ambient/.test(p) },
-      { re: /\b(chicken)\b/, test: p => /\/chicken/.test(p) },
-      { re: /\b(lava)\b/, test: p => p.includes("lava") },
-      { re: /\b(music|song|track|melody)\b/, test: p => p.startsWith("music/") }
-    ];
-    for (const t of topicMap) {
-      if (!t.re.test(low)) continue;
-      all.filter(x => t.test(x.path)).slice(0, 6).forEach(x => {
-        if (!parsed.plays.includes(x.path)) parsed.plays.push(x.path);
-      });
+    const cand = new Set(matches.map(m => m.path));
+    let plays = cand.size ? parsed.plays.filter(p => cand.has(p)) : parsed.plays;
+    if (matches.strong) {
+      const eng = pickDiverse(matches, maxPlays).map(x => x.path);
+      plays = eng.concat(plays.filter(p => !eng.includes(p)));
     }
-    if (wantSong) {
-      const music = parsed.plays.filter(p => p.startsWith("music/"));
-      const rest = parsed.plays.filter(p => !p.startsWith("music/"));
-      if (!music.length) {
-        all.filter(x => x.path.startsWith("music/")).slice(0, 6).forEach(x => music.push(x.path));
-      }
-      parsed.plays = music.concat(rest);
-    }
-    parsed.plays = parsed.plays.slice(0, 8);
+    parsed.plays = plays.slice(0, maxPlays);
+    parsed.plays.forEach(p => _shown.add(p));
 
     const textPlain = (parsed.text || raw || "").trim();
     await typeAIResponse(textPlain, parsed.plays);
@@ -1677,6 +1975,9 @@ function on(id, evt, fn, opts) {
 
 function bind() {
   let searchTimer = null;
+  on("btnBack", "click", () => {
+    if (navPath.length) goNav(navPath.slice(0, -1));
+  });
   on("btnDlAll", "click", openDlModal);
   on("dlCancel", "click", () => {
     if ($("dlConfirm") && $("dlConfirm").disabled) {
