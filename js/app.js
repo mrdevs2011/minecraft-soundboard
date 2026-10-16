@@ -58,7 +58,7 @@ const I18N = {
   uz: {
     search: "Tovushlarni qidirish...",
     sounds: "tovush",
-    root: "ILDİZ",
+    root: "ILDIZ",
     search_title: "QIDIRUV",
     loading: "YUKLANMOQDA",
     failed: "XATO",
