@@ -59,7 +59,7 @@
   "url": "https://minecraft-soundboard.vercel.app/",
   "description": "Find and play all Minecraft sounds — 4,900+ official .ogg sound effects. Search, browse, download, and discover with MCAI.",
   "applicationCategory": "MultimediaApplication",
-  "operatingSystem": "Any",
+  "operatingSystem": "Windows, macOS, Linux, Web",
   "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
   "image": "https://minecraft-soundboard.vercel.app/png/icon-512.png"
 }
@@ -119,6 +119,9 @@
       <button class="icon-btn" id="btnTheme" type="button" title="Theme">
         <img class="icon" src="/svg/theme.svg" alt="">
       </button>
+      <a class="icon-btn" id="btnDesktop" href="https://github.com/mrdevs2011/minecraft-soundboard/releases/latest" target="_blank" rel="noopener" title="Download desktop app (Windows, macOS, Linux)" aria-label="Download desktop app">
+        <span>APP</span>
+      </a>
       <button class="icon-btn" id="btnChat" type="button" title="AI">
         <img class="icon" src="/svg/chat.svg" alt="">
         <span>AI</span>
@@ -176,6 +179,7 @@
         <input type="text" id="groqKey" placeholder="Paste key (gsk_...)" autocomplete="off" spellcheck="false" inputmode="text">
         <button type="button" class="key-save" id="keySave">Save</button>
         <div class="key-status" id="keyStatus"></div>
+        <p class="key-help" id="keyHelp">Get a free key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a></p>
       </div>
     </div>
     <div class="chat-log" id="chatLog">

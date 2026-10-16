@@ -55,6 +55,8 @@ const I18N = {
     splash_sub: "LOADING SOUNDS...",
     splash_tag: "Find all the sounds in Minecraft – 100%",
     nav_root: "root",
+    key_help: "Get a free key at console.groq.com/keys",
+    key_help_html: 'Get a free key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a>',
     files: "files",
   },
   uz: {
@@ -106,6 +108,8 @@ const I18N = {
     splash_sub: "TOVUSHLAR YUKLANMOQDA...",
     splash_tag: "Minecraft dagi barcha tovushlar – 100%",
     nav_root: "ildiz",
+    key_help: "Bepul kalit: console.groq.com/keys",
+    key_help_html: 'Bepul kalitni <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a> dan oling',
     files: "fayl",
   }
 };
@@ -270,6 +274,8 @@ function applyStaticLang() {
   if (keyConn) keyConn.textContent = t("api_connected");
   const btnClear = $("btnClear");
   if (btnClear) btnClear.title = t("clear_chat");
+  const keyHelp = $("keyHelp");
+  if (keyHelp) keyHelp.innerHTML = t("key_help_html");
   const splashSub = document.querySelector(".splash-sub");
   if (splashSub) splashSub.textContent = t("splash_sub");
   const splashTag = document.querySelector(".splash-tag");
