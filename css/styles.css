@@ -1265,11 +1265,13 @@ html, body {
 [data-theme="light"] ::-webkit-scrollbar-thumb{background:#a89880;border-color:#d4cbb8 #7a6e5c #7a6e5c #d4cbb8}
 [data-theme="light"] ::-webkit-scrollbar-button:single-button{background-color:#a89880;border-color:#d4cbb8 #7a6e5c #7a6e5c #d4cbb8}
 
-/* no left nav - center only */
+/* no left nav - center only (desktop only; phones/tablets keep the folder menu) */
+@media (min-width:721px){
 .shell,.shell.chat-on{grid-template-columns:minmax(0,1fr)!important}
 .shell.chat-on{grid-template-columns:minmax(0,1fr) minmax(280px,340px)!important}
 .nav{display:none!important}
 .btn-menu{display:none!important}
+}
 .stage{max-width:1100px;margin:0 auto;width:100%}
 .stage-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .stage-head .stage-title{margin-bottom:0;flex:1}
@@ -1586,3 +1588,10 @@ body[data-theme="light"]{
   word-break:break-all;
 }
 .key-help a:hover{color:var(--accent-hi)}
+
+/* Phones & tablets: keep folder menu and language label visible in the header */
+@media (max-width:720px){
+  .btn-menu{display:inline-flex!important}
+  #btnLang{min-width:40px;width:auto;padding:0 8px}
+  #btnLang span#langLabel{display:inline!important;color:inherit;font-size:12px}
+}
