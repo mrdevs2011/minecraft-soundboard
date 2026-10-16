@@ -730,6 +730,8 @@ let data = null, all = [], tree = {}, navPath = [];
 let audio = null, cardEl = null, seeking = false, raf = null, hist = [];
 let currentPlayPath = null;
 let zipAbort = false;
+let playGen = 0;
+let playAbort = null;
 let chatUIHist = []; // {role, html} persisted
 let chatLoaded = 0;
 
@@ -979,11 +981,24 @@ function tick() {
 }
 
 function play(path, c, el) {
+  // Single-instance playback: invalidate any in-flight load/play
+  const myGen = ++playGen;
+  if (playAbort) { try { playAbort.abort(); } catch (e) {} }
+  playAbort = typeof AbortController !== "undefined" ? new AbortController() : null;
+  const signal = playAbort ? playAbort.signal : undefined;
+
   currentPlayPath = path;
-  stop(false);
+
+  // Hard-stop previous audio immediately
+  if (audio) {
+    try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch (e) {}
+    audio = null;
+  }
+  cancelAnimationFrame(raf);
   if (cardEl) cardEl.classList.remove("playing");
   cardEl = el || null;
   if (el) el.classList.add("playing");
+
   const mt = getMeta(path);
   const sizeStr = fmtSize(mt.size);
   $("player").classList.add("show");
@@ -999,24 +1014,36 @@ function play(path, c, el) {
   const knownSize = mt.size || 0;
   const useProgress = knownSize > 50000 || (mt.dur != null && mt.dur > 3);
 
-  function start(src, revoke) {
+  function start(src) {
+    if (myGen !== playGen) {
+      try { if (src && String(src).indexOf("blob:") === 0) URL.revokeObjectURL(src); } catch (e) {}
+      return;
+    }
+    // Ensure nothing else is playing
+    if (audio) {
+      try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch (e) {}
+      audio = null;
+    }
     const a = new Audio();
     a.preload = "auto";
     a.volume = parseFloat($("vol").value);
     a.src = src;
     audio = a;
     a.addEventListener("loadedmetadata", () => {
+      if (myGen !== playGen || audio !== a) return;
       setSpin(false, 100);
       $("tTot").textContent = fmt(a.duration);
       $("pPath").textContent = (c || "") + " · " + fmtDur(a.duration) + " · " + sizeStr + " · " + path;
     });
-    a.addEventListener("canplay", () => setSpin(false, 100));
-    a.addEventListener("waiting", () => setSpin(true, null));
+    a.addEventListener("canplay", () => { if (myGen === playGen && audio === a) setSpin(false, 100); });
+    a.addEventListener("waiting", () => { if (myGen === playGen && audio === a) setSpin(true, null); });
     a.addEventListener("playing", () => {
+      if (myGen !== playGen || audio !== a) return;
       setSpin(false, 100);
       $("pIcoSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
     });
     a.addEventListener("ended", () => {
+      if (myGen !== playGen || audio !== a) return;
       if (el) el.classList.remove("playing");
       a.currentTime = 0;
       $("fill").style.width = "0%";
@@ -1026,12 +1053,14 @@ function play(path, c, el) {
       setSpin(false, 0);
     });
     a.addEventListener("error", () => {
+      if (myGen !== playGen || audio !== a) return;
       setSpin(false, 0);
       $("pPath").textContent = "FAILED · " + path;
       if (el) el.classList.remove("playing");
     });
     const p = a.play();
     if (p && p.catch) p.catch(() => {
+      if (myGen !== playGen || audio !== a) return;
       setSpin(false, 0);
       $("pIcoSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
     });
@@ -1039,37 +1068,50 @@ function play(path, c, el) {
     raf = requestAnimationFrame(tick);
   }
 
-  if (!useProgress) { start(url, false); return; }
+  if (!useProgress) { start(url); return; }
 
-  fetch(url, { cache: "force-cache" }).then(async res => {
+  fetch(url, { cache: "force-cache", signal: signal }).then(async res => {
+    if (myGen !== playGen) return;
     if (!res.ok) throw new Error("HTTP " + res.status);
     const total = Number(res.headers.get("content-length")) || knownSize || 0;
     if (!res.body || !res.body.getReader) {
-      start(URL.createObjectURL(await res.blob()), true);
+      const blob = await res.blob();
+      if (myGen !== playGen) return;
+      start(URL.createObjectURL(blob));
       return;
     }
     const reader = res.body.getReader();
     const chunks = [];
     let received = 0;
     while (true) {
+      if (myGen !== playGen) { try { reader.cancel(); } catch (e) {} return; }
       const { done, value } = await reader.read();
       if (done) break;
       chunks.push(value);
       received += value.length;
       const pct = total ? (received / total) * 100 : Math.min(95, received / 5000);
-      setSpin(true, pct);
-      $("pPath").textContent = "LOADING " + Math.round(pct) + "% · " + sizeStr + " · " + path;
+      if (myGen === playGen) {
+        setSpin(true, pct);
+        $("pPath").textContent = "LOADING " + Math.round(pct) + "% · " + sizeStr + " · " + path;
+      }
     }
+    if (myGen !== playGen) return;
     setSpin(true, 100);
-    start(URL.createObjectURL(new Blob(chunks, { type: "audio/ogg" })), true);
-  }).catch(() => start(url, false));
+    start(URL.createObjectURL(new Blob(chunks, { type: "audio/ogg" })));
+  }).catch(err => {
+    if (myGen !== playGen) return;
+    if (err && err.name === "AbortError") return;
+    start(url);
+  });
 }
 
 function stop(hide) {
   if (hide === undefined) hide = false;
+  playGen++; // cancel any in-flight play/fetch
+  if (playAbort) { try { playAbort.abort(); } catch (e) {} playAbort = null; }
   setSpin(false, 0);
   if (audio) {
-    try { audio.pause(); audio.currentTime = 0; audio.src = ""; audio.load(); } catch (e) {}
+    try { audio.pause(); audio.removeAttribute("src"); audio.load(); } catch (e) {}
     audio = null;
   }
   if (cardEl) cardEl.classList.remove("playing");
