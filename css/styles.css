@@ -149,6 +149,13 @@ html[data-theme-early="light"] .splash-title,
 }
 html[data-theme-early="light"] .splash-sub,
 [data-theme="light"] .splash-sub{color:#666}
+.splash-tag{
+  font-family:var(--font-mono);font-size:15px;color:#6a6a6a;
+  letter-spacing:.04em;text-align:center;max-width:280px;line-height:1.4;
+  margin-top:4px;
+}
+html[data-theme-early="light"] .splash-tag,
+[data-theme="light"] .splash-tag{color:#666}
 .splash-bar{
   width:180px;height:8px;background:#222;border:2px solid #555;
   box-shadow:inset 2px 2px 0 #333, inset -2px -2px 0 #111;

@@ -388,7 +388,7 @@ async function init() {
     all = [];
     for (const c of data.categories) for (const p of (data.sounds[c] || [])) all.push({ path: p, cat: c });
     tree = buildTree(all.map(x => x.path));
-    $("stats").textContent = data.total.toLocaleString() + " FILES";
+    $("stats").textContent = data.total.toLocaleString() + " sounds";
     $("loadFill").style.width = "100%";
     syncKeyUI();
     const th = localStorage.getItem("mcsnd_theme");
