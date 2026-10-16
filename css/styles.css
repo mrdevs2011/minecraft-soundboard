@@ -267,141 +267,354 @@ html[data-theme-early="light"] .splash-bar,
 }
 
 /* ===== PLAYER ===== */
+/* ===== PLAYER — Minecraft Options / Sound GUI 1:1 ===== */
 .player{
   display:none;position:fixed;
-  left:max(12px,var(--safe-l));right:max(12px,var(--safe-r));
-  bottom:calc(12px + var(--safe-b));z-index:200;
-  background:var(--surface2);max-width:640px;margin:0 auto;
+  left:max(10px,var(--safe-l));right:max(10px,var(--safe-r));
+  bottom:calc(10px + var(--safe-b));z-index:200;
+  background:var(--surface2);
+  max-width:640px;margin:0 auto;
   border:var(--px) solid var(--border);
   box-shadow:
     inset var(--px) var(--px) 0 var(--bevel-light),
-    inset calc(-1*var(--px)) calc(-1*var(--px)) 0 var(--bevel-dark),
-    0 6px 0 rgba(0,0,0,.4),
-    0 8px 0 rgba(0,0,0,.15);
-  transition:left .25s,right .25s,max-width .25s;
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--bevel-dark),
+    0 6px 0 rgba(0,0,0,.35),
+    0 8px 12px rgba(0,0,0,.25);
   image-rendering:pixelated;
 }
 .player.show{display:block}
-@media(min-width:900px){.player{left:50%;right:auto;transform:translateX(-50%);width:min(640px,calc(100vw - 24px))}}
-.shell.chat-on .player{left:max(12px,var(--safe-l));right:calc(12px + min(340px,100vw) + 8px);transform:none;width:auto;max-width:520px;margin:0}
-.player-inner{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
-.player-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+@media(min-width:900px){
+  .player{
+    left:50%;right:auto;
+    transform:translateX(-50%);
+    width:min(640px,calc(100vw - 24px));
+  }
+}
+.shell.chat-on .player{
+  left:max(10px,var(--safe-l));
+  right:calc(10px + min(340px,100vw) + 8px);
+  transform:none;width:auto;max-width:520px;margin:0;
+}
+
+.player-inner{
+  padding:12px 14px 14px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.player-row{
+  display:flex;align-items:center;gap:12px;
+  min-width:0;
+}
+
+/* Play / Pause — grass button */
 .player-ico{
-  width:44px;height:44px;display:grid;place-items:center;flex-shrink:0;
+  width:48px;height:48px;display:grid;place-items:center;flex-shrink:0;
   background:var(--accent);color:#fff;position:relative;cursor:pointer;
   border:var(--px) solid var(--border);
-  box-shadow:inset var(--px) var(--px) 0 var(--accent-hi), inset calc(-1*var(--px)) calc(-1*var(--px)) 0 #2a5a1a;
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--accent-hi),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--accent2);
+}
+.player-ico:hover{
+  filter:brightness(1.08);
 }
 .player-ico:active{
-  box-shadow:inset var(--px) var(--px) 0 #2a5a1a, inset calc(-1*var(--px)) calc(-1*var(--px)) 0 var(--accent-hi);
-  filter:brightness(.92);
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--accent2),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--accent-hi);
+  filter:brightness(.9);
 }
-.player-ico svg{width:16px;height:16px}
-.spin-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#fff}
+.player-ico .icon,
+#pIcoSvg{
+  width:18px;height:18px;display:block;
+  /* SVG is black — force white on green MC button */
+  filter:brightness(0) invert(1);
+}
+/* Invert play icon on light? keep white on green */
+.spin-wrap{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:#fff;
+}
 .spin-wrap.hidden{display:none}
-.spin-ring{width:18px;height:18px;border:3px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:0;animation:spin .55s steps(8) infinite;position:absolute;image-rendering:pixelated}
+.spin-ring{
+  width:18px;height:18px;
+  border:3px solid rgba(255,255,255,.25);
+  border-top-color:#fff;
+  border-radius:0;
+  animation:spin .55s steps(8) infinite;
+  position:absolute;
+  image-rendering:pixelated;
+}
 @keyframes spin{to{transform:rotate(360deg)}}
-.spin-pct{font-family:var(--font-mono);font-size:12px;font-weight:600;position:relative;z-index:1}
-.player-meta{flex:1;min-width:0}
-.player-name{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.player-path{font-family:var(--font-mono);font-size:15px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-.player-ctrls{display:flex;gap:6px;align-items:center}
+.spin-pct{
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+  position:relative;z-index:1;color:#fff;
+}
 
-.prog{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center;padding:4px 0}
-.prog time{font-family:var(--font-mono);font-size:16px;color:var(--muted)}
+.player-meta{flex:1;min-width:0}
+.player-name{
+  font-weight:700;font-size:15px;line-height:1.25;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--text);
+}
+.player-path{
+  font-family:var(--font-mono);font-size:14px;line-height:1.3;
+  color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  margin-top:3px;
+}
+
+.player-ctrls{
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.player-ctrls .icon-btn{
+  height:36px;min-width:36px;padding:0 8px;
+}
+.player-ctrls .icon-btn .icon{width:15px;height:15px}
+
+/* ===== Progress bar (MC volume-style scrubber) ===== */
+.prog{
+  display:grid;
+  grid-template-columns:42px 1fr 42px;
+  gap:10px;
+  align-items:center;
+  padding:2px 0 0;
+}
+.prog time{
+  font-family:var(--font-mono);
+  font-size:15px;
+  color:var(--muted);
+  font-variant-numeric:tabular-nums;
+  user-select:none;
+}
 .prog time:last-child{text-align:right}
+
 .track{
-  height:8px;background:var(--bg);cursor:pointer;position:relative;overflow:visible;touch-action:none;
+  height:10px;
+  background:var(--bg);
+  cursor:pointer;
+  position:relative;
+  overflow:visible;
+  touch-action:none;
   border:var(--px) solid;
   border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
-  box-shadow:inset 1px 1px 0 rgba(0,0,0,.45);
-  transition:height .05s steps(1);
+  box-shadow:inset 1px 1px 0 rgba(0,0,0,.4);
 }
-.track:hover,.track:active,.track.scrubbing{height:12px}
-/* track pixel texture — subtle MC stone feel */
+.track:hover,
+.track:active,
+.track.scrubbing{
+  height:12px;
+}
+
+/* subtle inner texture */
 .track::before{
-  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;opacity:.12;
+  content:"";
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  opacity:.15;
   background-image:repeating-linear-gradient(
     90deg,
     transparent 0 2px,
-    rgba(255,255,255,.08) 2px 3px,
-    transparent 3px 5px
+    rgba(255,255,255,.1) 2px 3px,
+    transparent 3px 6px
   );
   image-rendering:pixelated;
 }
+[data-theme="light"] .track::before{
+  opacity:.2;
+  background-image:repeating-linear-gradient(
+    90deg,
+    transparent 0 2px,
+    rgba(0,0,0,.06) 2px 3px,
+    transparent 3px 6px
+  );
+}
 
 .fill{
-  height:100%;width:0%;background:var(--accent);position:absolute;left:0;top:0;z-index:1;
+  height:100%;width:0%;
+  background:var(--accent);
+  position:absolute;left:0;top:0;z-index:1;
   box-shadow:
     inset 0 2px 0 var(--accent-hi),
-    inset 0 -2px 0 var(--accent2),
-    inset 2px 0 0 rgba(255,255,255,.12);
+    inset 0 -2px 0 var(--accent2);
   image-rendering:pixelated;
+  pointer-events:none;
 }
-/* Minecraft-style pixel scrubber thumb — appears on hover / scrub */
+
+/* Pixel scrubber handle — always theme-aware */
 .thumb{
-  position:absolute;top:50%;left:0;z-index:3;
-  width:14px;height:14px;
-  transform:translate(-50%,-50%) scale(0);
-  background:#e8e8e8;
+  position:absolute;
+  top:50%;
+  left:0;
+  z-index:3;
+  width:16px;
+  height:16px;
+  margin:0;
+  transform:translate(-50%,-50%);
+  background:var(--surface);
   border:2px solid var(--accent);
   border-radius:0;
   box-shadow:
-    inset 1px 1px 0 #fff,
-    inset -1px -1px 0 #999,
-    0 0 0 1px rgba(0,0,0,.35),
-    1px 1px 0 rgba(0,0,0,.4);
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark),
+    0 0 0 1px rgba(0,0,0,.25),
+    1px 1px 0 rgba(0,0,0,.3);
   image-rendering:pixelated;
   pointer-events:none;
   opacity:0;
-  transition:opacity .08s steps(2), transform .08s steps(2);
+  visibility:hidden;
+  transition:opacity .06s steps(2), visibility .06s steps(2);
 }
 .track:hover .thumb,
 .track:active .thumb,
 .track.scrubbing .thumb,
 .thumb.visible{
   opacity:1;
-  transform:translate(-50%,-50%) scale(1);
+  visibility:visible;
+}
+
+/* Light theme player panel — clearer contrast */
+[data-theme="light"] .player{
+  background:var(--surface);
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--bevel-light),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--bevel-dark),
+    0 6px 0 rgba(0,0,0,.12),
+    0 8px 16px rgba(0,0,0,.1);
+}
+[data-theme="light"] .track{
+  background:var(--bg2);
+  box-shadow:inset 1px 1px 0 rgba(0,0,0,.15);
 }
 [data-theme="light"] .thumb{
-  background:#faf7f0;
+  background:#fff;
   border-color:var(--accent);
   box-shadow:
     inset 1px 1px 0 #fff,
-    inset -1px -1px 0 #b0a490,
-    0 0 0 1px rgba(0,0,0,.2),
-    1px 1px 0 rgba(0,0,0,.25);
+    inset -1px -1px 0 var(--bevel-dark),
+    0 0 0 1px rgba(0,0,0,.15),
+    1px 1px 0 rgba(0,0,0,.12);
 }
-/* volume slider — match MC style */
+
+/* ===== Volume slider — pure MC ===== */
 .vol{
-  -webkit-appearance:none;appearance:none;
-  width:80px;height:8px;background:var(--bg);outline:none;cursor:pointer;
+  -webkit-appearance:none;
+  appearance:none;
+  width:88px;
+  height:10px;
+  outline:none;
+  cursor:pointer;
   border:var(--px) solid;
   border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
-  box-shadow:inset 1px 1px 0 rgba(0,0,0,.4);
-  /* filled portion via accent */
-  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--vol-pct, 70%), var(--bg) var(--vol-pct, 70%), var(--bg) 100%);
+  box-shadow:inset 1px 1px 0 rgba(0,0,0,.35);
+  background:linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--vol-pct, 70%),
+    var(--bg) var(--vol-pct, 70%),
+    var(--bg) 100%
+  );
+  vertical-align:middle;
+}
+[data-theme="light"] .vol{
+  background:linear-gradient(
+    to right,
+    var(--accent) 0%,
+    var(--accent) var(--vol-pct, 70%),
+    var(--bg2) var(--vol-pct, 70%),
+    var(--bg2) 100%
+  );
+  box-shadow:inset 1px 1px 0 rgba(0,0,0,.12);
+}
+.vol::-webkit-slider-runnable-track{
+  height:10px;background:transparent;border:none;
+}
+.vol::-moz-range-track{
+  height:10px;background:transparent;border:none;
 }
 .vol::-webkit-slider-thumb{
-  -webkit-appearance:none;appearance:none;
-  width:14px;height:14px;border-radius:0;
-  background:#e8e8e8;border:2px solid var(--accent);
-  box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #999, 0 0 0 1px rgba(0,0,0,.3);
-  cursor:pointer;image-rendering:pixelated;
+  -webkit-appearance:none;
+  appearance:none;
+  width:16px;height:16px;
+  border-radius:0;
+  background:var(--surface);
+  border:2px solid var(--accent);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark),
+    0 0 0 1px rgba(0,0,0,.25);
+  cursor:pointer;
+  image-rendering:pixelated;
+  margin-top:-3px; /* center on 10px track */
 }
 .vol::-moz-range-thumb{
-  width:14px;height:14px;border-radius:0;
-  background:#e8e8e8;border:2px solid var(--accent);
-  box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #999, 0 0 0 1px rgba(0,0,0,.3);
+  width:16px;height:16px;
+  border-radius:0;
+  background:var(--surface);
+  border:2px solid var(--accent);
+  box-shadow:
+    inset 1px 1px 0 var(--bevel-light),
+    inset -1px -1px 0 var(--bevel-dark),
+    0 0 0 1px rgba(0,0,0,.25);
   cursor:pointer;
 }
 [data-theme="light"] .vol::-webkit-slider-thumb,
 [data-theme="light"] .vol::-moz-range-thumb{
-  background:#faf7f0;
-  box-shadow:inset 1px 1px 0 #fff, inset -1px -1px 0 #b0a490, 0 0 0 1px rgba(0,0,0,.2);
+  background:#fff;
+  border-color:var(--accent);
+  box-shadow:
+    inset 1px 1px 0 #fff,
+    inset -1px -1px 0 var(--bevel-dark),
+    0 0 0 1px rgba(0,0,0,.12);
 }
-.vol::-webkit-slider-runnable-track{height:8px;background:transparent}
-.vol::-moz-range-track{height:8px;background:transparent}
+
+/* ===== Responsive player ===== */
+@media(max-width:720px){
+  .player{
+    left:6px;right:6px;
+    bottom:calc(6px + var(--safe-b));
+    max-width:none;
+  }
+  .player-inner{padding:10px 12px 12px;gap:10px}
+  .player-row{gap:10px}
+  .player-ico{width:44px;height:44px}
+  .player-name{font-size:14px}
+  .player-path{font-size:13px}
+  .prog{
+    grid-template-columns:38px 1fr 38px;
+    gap:8px;
+  }
+  .prog time{font-size:14px}
+  .vol{width:64px}
+  .player-ctrls{gap:6px}
+  .player-ctrls .icon-btn{height:34px;min-width:34px}
+}
+@media(max-width:400px){
+  .player-ctrls .vol{width:52px}
+  .player-path{display:none} /* save space on tiny screens */
+  .prog{grid-template-columns:34px 1fr 34px;gap:6px}
+  .thumb{width:14px;height:14px}
+  .vol::-webkit-slider-thumb,
+  .vol::-moz-range-thumb{width:14px;height:14px}
+}
+
+/* Touch: keep thumb visible while scrubbing */
+@media (hover: none) {
+  .track.scrubbing .thumb,
+  .track:active .thumb {
+    opacity:1;
+    visibility:visible;
+  }
+}
+
+/* a11y */
+.track:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
+.player-ico:focus-visible,
+.icon-btn:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
 
 /* ===== CARDS - inventory slots ===== */
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr));gap:8px}
@@ -597,12 +810,7 @@ html[data-theme-early="light"] .splash-bar,
   .folder-grid.show{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
   .folder-card{min-height:80px;padding:14px 12px}
 
-  .player{left:8px;right:8px;bottom:calc(8px + var(--safe-b))}
-  .player-inner{padding:10px 12px;gap:8px}
-  .player-ico{width:44px;height:44px}
-  .player-name{font-size:14px}
-  .vol{width:60px!important}
-  .prog{grid-template-columns:40px 1fr 40px}
+  /* player responsive rules live in main player block */
 
   .chat{width:100vw;top:0;padding-top:var(--safe-t);z-index:95}
   .bubble{max-width:92%;font-size:15px}
@@ -615,7 +823,6 @@ html[data-theme-early="light"] .splash-bar,
   .brand-mark{width:26px;height:26px}
   .brand-text{font-size:13px}
   .folder-grid.show{grid-template-columns:1fr 1fr}
-  .player-ctrls .vol{width:48px!important}
 }
 
 @media(min-width:1400px){
@@ -657,8 +864,6 @@ html[data-theme-early="light"] .splash-bar,
 }
 .dl-progress .bar > i{display:block;height:100%;width:0%;background:var(--accent);box-shadow:inset 0 2px 0 var(--accent-hi)}
 .dl-progress .txt{font-family:var(--font-mono);font-size:14px;color:var(--muted)}
-.player-ctrls .icon-btn{height:34px;min-width:34px;padding:0 8px}
-.player-ctrls .icon-btn .icon{width:14px;height:14px}
 
 
 /* ===== MINECRAFT SCROLLBAR 1:1 ===== */
@@ -951,34 +1156,29 @@ body[data-theme="light"]{
   height: 14px;
 }
 
-
-/* Player play/pause icon */
-.player-ico .icon,
-#pIcoSvg {
-  width: 16px;
-  height: 16px;
-  display: block;
+/* Theme-aware icons (SVGs are black by default) */
+.icon-btn .icon,
+.btn-back .icon,
+.search-wrap .icon,
+.card-play .icon,
+.folder .icon,
+.chip-ico .icon,
+.send-btn .icon{
+  filter: brightness(0) invert(0.85);
 }
-
-
-
-/* Touch devices: keep thumb more visible while interacting */
-@media (hover: none) {
-  .track.scrubbing .thumb,
-  .track:active .thumb {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1.15);
-  }
+[data-theme="light"] .icon-btn .icon,
+[data-theme="light"] .btn-back .icon,
+[data-theme="light"] .search-wrap .icon,
+[data-theme="light"] .card-play .icon,
+[data-theme="light"] .folder .icon,
+[data-theme="light"] .chip-ico .icon,
+[data-theme="light"] .send-btn .icon{
+  filter: brightness(0) invert(0.15);
 }
-
-
-/* a11y + MC selection glow on track */
-.track:focus-visible{
-  outline:2px solid var(--accent);
-  outline-offset:2px;
-}
-.player-ico:focus-visible,
-.icon-btn:focus-visible{
-  outline:2px solid var(--accent);
-  outline-offset:2px;
+/* Hover/active on green buttons — force white */
+.icon-btn:hover .icon,
+.icon-btn.on .icon,
+.card:hover .card-play .icon,
+.card.playing .card-play .icon{
+  filter: brightness(0) invert(1) !important;
 }
