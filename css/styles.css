@@ -1423,7 +1423,19 @@ body[data-theme="light"]{
 }
 
 
-.mc-ai-title{font-size:15px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:0;flex:1;margin:0;line-height:1}
+.mc-ai-title{
+  font-family:var(--font-mono), "VT323", monospace;
+  font-size:20px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  font-weight:400;
+  display:flex;align-items:center;gap:0;flex:1;margin:0;line-height:1;
+}
+.mc-ai-title .mc,
+.mc-ai-title .ai{
+  font-family:inherit;
+  letter-spacing:inherit;
+}
 .mc-ai-title .mc{color:var(--accent)}
 .mc-ai-title .ai{color:#ffffff}
 [data-theme="light"] .mc-ai-title .ai{color:#0a0a0a}
