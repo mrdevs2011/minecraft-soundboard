@@ -460,10 +460,9 @@ body::after {
       <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off">
       <label>Model</label>
       <select id="groqModel">
-        <option value="openai/gpt-oss-20b">GPT OSS 20B</option>
+        <option value="openai/gpt-oss-20b" selected>GPT OSS 20B</option>
         <option value="openai/gpt-oss-120b">GPT OSS 120B</option>
         <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
-        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
         <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout</option>
         <option value="qwen/qwen3.8-27b">Qwen3.8 27B</option>
       </select>
@@ -514,9 +513,12 @@ async function init() {
     const m = localStorage.getItem("groq_model");
     const th = localStorage.getItem("mcsnd_theme");
     if (k) $("groqKey").value = k;
-    if (m) {
-      const opt = Array.from($("groqModel").options).some(o => o.value === m);
-      $("groqModel").value = opt ? m : "openai/gpt-oss-20b";
+    const blocked = ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "gemma2-9b-it"];
+    if (m && !blocked.includes(m) && Array.from($("groqModel").options).some(o => o.value === m)) {
+      $("groqModel").value = m;
+    } else {
+      $("groqModel").value = "openai/gpt-oss-20b";
+      localStorage.setItem("groq_model", "openai/gpt-oss-20b");
     }
     if (th === "light") setTheme("light");
   } catch (e) {
