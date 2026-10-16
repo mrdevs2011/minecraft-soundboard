@@ -392,6 +392,55 @@ body::after {
   font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted);
 }
 
+
+.bubble .chips { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.chip {
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; padding: 10px 12px;
+  border: 1px solid var(--border2); cursor: pointer; background: var(--surface);
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  transition: .15s;
+}
+.chip:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+.chip .chip-ico {
+  width: 28px; height: 28px; border: 1px solid currentColor;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.chip .chip-ico svg { width: 10px; height: 10px; }
+.chip .chip-body { min-width: 0; flex: 1; }
+.chip .chip-name { font-weight: 600; font-size: 12px; font-family: Syne, sans-serif; }
+.chip .chip-path { font-size: 9px; opacity: .65; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip .chip-meta { font-size: 9px; opacity: .55; margin-top: 2px; }
+/* player shifts left when AI open */
+.shell.chat-on .player {
+  right: calc(12px + min(360px, 100vw) + 8px);
+  left: 12px;
+  transform: none;
+  width: auto;
+  max-width: 560px;
+}
+@media (max-width: 1100px) {
+  .shell.chat-on .player {
+    right: 12px;
+    left: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
+  }
+}
+
+
+.card { transition: transform .2s, border-color .15s, background .15s; }
+.card:hover { transform: translateY(-3px) scale(1.01); }
+.player { transition: left .25s ease, right .25s ease, width .25s ease, transform .25s ease; }
+.shell.chat-on .player { margin-right: 0; }
+body[data-theme="dark"] .player {
+  box-shadow: 0 0 0 1px rgba(255,255,255,.06), 0 20px 50px rgba(0,0,0,.55);
+}
+body[data-theme="light"] .player {
+  box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 20px 50px rgba(0,0,0,.12);
+}
+.chat { animation: slideIn .25s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
 </style>
 </head>
 <body data-theme="dark">
@@ -487,11 +536,11 @@ body::after {
       <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off">
       <label>Model</label>
       <select id="groqModel">
-        <option value="openai/gpt-oss-20b" selected>GPT OSS 20B</option>
+        <option value="qwen/qwen3.8-27b" selected>Qwen3.8 27B</option>
+        <option value="openai/gpt-oss-20b">GPT OSS 20B</option>
         <option value="openai/gpt-oss-120b">GPT OSS 120B</option>
         <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
         <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout</option>
-        <option value="qwen/qwen3.8-27b">Qwen3.8 27B</option>
       </select>
     </div>
     <div class="chat-log" id="chatLog">
@@ -570,12 +619,13 @@ async function init() {
     const m = localStorage.getItem("groq_model");
     const th = localStorage.getItem("mcsnd_theme");
     if (k) $("groqKey").value = k;
+    // always prefer Qwen3.8 27B; strip inaccessible models
     const blocked = ["llama-3.3-70b-versatile", "mixtral-8x7b-32768", "gemma2-9b-it"];
     if (m && !blocked.includes(m) && Array.from($("groqModel").options).some(o => o.value === m)) {
       $("groqModel").value = m;
     } else {
-      $("groqModel").value = "openai/gpt-oss-20b";
-      localStorage.setItem("groq_model", "openai/gpt-oss-20b");
+      $("groqModel").value = "qwen/qwen3.8-27b";
+      localStorage.setItem("groq_model", "qwen/qwen3.8-27b");
     }
     if (th === "light") setTheme("light");
   } catch (e) {
@@ -620,7 +670,9 @@ function filterList(c, q) {
 function searchLib(query, limit) {
   limit = limit || 40;
   const aliases = {
-    "mol": "cow", "sigir": "cow", "cow": "cow",
+    "mol": "cow", "sigir": "cow", "cow": "cow", "moo": "say", "muu": "say",
+    "maarashi": "say", "marashi": "say", "ovoz": "say", "baqirish": "say",
+    "sut": "milk", "milk": "milk",
     "tovuq": "chicken", "chicken": "chicken",
     "chochqa": "pig", "pig": "pig",
     "qoy": "sheep", "sheep": "sheep",
@@ -639,8 +691,8 @@ function searchLib(query, limit) {
     "nota": "note", "qilich": "sword", "sword": "sword",
     "blok": "block", "block": "block", "yurish": "step", "step": "step",
     "portlash": "explode", "explode": "explode", "zarar": "hurt", "hurt": "hurt",
-    "olim": "death", "death": "death", "ambient": "ambient", "sut": "milk", "milk": "milk"
-  };
+    "olim": "death", "death": "death", "ambient": "ambient", "gish": "step"
+  }
   const q = query.toLowerCase();
   const tokens = q.split(/[^a-zA-Z0-9_\u0400-\u04FF]+/).filter(t => t.length > 1);
   const terms = new Set();
@@ -892,7 +944,11 @@ function parseAI(text) {
 
 async function sendChat() {
   const key = $("groqKey").value.trim();
-  const model = $("groqModel").value;
+  let model = $("groqModel").value;
+  if (!model || model.indexOf("llama-3.3") >= 0) {
+    model = "qwen/qwen3.8-27b";
+    $("groqModel").value = model;
+  }
   const msg = $("chatInput").value.trim();
   if (!msg) return;
   if (!key) { appendBubble("sys", "Groq API key kerak"); return; }
@@ -903,15 +959,21 @@ async function sendChat() {
   const wait = appendBubble("sys", "...");
   $("chatSend").disabled = true;
 
-  const matches = searchLib(msg, 35);
+  const matches = searchLib(msg, 50);
   const matchList = matches.map(m => m.path).join("\n");
-  const system = "Sen Minecraft Soundboard yordamchisisan. 4961 ta .ogg bor.\n" +
-    "1) SEARCH: qatorida search sozini ber.\n" +
-    "2) PLAY: qatorida aniq pathlarni vergul bilan ber.\n" +
-    "3) Qisqa ozbekcha javob yoz.\n" +
-    "Format:\nmatn\nSEARCH: soz\nPLAY: path1.ogg, path2.ogg\n\n" +
-    "Kategoriyalar: " + data.categories.join(", ") + "\n\nMos ovozlar:\n" +
-    (matchList || "(topilmadi)") + "\n\nPLAY da faqat shu royxatdan tanla. 1-5 ta.";
+  const system =
+    "Sen Minecraft Sound Archive ekspertsan. 4961 ta .ogg bor.\n" +
+    "Foydalanuvchi ozbek/rus/inglizda sozlaydi.\n\n" +
+    "MUHIM QOIDALAR:\n" +
+    "1) SEARCH qatori YOZMA. Search maydonini toldirma. Faqat PLAY ber.\n" +
+    "2) PLAY: qatorida aniq toliq pathlarni vergul bilan yoz (masalan mob/cow/say1.ogg).\n" +
+    "3) Mol/cow mooo ovozi = mob/cow/say*.ogg va mob/cow/moody/ambient*.ogg. Milk = sogish, bu mooo EMAS.\n" +
+    "4) Imkon qadar barcha mos ovozlarni ber (8 tagacha).\n" +
+    "5) Qisqa ozbekcha javob (1-2 jumla).\n\n" +
+    "Format:\nJavob matni\nPLAY: path1.ogg, path2.ogg\n\n" +
+    "Kategoriyalar: " + data.categories.join(", ") + "\n\n" +
+    "Mos topilgan ovozlar (faqat shulardan tanla):\n" +
+    (matchList || "(topilmadi — umumiy maslahat)");
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 12) hist = hist.slice(-12);
@@ -932,6 +994,21 @@ async function sendChat() {
     const raw = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || "";
     hist.push({ role: "assistant", content: raw });
     const parsed = parseAI(raw);
+    // enrich cow/moo requests if AI missed say*
+    const low = msg.toLowerCase();
+    if (/\b(mol|cow|moo|muu|sigir|maarash|marash)/.test(low)) {
+      const wantMilk = /milk|sut|sog/.test(low);
+      const extra = all.filter(x => {
+        const p = x.path;
+        if (!p.includes("cow")) return false;
+        if (wantMilk) return p.includes("milk");
+        return /say|moody\/ambient/.test(p);
+      }).map(x => x.path);
+      for (const p of extra) {
+        if (!parsed.plays.includes(p)) parsed.plays.push(p);
+      }
+      parsed.plays = parsed.plays.slice(0, 10);
+    }
     let html = esc(parsed.text || raw).replace(/\n/g, "<br>");
     if (parsed.search) {
       html += "<div class=\"hint\" data-q=\"" + esc(parsed.search) + "\">SEARCH: <b>" + esc(parsed.search) + "</b></div>";
@@ -939,8 +1016,13 @@ async function sendChat() {
     if (parsed.plays.length) {
       html += "<div class=\"chips\">";
       parsed.plays.forEach(p => {
-        html += "<span class=\"chip\" data-path=\"" + esc(p) + "\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg>" +
-          esc(p.split("/").pop()) + "</span>";
+        const mt = getMeta(p);
+        const nm = p.split("/").pop();
+        html += "<span class=\"chip\" data-path=\"" + esc(p) + "\">" +
+          "<span class=\"chip-ico\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg></span>" +
+          "<span class=\"chip-body\"><div class=\"chip-name\">" + esc(nm) + "</div>" +
+          "<div class=\"chip-path\">" + esc(p) + "</div>" +
+          "<div class=\"chip-meta\">" + fmtDur(mt.dur) + "  ·  " + fmtSize(mt.size) + "</div></span></span>";
       });
       html += "</div>";
     }
@@ -950,14 +1032,13 @@ async function sendChat() {
       const path = c.dataset.path;
       const meta = all.find(x => x.path === path);
       play(path, meta ? meta.cat : "", null);
-      applySearch(parsed.search || path.split("/").pop().replace(".ogg", ""));
+      // no auto-search on chip
     }));
     if (parsed.plays.length) {
       const path = parsed.plays[0];
       const meta = all.find(x => x.path === path);
       play(path, meta ? meta.cat : "", null);
-      if (parsed.search) applySearch(parsed.search);
-    } else if (parsed.search) applySearch(parsed.search);
+    }
   } catch (e) {
     wait.remove();
     appendBubble("sys", "Network: " + e.message);
