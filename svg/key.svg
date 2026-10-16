@@ -1,4 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square">
-  <circle cx="8" cy="12" r="4"/>
-  <path d="M12 12h10v3M18 12v3"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
+  <path d="M5 2h6v1H5V2zm-1 1h1v1H4V3zm7 0h1v1h-1V3zM3 4h1v3H3V4zm9 0h1v3h-1V4zM4 7h1v1H4V7zm7 0h1v1h-1V7zm-2 1h2v1H9V8z" fill="#ffffff"/>
+  <path d="M5 3h6v1H5V3zm-1 1h1v3H4V4zm7 0h1v3h-1V4zm-6 3h1v1H5V7zm5 0h1v1h-1V7zm-2 1h1v1H8V8z" fill="#777777"/>
+  <path d="M6 4h4v1H6V4zm-1 1h1v1H5V5zm4 0h1v1H9V5zm-3 1h4v1H6V6z" fill="#aaaaaa"/>
+  <path d="M6 5h3v1H6V5z" fill="#333333"/>
+  <path d="M7 9h2v1H7V9zm0 1h2v1H7v-1zm0 1h2v1H7v-1zm0 1h2v1H7v-1zm0 1h2v1H7v-1z" fill="#ffffff"/>
+  <path d="M8 9h1v5H8V9z" fill="#777777"/>
+  <path d="M7 9h1v5H7V9z" fill="#333333"/>
+  <path d="M9 10h2v1H9v-1zm2 1h1v2h-1v-2zm-2 2h2v1H9v-1z" fill="#ffffff"/>
+  <path d="M9 11h2v2H9v-2z" fill="#777777"/>
+  <path d="M9 11h1v1H9v-1z" fill="#333333"/>
 </svg>

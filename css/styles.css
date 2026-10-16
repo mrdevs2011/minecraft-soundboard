@@ -1363,3 +1363,14 @@ body[data-theme="light"]{
 [data-theme="light"] .card.playing .card-play .icon{
   filter: brightness(0) invert(0.12) !important;
 }
+
+
+/* Pixel key icon — no CSS invert (multi-color art) */
+.key-icon,
+#keyIcon,
+.icon-btn .key-icon,
+.icon-btn:hover .key-icon,
+.icon-btn.on .key-icon{
+  filter: none !important;
+  image-rendering: pixelated;
+}

@@ -15,6 +15,15 @@ const $ = id => document.getElementById(id);
 function getApiKey() {
   try { return (localStorage.getItem("groq_api_key") || "").trim(); } catch (e) { return ""; }
 }
+
+function syncKeyIcon() {
+  const img = document.getElementById("keyIcon");
+  if (!img) return;
+  const light = document.body.getAttribute("data-theme") === "light";
+  // light theme = light UI bg → black key; dark theme = dark UI bg → white key
+  img.src = light ? "/svg/key-light.svg" : "/svg/key-dark.svg";
+}
+
 function syncKeyUI() {
   const has = !!getApiKey();
   const conn = $("keyConnected");
@@ -384,6 +393,7 @@ async function init() {
     syncKeyUI();
     const th = localStorage.getItem("mcsnd_theme");
     if (th === "light") document.body.setAttribute("data-theme", "light");
+    syncKeyIcon();
     bind();
     loadChatFromStorage();
     goNav(urlToPath(), false);
@@ -1275,6 +1285,7 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     document.body.setAttribute("data-theme", next);
     document.documentElement.setAttribute("data-theme-early", next);
     localStorage.setItem("mcsnd_theme", next);
+    syncKeyIcon();
   });
 
   const toggleNav = () => {
