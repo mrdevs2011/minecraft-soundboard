@@ -1,2 +1,11 @@
 .vercel
 .env*
+
+node_modules/
+dist/
+.cache/
+
+www/
+android/app/build/
+android/.gradle/
+android/local.properties

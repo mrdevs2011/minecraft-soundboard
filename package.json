@@ -3,7 +3,10 @@
   "productName": "MCSOUNDS",
   "version": "1.0.0",
   "description": "Find and play all Minecraft sounds — desktop app for Windows, macOS and Linux",
-  "author": "MCSOUNDS",
+  "author": {
+    "name": "MCSOUNDS",
+    "email": "mrdevs2011@users.noreply.github.com"
+  },
   "license": "UNLICENSED",
   "private": true,
   "main": "electron/main.js",
@@ -12,11 +15,15 @@
     "build:win": "electron-builder --win --x64",
     "build:mac": "electron-builder --mac --x64 --arm64",
     "build:linux": "electron-builder --linux --x64",
-    "build:desktop": "electron-builder"
+    "build:desktop": "electron-builder",
+    "prepare:www": "node scripts/prepare-www.mjs",
+    "android:sync": "node scripts/prepare-www.mjs && npx cap sync android",
+    "android:build": "cd android && ./gradlew assembleDebug"
   },
   "devDependencies": {
     "electron": "^33.2.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "@capacitor/cli": "^6.2.0"
   },
   "build": {
     "appId": "com.mcsounds.app",
@@ -49,26 +56,76 @@
     "publish": null,
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-${version}-Setup.${ext}"
     },
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["x64", "arm64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
       ],
-      "category": "public.app-category.entertainment"
+      "category": "public.app-category.entertainment",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Game",
-      "maintainer": "MCSOUNDS"
+      "maintainer": "MCSOUNDS <mrdevs2011@users.noreply.github.com>",
+      "synopsis": "Minecraft sound archive",
+      "executableName": "mcsounds"
+    },
+    "afterPack": "scripts/adhoc-sign.js",
+    "portable": {
+      "artifactName": "${productName}-${version}-Portable.${ext}"
+    },
+    "dmg": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "appImage": {
+      "artifactName": "${productName}-${version}.${ext}"
+    },
+    "deb": {
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
     }
+  },
+  "homepage": "https://minecraft-soundboard.vercel.app/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mrdevs2011/minecraft-soundboard.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/android": "^6.2.0"
   }
 }

@@ -1,0 +1,8 @@
+{
+  "appId": "com.mcsounds.app",
+  "appName": "MCSOUNDS",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MCSOUNDS</string>
+    <string name="title_activity_main">MCSOUNDS</string>
+    <string name="package_name">com.mcsounds.app</string>
+    <string name="custom_url_scheme">com.mcsounds.app</string>
+</resources>
