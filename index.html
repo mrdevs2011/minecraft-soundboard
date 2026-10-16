@@ -802,6 +802,13 @@ body[data-theme="light"]{
   image-rendering:pixelated;overflow:visible;
 }
 
+
+.mc-ai-title{font-size:14px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:6px;flex:1;margin:0}
+.mc-ai-title .mc{color:#3b82f6}
+.mc-ai-title .ai{color:#ffffff}
+[data-theme="light"] .mc-ai-title .ai{color:#0a0a0a}
+[data-theme="light"] .mc-ai-title .mc{color:#2563eb}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
@@ -894,7 +901,7 @@ body[data-theme="light"]{
           <rect x="10" y="7" width="5" height="2" fill="currentColor"/>
         </svg>
       </button>
-      <h3>MC AI</h3>
+      <h3 class="mc-ai-title"><span class="mc">MC</span> <span class="ai">AI</span></h3>
       <div class="chat-hd-actions">
         <button class="icon-btn hidden" id="btnClear" type="button" title="Clear chat">
           <svg viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges" aria-hidden="true">
