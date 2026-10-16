@@ -1,25 +1,25 @@
-# Minecraft Soundboard
+# MCSOUNDS — Minecraft Sound Archive
 
-Beautiful web player for **all 4961** Minecraft sound effects extracted from the game.
+Find **all the sounds in Minecraft – 100%**. Play, search, download, and explore **4,900+** official `.ogg` sounds.
+
+**Live:** https://minecraft-soundboard.vercel.app/
 
 ## Features
-- 🎧 Play any of the 4961 .ogg sounds
-- 🔍 Instant search across all categories
-- 🎨 Dark Minecraft-inspired UI
-- 🎲 Random sound button
-- 📁 21 categories (ambient, block, entity, mob, music, ...)
-- 📱 Fully responsive
 
-## Local preview
+- Instant search · folder navigation · in-page player
+- Dark / light themes · MCAI (optional Groq key)
+- Bulk ZIP download · PWA · fully responsive
+
+## Local
 
 ```bash
 npx serve .
-# or
-python3 -m http.server 8080
 ```
-
-Then open http://localhost:8080
 
 ## Deploy
 
-This repo is ready for Vercel / Netlify / GitHub Pages.
+```bash
+npx vercel --prod
+```
+
+Push to `main` for auto-deploy when linked to Vercel.

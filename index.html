@@ -3,16 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>MCSOUNDS - Minecraft Sound Archive</title>
+<title>MCSOUNDS — All Minecraft Sounds Archive & Player</title>
+<meta name="description" content="Find and play all Minecraft sounds — 4,900+ .ogg effects from the game. Search, browse categories, download, and use MCAI to discover the perfect sound. 100% Minecraft sound archive.">
+<meta name="keywords" content="Minecraft sounds, Minecraft soundboard, Minecraft SFX, ogg sounds, Minecraft ambient, Minecraft mob sounds, sound archive">
+<meta name="author" content="MCSOUNDS">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#1b1b1b" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3efe6" media="(prefers-color-scheme: light)">
+<link rel="canonical" href="https://minecraft-soundboard.vercel.app/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://minecraft-soundboard.vercel.app/">
+<meta property="og:title" content="MCSOUNDS — All Minecraft Sounds">
+<meta property="og:description" content="Find all the sounds in Minecraft – 100%. Play, search, and download 4,900+ official game sounds.">
+<meta property="og:image" content="https://minecraft-soundboard.vercel.app/png/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:site_name" content="MCSOUNDS">
+<meta property="og:locale" content="en_US">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MCSOUNDS — All Minecraft Sounds">
+<meta name="twitter:description" content="Find all the sounds in Minecraft – 100%. Play and download 4,900+ sounds.">
+<meta name="twitter:image" content="https://minecraft-soundboard.vercel.app/png/icon-512.png">
+
+<!-- PWA / App -->
+<link rel="manifest" href="/site.webmanifest">
+<meta name="application-name" content="MCSOUNDS">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MCSOUNDS">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" sizes="180x180" href="/png/apple-touch-icon.png">
 <link rel="icon" href="/png/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="icon" href="/png/favicon-16.png" type="image/png" sizes="16x16">
 <link rel="icon" href="/png/creeper.png" type="image/png" sizes="any">
-<link rel="apple-touch-icon" sizes="180x180" href="/png/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="theme-color" content="#1b1b1b">
+<link rel="icon" href="/favicon.ico" sizes="any">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "MCSOUNDS",
+  "alternateName": "Minecraft Sound Archive",
+  "url": "https://minecraft-soundboard.vercel.app/",
+  "description": "Find and play all Minecraft sounds — 4,900+ official .ogg sound effects. Search, browse, download, and discover with MCAI.",
+  "applicationCategory": "MultimediaApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "image": "https://minecraft-soundboard.vercel.app/png/icon-512.png"
+}
+</script>
+
 <script>
 (function(){
   try {
@@ -182,5 +234,12 @@
 
 
 <script src="/js/app.js"></script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
+  });
+}
+</script>
 </body>
 </html>

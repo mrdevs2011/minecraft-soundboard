@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/((?!sounds/).*)", "destination": "/index.html" }
+    {
+      "source": "/((?!sounds/|css/|js/|png/|svg/|sw\\.js|site\\.webmanifest|robots\\.txt|sitemap\\.xml|sounds\\.json|favicon\\.ico|.*\\..*).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
@@ -12,8 +15,31 @@
       ]
     },
     {
-      "source": "/index.html",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "source": "/(css|js|png|svg)/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+      ]
+    },
+    {
+      "source": "/sounds.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, stale-while-revalidate=86400" }
+      ]
+    },
+    {
+      "source": "/(index.html|sw.js|site.webmanifest)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Permissions-Policy", "value": "geolocation=(), microphone=(), camera=()" }
+      ]
     }
   ]
 }
