@@ -73,5 +73,6 @@
     }
   ],
   "installCommand": "echo skip",
-  "buildCommand": "echo skip"
+  "buildCommand": "echo skip",
+  "outputDirectory": "."
 }
