@@ -14,6 +14,7 @@ const I18N = {
     loading: "LOADING",
     failed: "FAILED",
     load_failed: "LOAD FAILED",
+    load_error: "Something went wrong",
     no_subfolders: "No subfolders",
     showing: "Showing",
     folders: "Folders",
@@ -64,6 +65,7 @@ const I18N = {
     loading: "YUKLANMOQDA",
     failed: "XATO",
     load_failed: "YUKLASH XATOSI",
+    load_error: "Nimadir xato ketdi",
     no_subfolders: "Ichki papka yo\u2018q",
     showing: "Ko\u2018rsatilmoqda",
     folders: "Papkalar",
@@ -650,6 +652,7 @@ async function hideSplash() {
 
 
 async function init() {
+  try { applyStaticLang(); } catch (e) {}
   window.__splashStarted = window.__splashStarted || performance.now();
   const splash = $("splash");
   const head = splash ? splash.querySelector(".creeper-head") : null;
@@ -672,7 +675,8 @@ async function init() {
     const th = localStorage.getItem("mcsnd_theme");
     if (th === "light") document.body.setAttribute("data-theme", "light");
     syncKeyIcon();
-    bind();
+    applyStaticLang();
+    try { bind(); } catch (be) { console.error(be); }
     loadChatFromStorage();
     goNav(urlToPath(), false);
   } catch (e) {
@@ -1459,68 +1463,43 @@ async function downloadAllSoundsZip() {
 }
 
 
+function on(id, evt, fn, opts) {
+  const el = typeof id === "string" ? $(id) : id;
+  if (el && el.addEventListener) el.addEventListener(evt, fn, opts);
+}
+
 function bind() {
-  let t;
-  
-  // Triple-click logo creeper → fuse + pixel shatter
-  (function () {
-    const mark = document.querySelector(".brand-mark");
-    if (!mark) return;
-    let clicks = 0, timer = null, busy = false;
-    mark.style.cursor = "pointer";
-    mark.addEventListener("click", async e => {
-      if (busy) { e.preventDefault(); e.stopPropagation(); return; }
-      clicks++;
-      clearTimeout(timer);
-      timer = setTimeout(() => { clicks = 0; }, 450);
-      if (clicks < 3) return;
-      e.preventDefault();
-      e.stopPropagation();
-      clicks = 0;
-      busy = true;
-      try {
-        await creeperFuseAndBoom(mark, { duration: 1200 });
-      } catch (err) {}
-      mark.style.visibility = "";
-      mark.style.opacity = "1";
-      mark.classList.remove("flash-white", "fusing", "boom");
-      busy = false;
-    });
-  })();
-
-window.addEventListener("popstate", () => goNav(urlToPath(), false));
-
-  if ($("pDl")) $("pDl").addEventListener("click", e => {
-    e.stopPropagation();
-    downloadOneSound(currentPlayPath);
-  });
-  if ($("btnDlAll")) $("btnDlAll").addEventListener("click", openDlModal);
-  if ($("dlCancel")) $("dlCancel").addEventListener("click", () => {
-    if ($("dlConfirm").disabled && $("dlConfirm").textContent.indexOf("Yuklan") >= 0) {
+  let searchTimer = null;
+  on("btnDlAll", "click", openDlModal);
+  on("dlCancel", "click", () => {
+    if ($("dlConfirm") && $("dlConfirm").disabled) {
       zipAbort = true;
-      $("dlStatus").textContent = "Stopping...";
+      if ($("dlStatus")) $("dlStatus").textContent = t("stop");
     } else {
       zipAbort = true;
       closeDlModal();
     }
   });
-  if ($("dlConfirm")) $("dlConfirm").addEventListener("click", () => downloadAllSoundsZip());
-  if ($("dlModal")) $("dlModal").addEventListener("click", e => {
-    if (e.target === $("dlModal") && !$("dlConfirm").disabled) closeDlModal();
+  on("dlConfirm", "click", () => downloadAllSoundsZip());
+  on("dlModal", "click", e => {
+    if (e.target === $("dlModal") && $("dlConfirm") && !$("dlConfirm").disabled) closeDlModal();
   });
 
-  $("search").addEventListener("input", e => {
-    clearTimeout(t);
-    t = setTimeout(() => renderStage(e.target.value), 150);
+  on("search", "input", e => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => renderStage(e.target.value), 150);
   });
-  $("pIco").addEventListener("click", togglePause);
-  $("vol").addEventListener("input", e => {
+  on("pIco", "click", togglePause);
+  on("vol", "input", e => {
     const v = parseFloat(e.target.value);
     if (audio) audio.volume = v;
     e.target.style.setProperty("--vol-pct", (v * 100) + "%");
   });
-  // init vol fill
-  (function(){ const v = $("vol"); if (v) v.style.setProperty("--vol-pct", (parseFloat(v.value) * 100) + "%"); })();
+  (function () {
+    const v = $("vol");
+    if (v) v.style.setProperty("--vol-pct", (parseFloat(v.value) * 100) + "%");
+  })();
+
   const onScrubStart = e => {
     if (!audio) return;
     e.preventDefault();
@@ -1538,19 +1517,17 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
       document.removeEventListener("touchmove", move);
       document.removeEventListener("touchend", end);
       document.removeEventListener("touchcancel", end);
-      // Resume ONLY if it was already playing before scrub
       if (wasPlayingBeforeScrub && audio && !audio.ended) {
         if (audio.paused) {
           const p = audio.play();
           if (p && p.catch) p.catch(function () {});
         }
-        $("pIcoSvg").src = "/svg/pause.svg";
+        if ($("pIcoSvg")) $("pIcoSvg").src = "/svg/pause.svg";
         cancelAnimationFrame(raf);
         raf = requestAnimationFrame(tick);
       } else {
-        // Stay paused — keep play icon, no auto-start
         if (audio) audio.pause();
-        $("pIcoSvg").src = "/svg/play.svg";
+        if ($("pIcoSvg")) $("pIcoSvg").src = "/svg/play.svg";
         cancelAnimationFrame(raf);
       }
     };
@@ -1560,54 +1537,56 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     document.addEventListener("touchend", end);
     document.addEventListener("touchcancel", end);
   };
-  $("track").addEventListener("mousedown", onScrubStart);
-  $("track").addEventListener("touchstart", onScrubStart, { passive: false });
-  $("btnTheme").addEventListener("click", () => {
+  on("track", "mousedown", onScrubStart);
+  on("track", "touchstart", onScrubStart, { passive: false });
+
+  on("btnTheme", "click", () => {
     const next = document.body.getAttribute("data-theme") === "light" ? "dark" : "light";
     document.body.setAttribute("data-theme", next);
     document.documentElement.setAttribute("data-theme-early", next);
-    localStorage.setItem("mcsnd_theme", next);
+    try { localStorage.setItem("mcsnd_theme", next); } catch (e) {}
     syncKeyIcon();
   });
-  if ($("btnLang")) $("btnLang").addEventListener("click", () => {
+  on("btnLang", "click", () => {
     lang = lang === "en" ? "uz" : "en";
     try { localStorage.setItem("mcsnd_lang", lang); } catch (e) {}
     applyStaticLang();
-    renderNav();
-    renderStage(($("search") && $("search").value) || "");
+    try { renderNav(); } catch (e) {}
+    try { renderStage(($("search") && $("search").value) || ""); } catch (e) {}
   });
 
   const toggleNav = () => {
+    if (!$("nav") || !$("shell")) return;
     const open = $("nav").classList.toggle("open");
     $("shell").classList.toggle("nav-on", open);
-    $("btnMenu").classList.toggle("on", open);
-    // close chat if opening nav
+    if ($("btnMenu")) $("btnMenu").classList.toggle("on", open);
     if (open && $("shell").classList.contains("chat-on")) {
       $("shell").classList.remove("chat-on");
-      $("btnChat").classList.remove("on");
+      if ($("btnChat")) $("btnChat").classList.remove("on");
     }
   };
-  if ($("btnMenu")) $("btnMenu").addEventListener("click", toggleNav);
+  on("btnMenu", "click", toggleNav);
 
   const toggleChat = () => {
+    if (!$("shell")) return;
     $("shell").classList.toggle("chat-on");
-    $("btnChat").classList.toggle("on", $("shell").classList.contains("chat-on"));
+    if ($("btnChat")) $("btnChat").classList.toggle("on", $("shell").classList.contains("chat-on"));
   };
-  $("btnChat").addEventListener("click", toggleChat);
-  $("backdrop").addEventListener("click", () => {
-    if ($("shell").classList.contains("nav-on")) {
-      $("nav").classList.remove("open");
+  on("btnChat", "click", toggleChat);
+  on("backdrop", "click", () => {
+    if ($("shell") && $("shell").classList.contains("nav-on")) {
+      if ($("nav")) $("nav").classList.remove("open");
       $("shell").classList.remove("nav-on");
-      $("btnMenu") && $("btnMenu").classList.remove("on");
+      if ($("btnMenu")) $("btnMenu").classList.remove("on");
     } else {
       toggleChat();
     }
   });
-  $("btnKey").addEventListener("click", () => $("keyPop").classList.toggle("open"));
-  $("btnClear").addEventListener("click", clearChat);
-  $("chatLog").addEventListener("scroll", () => {
+  on("btnKey", "click", () => { if ($("keyPop")) $("keyPop").classList.toggle("open"); });
+  on("btnClear", "click", clearChat);
+  on("chatLog", "scroll", () => {
     const log = $("chatLog");
-    if (log.scrollTop > 40 || chatLoaded <= 0) return;
+    if (!log || log.scrollTop > 40 || chatLoaded <= 0) return;
     const prevH = log.scrollHeight;
     const more = Math.max(0, chatLoaded - 20);
     if (more === chatLoaded) return;
@@ -1616,36 +1595,36 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     chatLoaded = more;
     log.scrollTop = log.scrollHeight - prevH;
   });
-  
-  if ($("keySave")) $("keySave").addEventListener("click", () => saveApiKeyFromInput());
-  if ($("groqKey")) $("groqKey").addEventListener("keydown", e => {
+
+  on("keySave", "click", () => saveApiKeyFromInput());
+  on("groqKey", "keydown", e => {
     if (e.key === "Enter") { e.preventDefault(); saveApiKeyFromInput(); }
   });
-  if ($("keyChange")) $("keyChange").addEventListener("click", () => {
+  on("keyChange", "click", () => {
     const conn = $("keyConnected");
     const entry = $("keyEntry");
     if (conn) conn.hidden = true;
     if (entry) entry.hidden = false;
     if ($("groqKey")) { $("groqKey").value = ""; $("groqKey").focus(); }
   });
-  if ($("keyRemove")) $("keyRemove").addEventListener("click", () => {
+  on("keyRemove", "click", () => {
     try { localStorage.removeItem("groq_api_key"); } catch (e) {}
     syncKeyUI();
     const hero = $("askHero");
     if (hero) {
       const sub = hero.querySelector(".ask-sub");
-      if (sub) sub.textContent = "ENTER API KEY TO START";
+      if (sub) sub.textContent = t("enter_key");
     }
   });
-  syncKeyUI();
+  try { syncKeyUI(); } catch (e) {}
 
-  $("chatSend").addEventListener("click", sendChat);
-  $("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
+  on("chatSend", "click", sendChat);
+  on("chatInput", "keydown", e => { if (e.key === "Enter") sendChat(); });
 
   document.addEventListener("keydown", e => {
     if (e.code !== "Space" && e.key !== " ") return;
     const tag = (e.target && e.target.tagName) || "";
-    if (tag === "INPUT" || tag === "TEXTAREA" || e.target.isContentEditable) return;
+    if (tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable)) return;
     e.preventDefault();
     togglePause();
   });
