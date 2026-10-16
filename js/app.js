@@ -1231,7 +1231,13 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     t = setTimeout(() => renderStage(e.target.value), 150);
   });
   $("pIco").addEventListener("click", togglePause);
-  $("vol").addEventListener("input", e => { if (audio) audio.volume = parseFloat(e.target.value); });
+  $("vol").addEventListener("input", e => {
+    const v = parseFloat(e.target.value);
+    if (audio) audio.volume = v;
+    e.target.style.setProperty("--vol-pct", (v * 100) + "%");
+  });
+  // init vol fill
+  (function(){ const v = $("vol"); if (v) v.style.setProperty("--vol-pct", (parseFloat(v.value) * 100) + "%"); })();
   const onScrubStart = e => {
     if (!audio) return;
     e.preventDefault();

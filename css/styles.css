@@ -338,6 +338,7 @@ html[data-theme-early="light"] .splash-bar,
   transform:translate(-50%,-50%) scale(0);
   background:#e8e8e8;
   border:2px solid var(--accent);
+  border-radius:0;
   box-shadow:
     inset 1px 1px 0 #fff,
     inset -1px -1px 0 #999,
@@ -371,6 +372,8 @@ html[data-theme-early="light"] .splash-bar,
   border:var(--px) solid;
   border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
   box-shadow:inset 1px 1px 0 rgba(0,0,0,.4);
+  /* filled portion via accent */
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--vol-pct, 70%), var(--bg) var(--vol-pct, 70%), var(--bg) 100%);
 }
 .vol::-webkit-slider-thumb{
   -webkit-appearance:none;appearance:none;
