@@ -17,7 +17,6 @@
   --text: #e8f0e9;
   --muted: #8b9bab;
   --border: #2a3548;
-  --danger: #e74c3c;
   --glow: 0 0 20px rgba(85, 197, 122, 0.25);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -28,12 +27,11 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
 }
-/* Animated subtle background */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: 
+  background:
     radial-gradient(ellipse at 20% 20%, rgba(85,197,122,0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 80% 80%, rgba(61,158,95,0.05) 0%, transparent 50%),
     linear-gradient(180deg, #0a0e14 0%, #0d1219 100%);
@@ -110,14 +108,6 @@ header {
   gap: 6px;
 }
 .btn:hover { background: var(--card-hover); border-color: var(--accent); }
-.btn.primary {
-  background: var(--accent);
-  color: #0a0e14;
-  border-color: var(--accent);
-  font-weight: 600;
-}
-.btn.primary:hover { background: var(--accent2); }
-.btn.active { background: var(--accent); color: #0a0e14; }
 .stats {
   font-size: 12px;
   color: var(--muted);
@@ -131,7 +121,6 @@ header {
 @media (max-width: 768px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .sidebar.open { display: block; position: fixed; inset: 0; z-index: 200; background: var(--bg); overflow-y: auto; padding: 20px; }
 }
 .sidebar {
   background: var(--bg2);
@@ -175,42 +164,147 @@ header {
   padding: 20px;
   overflow-y: auto;
 }
+
+/* ===== NOW PLAYING + PROGRESS ===== */
 .now-playing {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: linear-gradient(90deg, rgba(85,197,122,0.12), rgba(61,158,95,0.08));
+  background: linear-gradient(135deg, rgba(85,197,122,0.12), rgba(61,158,95,0.06));
   border: 1px solid rgba(85,197,122,0.3);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 14px 18px;
   margin-bottom: 20px;
   display: none;
-  align-items: center;
-  gap: 14px;
-  backdrop-filter: blur(8px);
+  flex-direction: column;
+  gap: 10px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
 }
 .now-playing.visible { display: flex; }
+.np-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .np-icon {
-  width: 40px; height: 40px;
+  width: 42px; height: 42px;
   background: var(--accent);
-  border-radius: 10px;
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   flex-shrink: 0;
   animation: pulse 1.5s infinite;
+  color: #0a0e14;
+  font-weight: 700;
 }
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(85,197,122,0.4); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(85,197,122,0.45); }
   50% { box-shadow: 0 0 0 10px rgba(85,197,122,0); }
 }
 .np-info { flex: 1; min-width: 0; }
-.np-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.np-cat { font-size: 12px; color: var(--muted); }
-.np-controls { display: flex; gap: 8px; align-items: center; }
+.np-name {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.np-cat {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.np-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
 .vol-slider {
   width: 80px;
   accent-color: var(--accent);
 }
+
+/* Progress bar */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.time {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 36px;
+}
+.time.end { text-align: right; }
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 99px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: height .15s;
+}
+.progress-track:hover { height: 10px; }
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 99px;
+  position: relative;
+  transition: width 0.1s linear;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -5px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(85,197,122,0.8);
+  opacity: 0;
+  transition: opacity .15s;
+}
+.progress-track:hover .progress-fill::after { opacity: 1; }
+
+/* Loading progress (initial) */
+.loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 40vh;
+  gap: 16px;
+}
+.loading-bar {
+  width: min(320px, 80%);
+  height: 6px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.loading-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 99px;
+  transition: width .25s ease;
+}
+.loading-text {
+  font-size: 13px;
+  color: var(--muted);
+}
+
 #grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -250,7 +344,8 @@ header {
   flex-shrink: 0;
   transition: all .15s;
 }
-.sound-card:hover .play-btn, .sound-card.playing .play-btn {
+.sound-card:hover .play-btn,
+.sound-card.playing .play-btn {
   background: var(--accent);
   color: #0a0e14;
 }
@@ -274,22 +369,9 @@ header {
   text-align: center;
   padding: 60px 20px;
   color: var(--muted);
+  grid-column: 1 / -1;
 }
 .empty h2 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 40vh;
-  font-size: 14px;
-  color: var(--muted);
-}
-.footer-note {
-  text-align: center;
-  padding: 30px;
-  font-size: 12px;
-  color: var(--muted);
-}
 </style>
 </head>
 <body>
@@ -301,7 +383,6 @@ header {
   <div class="controls">
     <button class="btn" id="btn-random" title="Play random sound">🎲 Random</button>
     <button class="btn" id="btn-stop" title="Stop all">⏹ Stop</button>
-    <button class="btn" id="btn-cats" style="display:none">Categories</button>
   </div>
   <div class="stats" id="stats">Loading...</div>
 </header>
@@ -310,37 +391,73 @@ header {
   <aside class="sidebar" id="sidebar"></aside>
   <main class="main">
     <div class="now-playing" id="nowPlaying">
-      <div class="np-icon">▶</div>
-      <div class="np-info">
-        <div class="np-name" id="npName">—</div>
-        <div class="np-cat" id="npCat">—</div>
+      <div class="np-top">
+        <div class="np-icon" id="npIcon">▶</div>
+        <div class="np-info">
+          <div class="np-name" id="npName">—</div>
+          <div class="np-cat" id="npCat">—</div>
+        </div>
+        <div class="np-controls">
+          <input type="range" class="vol-slider" id="volume" min="0" max="1" step="0.05" value="0.7" title="Volume">
+          <button class="btn" id="npPause">⏸</button>
+          <button class="btn" id="npStop">⏹</button>
+        </div>
       </div>
-      <div class="np-controls">
-        <input type="range" class="vol-slider" id="volume" min="0" max="1" step="0.05" value="0.7" title="Volume">
-        <button class="btn" id="npStop">⏹</button>
+      <div class="progress-row">
+        <span class="time" id="timeCurrent">0:00</span>
+        <div class="progress-track" id="progressTrack">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span class="time end" id="timeTotal">0:00</span>
       </div>
     </div>
-    <div id="grid" class="loading">Loading sound library...</div>
+    <div id="grid">
+      <div class="loading-wrap">
+        <div class="loading-bar"><div class="loading-fill" id="loadFill"></div></div>
+        <div class="loading-text" id="loadText">Loading sound library...</div>
+      </div>
+    </div>
   </main>
 </div>
 
 <script>
-const SOUNDS_BASE = 'sounds/'; // will be relative path
+const SOUNDS_BASE = 'sounds/';
 let data = null;
 let currentAudio = null;
 let currentCard = null;
 let activeCategory = 'all';
+let isSeeking = false;
+let rafId = null;
+
+function fmt(sec) {
+  if (!isFinite(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+}
+
+function setLoadProgress(pct, text) {
+  const fill = document.getElementById('loadFill');
+  const txt = document.getElementById('loadText');
+  if (fill) fill.style.width = pct + '%';
+  if (txt && text) txt.textContent = text;
+}
 
 async function init() {
   try {
+    setLoadProgress(15, 'Fetching sounds.json...');
     const res = await fetch('sounds.json');
+    setLoadProgress(55, 'Parsing library...');
     data = await res.json();
+    setLoadProgress(80, 'Building categories...');
     document.getElementById('stats').textContent = data.total.toLocaleString() + ' sounds';
     buildSidebar();
-    renderSounds('all');
+    setLoadProgress(100, 'Ready!');
+    setTimeout(() => renderSounds('all'), 180);
     setupEvents();
   } catch (e) {
-    document.getElementById('grid').innerHTML = '<div class="empty"><h2>Failed to load sounds.json</h2><p>' + e.message + '</p></div>';
+    document.getElementById('grid').innerHTML =
+      '<div class="empty"><h2>Failed to load</h2><p>' + e.message + '</p></div>';
   }
 }
 
@@ -367,14 +484,10 @@ function getFilteredList(cat, query) {
   let list = [];
   if (cat === 'all') {
     for (const c of data.categories) {
-      for (const path of data.sounds[c] || []) {
-        list.push({ path, cat: c });
-      }
+      for (const path of data.sounds[c] || []) list.push({ path, cat: c });
     }
   } else {
-    for (const path of data.sounds[cat] || []) {
-      list.push({ path, cat });
-    }
+    for (const path of data.sounds[cat] || []) list.push({ path, cat });
   }
   if (query) {
     const q = query.toLowerCase();
@@ -387,10 +500,9 @@ function renderSounds(cat, query = '') {
   const grid = document.getElementById('grid');
   const list = getFilteredList(cat, query);
   if (list.length === 0) {
-    grid.innerHTML = '<div class="empty"><h2>No sounds found</h2><p>Try another category or search term</p></div>';
+    grid.innerHTML = '<div class="empty"><h2>No sounds found</h2><p>Try another category or search</p></div>';
     return;
   }
-  // Limit initial render for performance (virtual-ish)
   const MAX = 400;
   const slice = list.slice(0, MAX);
   let html = '';
@@ -405,7 +517,7 @@ function renderSounds(cat, query = '') {
     </div>`;
   }
   if (list.length > MAX) {
-    html += `<div class="empty" style="grid-column:1/-1"><p>Showing first ${MAX} of ${list.length} results. Use search to narrow down.</p></div>`;
+    html += `<div class="empty"><p>Showing first ${MAX} of ${list.length}. Use search to narrow down.</p></div>`;
   }
   grid.innerHTML = html;
   grid.querySelectorAll('.sound-card').forEach(card => {
@@ -413,16 +525,22 @@ function renderSounds(cat, query = '') {
   });
 }
 
+function updateProgress() {
+  if (!currentAudio || isSeeking) return;
+  const a = currentAudio;
+  const pct = a.duration ? (a.currentTime / a.duration) * 100 : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('timeCurrent').textContent = fmt(a.currentTime);
+  document.getElementById('timeTotal').textContent = fmt(a.duration);
+  rafId = requestAnimationFrame(updateProgress);
+}
+
 function playSound(card) {
   const path = card.dataset.path;
   const cat = card.dataset.cat;
   const name = path.split('/').pop();
 
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-  }
-  if (currentCard) currentCard.classList.remove('playing');
+  stopAll(false);
 
   const audio = new Audio(SOUNDS_BASE + path);
   audio.volume = parseFloat(document.getElementById('volume').value);
@@ -434,22 +552,61 @@ function playSound(card) {
   document.getElementById('nowPlaying').classList.add('visible');
   document.getElementById('npName').textContent = name;
   document.getElementById('npCat').textContent = cat + ' • ' + path;
+  document.getElementById('npIcon').textContent = '▶';
+  document.getElementById('npPause').textContent = '⏸';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('timeCurrent').textContent = '0:00';
+  document.getElementById('timeTotal').textContent = '0:00';
 
-  audio.onended = () => {
+  audio.addEventListener('loadedmetadata', () => {
+    document.getElementById('timeTotal').textContent = fmt(audio.duration);
+  });
+  audio.addEventListener('ended', () => {
     card.classList.remove('playing');
     document.getElementById('nowPlaying').classList.remove('visible');
     currentAudio = null;
     currentCard = null;
-  };
+    cancelAnimationFrame(rafId);
+  });
+
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(updateProgress);
 }
 
-function stopAll() {
+function stopAll(hide = true) {
   if (currentAudio) {
     currentAudio.pause();
     currentAudio = null;
   }
   if (currentCard) currentCard.classList.remove('playing');
-  document.getElementById('nowPlaying').classList.remove('visible');
+  currentCard = null;
+  cancelAnimationFrame(rafId);
+  if (hide) document.getElementById('nowPlaying').classList.remove('visible');
+}
+
+function togglePause() {
+  if (!currentAudio) return;
+  if (currentAudio.paused) {
+    currentAudio.play();
+    document.getElementById('npPause').textContent = '⏸';
+    document.getElementById('npIcon').textContent = '▶';
+    rafId = requestAnimationFrame(updateProgress);
+  } else {
+    currentAudio.pause();
+    document.getElementById('npPause').textContent = '▶';
+    document.getElementById('npIcon').textContent = '⏸';
+    cancelAnimationFrame(rafId);
+  }
+}
+
+function seek(e) {
+  if (!currentAudio || !currentAudio.duration) return;
+  const track = document.getElementById('progressTrack');
+  const rect = track.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+  currentAudio.currentTime = ratio * currentAudio.duration;
+  document.getElementById('progressFill').style.width = (ratio * 100) + '%';
+  document.getElementById('timeCurrent').textContent = fmt(currentAudio.currentTime);
 }
 
 function setupEvents() {
@@ -465,31 +622,43 @@ function setupEvents() {
     const list = getFilteredList(activeCategory, document.getElementById('search').value.trim());
     if (!list.length) return;
     const item = list[Math.floor(Math.random() * list.length)];
-    // find or create a temporary card
-    const cards = document.querySelectorAll('.sound-card');
     let found = null;
-    cards.forEach(c => { if (c.dataset.path === item.path) found = c; });
+    document.querySelectorAll('.sound-card').forEach(c => {
+      if (c.dataset.path === item.path) found = c;
+    });
     if (found) {
       playSound(found);
       found.scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
-      // play directly
-      stopAll();
-      const audio = new Audio(SOUNDS_BASE + item.path);
-      audio.volume = parseFloat(document.getElementById('volume').value);
-      audio.play();
-      currentAudio = audio;
-      document.getElementById('nowPlaying').classList.add('visible');
-      document.getElementById('npName').textContent = item.path.split('/').pop();
-      document.getElementById('npCat').textContent = item.cat + ' • ' + item.path;
-      audio.onended = () => document.getElementById('nowPlaying').classList.remove('visible');
+      // temporary card-less play
+      const fake = document.createElement('div');
+      fake.dataset.path = item.path;
+      fake.dataset.cat = item.cat;
+      fake.classList.add('sound-card');
+      playSound(fake);
     }
   });
 
-  document.getElementById('btn-stop').addEventListener('click', stopAll);
-  document.getElementById('npStop').addEventListener('click', stopAll);
+  document.getElementById('btn-stop').addEventListener('click', () => stopAll(true));
+  document.getElementById('npStop').addEventListener('click', () => stopAll(true));
+  document.getElementById('npPause').addEventListener('click', togglePause);
   document.getElementById('volume').addEventListener('input', (e) => {
     if (currentAudio) currentAudio.volume = parseFloat(e.target.value);
+  });
+
+  const track = document.getElementById('progressTrack');
+  track.addEventListener('click', seek);
+  track.addEventListener('mousedown', (e) => {
+    isSeeking = true;
+    seek(e);
+    const onMove = (ev) => seek(ev);
+    const onUp = () => {
+      isSeeking = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 }
 
