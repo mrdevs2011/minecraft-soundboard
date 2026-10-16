@@ -702,7 +702,7 @@ html[data-theme-early="light"] .splash-bar,
   background:var(--surface2);
   box-shadow:inset 0 0 0 1px var(--accent), 0 0 0 2px var(--accent-soft);
 }
-.folder-card .icon{width:20px;height:20px;color:var(--accent)}
+.folder-card .icon{width:20px;height:20px;opacity:1}
 .folder-card .fn{font-weight:700;font-size:14px;letter-spacing:.02em}
 .folder-card .fc{font-family:var(--font-mono);font-size:15px;color:var(--muted)}
 
@@ -1486,10 +1486,11 @@ body[data-theme="light"]{
 .search-wrap .icon,
 .card-play .icon,
 .folder .icon,
+.folder-card .icon,
 .chip-ico .icon,
 .send-btn .icon,
 .file-row .icon{
-  filter: brightness(0) invert(0.88);
+  filter: brightness(0) invert(0.92);
 }
 
 /* Light mode: default dark icons on light UI */
@@ -1498,6 +1499,7 @@ body[data-theme="light"]{
 [data-theme="light"] .search-wrap .icon,
 [data-theme="light"] .card-play .icon,
 [data-theme="light"] .folder .icon,
+[data-theme="light"] .folder-card .icon,
 [data-theme="light"] .chip-ico .icon,
 [data-theme="light"] .send-btn .icon,
 [data-theme="light"] .file-row .icon{
@@ -1510,6 +1512,7 @@ body[data-theme="light"]{
 .card:hover .card-play .icon,
 .folder.active .icon,
 .folder:hover .icon,
+.folder-card:hover .icon,
 .player-ico .icon,
 #pIcoSvg{
   filter: brightness(0) invert(1) !important;
