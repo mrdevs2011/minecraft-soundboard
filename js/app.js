@@ -20,8 +20,6 @@ function syncKeyIcon() {
   const light = document.body.getAttribute("data-theme") === "light";
   const key = document.getElementById("keyIcon");
   if (key) key.src = light ? "/svg/key-light.svg" : "/svg/key-dark.svg";
-  const panel = document.getElementById("panelIcon");
-  if (panel) panel.src = light ? "/svg/panel-light.svg" : "/svg/panel-dark.svg";
 }
 
 function syncKeyUI() {
@@ -1309,7 +1307,6 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     $("btnChat").classList.toggle("on", $("shell").classList.contains("chat-on"));
   };
   $("btnChat").addEventListener("click", toggleChat);
-  $("chatClose").addEventListener("click", toggleChat);
   $("backdrop").addEventListener("click", () => {
     if ($("shell").classList.contains("nav-on")) {
       $("nav").classList.remove("open");
