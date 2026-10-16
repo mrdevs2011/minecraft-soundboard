@@ -1,4 +1,243 @@
 const BASE = "/sounds/";
+
+/* ===== i18n EN / UZ ===== */
+let lang = (function(){
+  try { return localStorage.getItem("mcsnd_lang") === "uz" ? "uz" : "en"; } catch(e) { return "en"; }
+})();
+
+const I18N = {
+  en: {
+    search: "Search sounds...",
+    sounds: "sounds",
+    root: "ROOT",
+    search_title: "SEARCH",
+    loading: "LOADING",
+    failed: "FAILED",
+    load_failed: "LOAD FAILED",
+    no_subfolders: "No subfolders",
+    showing: "Showing",
+    folders: "Folders",
+    download_all: "Download all sounds",
+    theme: "Theme",
+    language: "Language",
+    ai: "AI",
+    ask_ai: "ASK AI",
+    enter_key: "ENTER API KEY TO START",
+    type_q: "TYPE YOUR QUESTION",
+    what_sound: "What sound?",
+    paste_key: "Paste key (gsk_...)",
+    groq_key: "Groq API key",
+    save: "Save",
+    checking: "Checking...",
+    saved: "Saved",
+    paste_first: "Paste a key first",
+    invalid_key: "Invalid key",
+    api_connected: "API key connected",
+    change: "Change",
+    remove: "Remove",
+    clear_chat: "Clear chat",
+    dl_title: "Download all?",
+    dl_text: "Download all sounds?<br>Only .ogg files ({n} files, ~370 MB). No code included.",
+    yes_dl: "Yes, download",
+    cancel: "Cancel",
+    close: "Close",
+    stop: "Stop",
+    downloading: "Downloading...",
+    building_zip: "Building ZIP...",
+    done_dl: "Done! Downloaded",
+    retry: "Retry",
+    download_again: "Download again",
+    list_empty: "List is empty",
+    jszip_fail: "JSZip failed to load - check network",
+    stopped: "Stopped",
+    zip_err: "ZIP error",
+    splash_sub: "LOADING SOUNDS...",
+    splash_tag: "Find all the sounds in Minecraft – 100%",
+    nav_root: "root",
+  },
+  uz: {
+    search: "Tovushlarni qidirish...",
+    sounds: "tovush",
+    root: "ILDİZ",
+    search_title: "QIDIRUV",
+    loading: "YUKLANMOQDA",
+    failed: "XATO",
+    load_failed: "YUKLASH XATOSI",
+    no_subfolders: "Ichki papka yo\u2018q",
+    showing: "Ko\u2018rsatilmoqda",
+    folders: "Papkalar",
+    download_all: "Barcha tovushlarni yuklab olish",
+    theme: "Mavzu",
+    language: "Til",
+    ai: "AI",
+    ask_ai: "AI SO\u2018RASH",
+    enter_key: "BOSHLASH UCHUN API KALIT KIRITING",
+    type_q: "SAVOLINGIZNI YOZING",
+    what_sound: "Qanday tovush?",
+    paste_key: "Kalitni joylashtiring (gsk_...)",
+    groq_key: "Groq API kaliti",
+    save: "Saqlash",
+    checking: "Tekshirilmoqda...",
+    saved: "Saqlandi",
+    paste_first: "Avval kalitni kiriting",
+    invalid_key: "Noto\u2018g\u2018ri kalit",
+    api_connected: "API kalit ulangan",
+    change: "O\u2018zgartirish",
+    remove: "O\u2018chirish",
+    clear_chat: "Chatni tozalash",
+    dl_title: "Hammasi yuklab olinsinmi?",
+    dl_text: "Barcha tovushlar yuklab olinsinmi?<br>Faqat .ogg fayllar ({n} ta, ~370 MB). Kod kiritilmaydi.",
+    yes_dl: "Ha, yuklab olish",
+    cancel: "Bekor",
+    close: "Yopish",
+    stop: "To\u2018xtatish",
+    downloading: "Yuklanmoqda...",
+    building_zip: "ZIP yig\u2018ilmoqda...",
+    done_dl: "Tayyor! Yuklab olindi",
+    retry: "Qayta",
+    download_again: "Yana yuklab olish",
+    list_empty: "Ro\u2018yxat bo\u2018sh",
+    jszip_fail: "JSZip yuklanmadi - tarmoqni tekshiring",
+    stopped: "To\u2018xtatildi",
+    zip_err: "ZIP xatosi",
+    splash_sub: "TOVUSHLAR YUKLANMOQDA...",
+    splash_tag: "Minecraft dagi barcha tovushlar – 100%",
+    nav_root: "ildiz",
+  }
+};
+
+function t(key) {
+  const pack = I18N[lang] || I18N.en;
+  return (pack[key] != null ? pack[key] : (I18N.en[key] || key));
+}
+
+/* Path segment dictionary for display names only (not URLs/paths) */
+const SEG_UZ = {
+  ambient:"atrof", block:"blok", entity:"mavjudot", item:"buyum", mob:"mavjudot",
+  music:"musiqa", record:"plastinka", ui:"interfeys", weather:"ob-havo",
+  random:"tasodifiy", step:"qadam", break:"sindirish", place:"qo\u2018yish",
+  hit:"zarba", fall:"tushish", hurt:"jarohat", death:"o\u2018lim", say:"ovoz",
+  ambient:"atrof", cave:"g\u2018or", underwater:"suv osti", nether:"nether",
+  end:"oxir", portal:"portal", door:"eshik", chest:"sandiq", button:"tugma",
+  lever:"richag", pressure:"bosim", plate:"plastinka", fence:"panjara",
+  gate:"darvoza", trapdoor:"lyuk", wood:"yog\u2018och", stone:"tosh",
+  grass:"o\u2018t", dirt:"tuproq", sand:"qum", gravel:"shag\u2018al", snow:"qor",
+  ice:"muz", metal:"metall", glass:"oyna", cloth:"mato", ladder:"narvon",
+  anvil:"anvil", furnace:"pech", brew:"qaynash", enchant:"sehr",
+  explode:"portlash", fire:"olov", water:"suv", lava:"lava", swim:"suzish",
+  splash:"sachrash", rain:"yomg\u2018ir", thunder:"momaqaldiroq",
+  cow:"sigir", pig:"cho\u2018chqa", sheep:"qo\u2018y", chicken:"tovuq",
+  horse:"ot", wolf:"bo\u2018ri", cat:"mushuk", villager:"qishloq aholisi",
+  zombie:"zombi", skeleton:"skelet", creeper:"kriper", spider:"o\u2018rgimchak",
+  enderman:"enderman", slime:"shilimshiq", ghast:"ghast", blaze:"blaze",
+  wither:"wither", dragon:"ajdar", player:"o\u2018yinchi", arrow:"o\u2018q",
+  bow:"kamon", crossbow:"arbalet", sword:"qilich", tool:"asbob",
+  armor:"zirh", shield:"qalqon", bucket:"chelak", bottle:"shisha",
+  book:"kitob", note:"nota", block:"blok", cluster:"klaster",
+  amethyst:"ametist", deepslate:"chuqur tosh", netherite:"neterit",
+  copper:"mis", bamboo:"bambuk", cherry:"gilos", sculk:"skalk",
+  frog:"qurbaqa", allay:"allay", sniffer:"sniffer", camel:"tuya",
+  goat:"echki", axolotl:"aksolotl", bee:"ari", fox:"tulki",
+  panda:"panda", parrot:"to\u2018ti", dolphin:"delfin", squid:"kalmar",
+  glow:"yorug\u2018", berry:"meva", crop:"hosil", plant:"o\u2018simlik",
+  harvest:"yig\u2018im", eat:"yemoq", drink:"ichmoq", burp:"kesak",
+  levelup:"daraja", orb:"shar", experience:"tajriba", click:"bosish",
+  open:"ochish", close:"yopish", close_door:"yopish", open_door:"ochish",
+  lock:"qulf", unlock:"ochish", insert:"kiritish", take:"olish",
+  pop:"pop", fizz:"shivir", fuse:"fitil", ignite:"yoqish",
+  extinguish:"o\u2018chirish", breath:"nafas", flap:"qanot", roar:"bo\u2018kirish",
+  growl:"xirillash", howl:"uvlash", purr:"mirillash", hiss:"xish",
+  scream:"qichqiriq", laugh:"kulgi", cry:"yig\u2018i", idle:"tinch",
+  walk:"yurish", run:"yugurish", jump:"sakrash", land:"qo\u2018nish",
+  swim:"suzish", splash:"sachrash", dig:"qazish", mine:"qazish",
+  attack:"hujum", shoot:"otish", throw:"otish", teleport:"teleport",
+  charge:"zaryad", discharge:"bo\u2018shatish", activate:"faollashtirish",
+  deactivate:"o\u2018chirish", power:"quvvat", redstone:"redstone",
+  piston:"piston", note_block:"nota bloki", jukebox:"pleyer",
+  beacon:"mayoq", conduit:"kanal", sculk_sensor:"skalk sensor",
+  calibrator:"kalibrator", shrieker:"qichqiruvchi", catalyst:"katalizator",
+  music_disc:"musiqa diski", disc:"disk", creative:"ijodiy",
+  menu:"menyu", toast:"toast", toast_in:"kirish", toast_out:"chiqish",
+  hover:"ustiga", select:"tanlash", confirm:"tasdiqlash",
+  back:"orqaga", forward:"oldinga", left:"chap", right:"o\u2018ng",
+  up:"yuqori", down:"past", small:"kichik", big:"katta",
+  large:"katta", soft:"yumshoq", hard:"qattiq", heavy:"og\u2018ir",
+  light:"yorug\u2018", dark:"qorong\u2018u", high:"yuqori", low:"past",
+  short:"qisqa", long:"uzun", quick:"tez", slow:"sekin",
+  generic:"umumiy", normal:"oddiy", special:"maxsus",
+};
+
+function trSeg(seg) {
+  if (lang !== "uz" || !seg) return seg;
+  const key = String(seg).toLowerCase();
+  if (SEG_UZ[key]) return SEG_UZ[key];
+  // multi-part: amethyst_cluster
+  if (key.indexOf("_") >= 0) {
+    return key.split("_").map(function(p){ return SEG_UZ[p] || p; }).join("_");
+  }
+  return seg;
+}
+
+function displayFileName(path) {
+  const base = path.split("/").pop().replace(/\.ogg$/i, "");
+  if (lang !== "uz") return base;
+  return base.split("_").map(function(p){ return SEG_UZ[p.toLowerCase()] || p; }).join("_");
+}
+
+function displayPathSegs(segs) {
+  if (lang !== "uz") return segs.join(" / ");
+  return segs.map(trSeg).join(" / ");
+}
+
+function applyStaticLang() {
+  const search = $("search");
+  if (search) search.placeholder = t("search");
+  const stats = $("stats");
+  if (stats && window.__soundTotal != null) {
+    stats.textContent = window.__soundTotal.toLocaleString() + " " + t("sounds");
+  }
+  const btnMenu = $("btnMenu");
+  if (btnMenu) btnMenu.title = t("folders");
+  const btnDl = $("btnDlAll");
+  if (btnDl) btnDl.title = t("download_all");
+  const btnTheme = $("btnTheme");
+  if (btnTheme) btnTheme.title = t("theme");
+  const btnLang = $("btnLang");
+  if (btnLang) {
+    btnLang.title = t("language");
+    const lab = $("langLabel");
+    // button shows the OTHER language you can switch to
+    if (lab) lab.textContent = lang === "en" ? "UZ" : "EN";
+  }
+  const btnChat = $("btnChat");
+  if (btnChat) btnChat.title = t("ai");
+  const chatInput = $("chatInput");
+  if (chatInput) chatInput.placeholder = t("what_sound");
+  const groqKey = $("groqKey");
+  if (groqKey) groqKey.placeholder = t("paste_key");
+  const keySave = $("keySave");
+  if (keySave) keySave.textContent = t("save");
+  const keyLabel = document.querySelector('label[for="groqKey"]');
+  if (keyLabel) keyLabel.textContent = t("groq_key");
+  const keyChange = $("keyChange");
+  if (keyChange) keyChange.textContent = t("change");
+  const keyRemove = $("keyRemove");
+  if (keyRemove) keyRemove.textContent = t("remove");
+  const keyConn = document.querySelector("#keyConnected .key-connected-row span:last-child");
+  if (keyConn) keyConn.textContent = t("api_connected");
+  const btnClear = $("btnClear");
+  if (btnClear) btnClear.title = t("clear_chat");
+  const splashSub = document.querySelector(".splash-sub");
+  if (splashSub) splashSub.textContent = t("splash_sub");
+  const splashTag = document.querySelector(".splash-tag");
+  if (splashTag) splashTag.textContent = t("splash_tag");
+  const askTitle = document.querySelector(".ask-title");
+  if (askTitle) askTitle.textContent = t("ask_ai");
+  const askSub = document.querySelector(".ask-sub");
+  if (askSub) askSub.textContent = t("enter_key");
+  document.documentElement.lang = lang === "uz" ? "uz" : "en";
+}
+
 const MODEL = "qwen/qwen3.8-27b";
 let data = null, all = [], tree = {}, navPath = [];
 let audio = null, cardEl = null, seeking = false, raf = null, hist = [];
@@ -38,24 +277,24 @@ async function saveApiKeyFromInput() {
   const st = $("keyStatus");
   const k = (inp && inp.value || "").trim();
   if (!k) {
-    if (st) { st.textContent = "Paste a key first"; st.className = "key-status err"; }
+    if (st) { st.textContent = t("paste_first"); st.className = "key-status err"; }
     return;
   }
-  if (st) { st.textContent = "Checking..."; st.className = "key-status"; }
+  if (st) { st.textContent = t("checking"); st.className = "key-status"; }
   try {
     await validateGroqKey(k);
     localStorage.setItem("groq_api_key", k);
     if (inp) inp.value = "";
-    if (st) { st.textContent = "Saved"; st.className = "key-status ok"; }
+    if (st) { st.textContent = t("saved"); st.className = "key-status ok"; }
     syncKeyUI();
     const hero = $("askHero");
     if (hero) {
       const sub = hero.querySelector(".ask-sub");
-      if (sub) sub.textContent = "TYPE YOUR QUESTION";
+      if (sub) sub.textContent = t("type_q");
     }
   } catch (e) {
     try { localStorage.removeItem("groq_api_key"); } catch (x) {}
-    if (st) { st.textContent = e.message || "Invalid key"; st.className = "key-status err"; }
+    if (st) { st.textContent = e.message || t("invalid_key"); st.className = "key-status err"; }
     syncKeyUI();
   }
 }
@@ -64,7 +303,7 @@ function showAskHero(log) {
   if (!log) log = document.getElementById("chatLog");
   if (!log) return;
   const hasKey = !!getApiKey();
-  log.innerHTML = '<div class="ask-hero" id="askHero"><div class="ask-title">ASK AI</div><div class="ask-sub">' +
+  log.innerHTML = '<div class="ask-hero" id="askHero"><div class="ask-title">' + t("ask_ai") + '</div><div class="ask-sub">' +
     (hasKey ? "TYPE YOUR QUESTION" : "ENTER API KEY TO START") + "</div></div>";
 }
 async function validateGroqKey(key) {
@@ -386,7 +625,7 @@ async function init() {
     all = [];
     for (const c of data.categories) for (const p of (data.sounds[c] || [])) all.push({ path: p, cat: c });
     tree = buildTree(all.map(x => x.path));
-    $("stats").textContent = data.total.toLocaleString() + " sounds";
+    window.__soundTotal = data.total; $("stats").textContent = data.total.toLocaleString() + " " + t("sounds"); applyStaticLang();
     $("loadFill").style.width = "100%";
     syncKeyUI();
     const th = localStorage.getItem("mcsnd_theme");
@@ -396,7 +635,7 @@ async function init() {
     loadChatFromStorage();
     goNav(urlToPath(), false);
   } catch (e) {
-    $("grid").innerHTML = '<div class="empty"><h2>LOAD FAILED</h2><p>' + esc(e.message) + '</p></div>';
+    $("grid").innerHTML = '<div class="empty"><h2>' + t("load_failed") + '</h2><p>' + esc(e.message) + '</p></div>';
   }
   // Wait for creeper boom to finish (~3s), then dismiss splash
   try { await fuseP; } catch (e) {}
@@ -462,9 +701,9 @@ function goNav(pathArr, push) {
 
 function renderNav() {
   const crumb = $("crumb");
-  let ch = "<button type=\"button\" data-i=\"-1\">root</button>";
+  let ch = "<button type=\"button\" data-i=\"-1\">" + t("nav_root") + "</button>";
   navPath.forEach((seg, i) => {
-    ch += "<span class=\"sep\">/</span><button type=\"button\" data-i=\"" + i + "\">" + esc(seg) + "</button>";
+    ch += "<span class=\"sep\">/</span><button type=\"button\" data-i=\"" + i + "\">" + esc(trSeg(seg)) + "</button>";
   });
   crumb.innerHTML = ch;
   crumb.querySelectorAll("button").forEach(btn => {
@@ -482,9 +721,9 @@ function renderNav() {
     const n = countFiles(sub);
     h += "<button class=\"folder\" type=\"button\" data-folder=\"" + esc(name) + "\">" +
       "<img class=\"icon\" src=\"/svg/folder.svg\" alt=\"\">" +
-      "<span>" + esc(name) + "</span><span class=\"n\">" + n + "</span></button>";
+      "<span>" + esc(trSeg(name)) + "</span><span class=\"n\">" + n + "</span></button>";
   });
-  $("navList").innerHTML = h || "<div style=\"padding:12px;color:var(--dim);font-size:11px;font-family:IBM Plex Mono,monospace\">No subfolders</div>";
+  $("navList").innerHTML = h || "<div style=\"padding:12px;color:var(--dim);font-size:11px;font-family:IBM Plex Mono,monospace\">" + t("no_subfolders") + "</div>";
   $("navList").querySelectorAll(".folder").forEach(btn => {
     btn.addEventListener("click", () => goNav(navPath.concat([btn.dataset.folder])));
   });
@@ -496,7 +735,7 @@ function renderStage(query) {
   const grid = $("grid");
 
   if (query) {
-    $("stageTitle").textContent = "SEARCH  -  " + query;
+    $("stageTitle").textContent = t("search_title") + "  -  " + query;
     folderGrid.innerHTML = "";
     folderGrid.classList.remove("show");
     const list = all.filter(s => s.path.toLowerCase().includes(query));
@@ -506,7 +745,7 @@ function renderStage(query) {
 
   const node = nodeAt(navPath);
   const folders = Object.keys(node.folders).sort();
-  $("stageTitle").textContent = navPath.length ? navPath.join(" / ") : "ROOT";
+  $("stageTitle").textContent = navPath.length ? displayPathSegs(navPath) : t("root");
   const bb = $("btnBack");
   if (bb) bb.classList.toggle("show", navPath.length > 0);
 
@@ -518,7 +757,7 @@ function renderStage(query) {
       const n = countFiles(sub);
       fh += '<button class="folder-card" type="button" data-folder="' + esc(name) + '">' +
         '<img class=\"icon\" src=\"/svg/folder.svg\" alt=\"\">' +
-        '<div class="fn">' + esc(name) + '</div>' +
+        '<div class="fn">' + esc(trSeg(name)) + '</div>' +
         '<div class="fc">' + n + ' files</div></button>';
     });
     folderGrid.innerHTML = fh;
@@ -543,7 +782,7 @@ function renderCards(list, total) {
   }
   let h = "";
   for (const s of list) {
-    const name = s.path.split("/").pop().replace(/\.ogg$/i, "");
+    const name = displayFileName(s.path);
     const mt = getMeta(s.path);
     h += "<div class=\"card\" data-path=\"" + esc(s.path) + "\" data-cat=\"" + esc(s.cat) + "\">" +
       "<div class=\"card-play\"><img class=\"icon\" src=\"/svg/play.svg\" alt=\"\"></div>" +
@@ -551,7 +790,7 @@ function renderCards(list, total) {
       "<div class=\"card-path\">" + esc(s.path) + "</div>" +
       "<div class=\"card-meta\">" + fmtDur(mt.dur) + "   -   " + fmtSize(mt.size) + "</div></div></div>";
   }
-  if (total > list.length) h += "<div class=\"empty\"><p>Showing " + list.length + " / " + total + "</p></div>";
+  if (total > list.length) h += "<div class=\"empty\"><p>" + t("showing") + " " + list.length + " / " + total + "</p></div>";
   grid.innerHTML = h;
   grid.querySelectorAll(".card").forEach(el => {
     el.addEventListener("click", () => play(el.dataset.path, el.dataset.cat, el));
@@ -597,8 +836,8 @@ function play(path, c, el) {
   const mt = getMeta(path);
   const sizeStr = fmtSize(mt.size);
   $("player").classList.add("show");
-  $("pName").textContent = path.split("/").pop();
-  $("pPath").textContent = "LOADING  -  " + sizeStr + "  -  " + path;
+  $("pName").textContent = displayFileName(path);
+  $("pPath").textContent = t("loading") + "  -  " + sizeStr + "  -  " + path;
   $("fill").style.width = "0%";
   setThumb(0);
   $("tCur").textContent = "0:00";
@@ -658,7 +897,7 @@ function play(path, c, el) {
     a.addEventListener("error", () => {
       if (myGen !== playGen || audio !== a) return;
       setSpin(false, 0);
-      $("pPath").textContent = "FAILED  -  " + path;
+      $("pPath").textContent = t("failed") + "  -  " + path;
       if (el) el.classList.remove("playing");
     });
     const p = a.play();
@@ -695,7 +934,7 @@ function play(path, c, el) {
       const pct = total ? (received / total) * 100 : Math.min(95, received / 5000);
       if (myGen === playGen) {
         setSpin(true, pct);
-        $("pPath").textContent = "LOADING " + Math.round(pct) + "%  -  " + sizeStr + "  -  " + path;
+        $("pPath").textContent = t("loading") + " " + Math.round(pct) + "%  -  " + sizeStr + "  -  " + path;
       }
     }
     if (myGen !== playGen) return;
@@ -1084,10 +1323,10 @@ function openDlModal() {
   $("dlBar").style.width = "0%";
   $("dlStatus").textContent = "";
   $("dlConfirm").disabled = false;
-  $("dlConfirm").textContent = "Yes, download";
-  $("dlCancel").textContent = "Cancel";
+  $("dlConfirm").textContent = t("yes_dl");
+  $("dlCancel").textContent = t("cancel");
   const n = (data && data.total) || (all && all.length) || "?";
-  $("dlModalText").innerHTML = "Download all sounds?<br>Only .ogg files (" + n + " files, ~370 MB). No code included.";
+  $("dlModalText").innerHTML = t("dl_text").replace("{n}", String(n));
   $("dlModal").classList.add("open");
 }
 function closeDlModal() {
@@ -1096,19 +1335,19 @@ function closeDlModal() {
 
 async function downloadAllSoundsZip() {
   if (typeof JSZip === "undefined") {
-    $("dlStatus").textContent = "JSZip failed to load - check network";
+    $("dlStatus").textContent = t("jszip_fail");
     return;
   }
   const paths = all.map(x => x.path);
   if (!paths.length) {
-    $("dlStatus").textContent = "List is empty";
+    $("dlStatus").textContent = t("list_empty");
     return;
   }
   zipAbort = false;
   $("dlProgress").classList.add("show");
   $("dlConfirm").disabled = true;
-  $("dlConfirm").textContent = "Downloading...";
-  $("dlCancel").textContent = "Stop";
+  $("dlConfirm").textContent = t("downloading");
+  $("dlCancel").textContent = t("stop");
 
   const zip = new JSZip();
   const folder = zip.folder("mcsnd-sounds");
@@ -1146,14 +1385,14 @@ async function downloadAllSoundsZip() {
   await Promise.all(Array.from({ length: concurrency }, () => worker()));
 
   if (zipAbort) {
-    $("dlStatus").textContent = "Stopped (" + done + " / " + total + ")";
+    $("dlStatus").textContent = t("stopped") + " (" + done + " / " + total + ")";
     $("dlConfirm").disabled = false;
-    $("dlConfirm").textContent = "Retry";
-    $("dlCancel").textContent = "Close";
+    $("dlConfirm").textContent = t("retry");
+    $("dlCancel").textContent = t("close");
     return;
   }
 
-  $("dlStatus").textContent = "Building ZIP...";
+  $("dlStatus").textContent = t("building_zip");
   try {
     const blob = await zip.generateAsync(
       { type: "blob", compression: "STORE" },
@@ -1165,16 +1404,16 @@ async function downloadAllSoundsZip() {
       }
     );
     triggerBlobDownload(blob, "mcsnd-sounds.zip");
-    $("dlStatus").textContent = "Done! Downloaded" + (failed ? " (" + failed + " skipped)" : "");
+    $("dlStatus").textContent = t("done_dl") + (failed ? " (" + failed + ")" : "");
     $("dlBar").style.width = "100%";
-    $("dlConfirm").textContent = "Download again";
+    $("dlConfirm").textContent = t("download_again");
     $("dlConfirm").disabled = false;
-    $("dlCancel").textContent = "Close";
+    $("dlCancel").textContent = t("close");
   } catch (e) {
-    $("dlStatus").textContent = "ZIP error: " + (e.message || e);
+    $("dlStatus").textContent = t("zip_err") + ": " + (e.message || e);
     $("dlConfirm").disabled = false;
-    $("dlConfirm").textContent = "Retry";
-    $("dlCancel").textContent = "Close";
+    $("dlConfirm").textContent = t("retry");
+    $("dlCancel").textContent = t("close");
   }
 }
 
@@ -1288,6 +1527,13 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     document.documentElement.setAttribute("data-theme-early", next);
     localStorage.setItem("mcsnd_theme", next);
     syncKeyIcon();
+  });
+  if ($("btnLang")) $("btnLang").addEventListener("click", () => {
+    lang = lang === "en" ? "uz" : "en";
+    try { localStorage.setItem("mcsnd_lang", lang); } catch (e) {}
+    applyStaticLang();
+    renderNav();
+    renderStage(($("search") && $("search").value) || "");
   });
 
   const toggleNav = () => {

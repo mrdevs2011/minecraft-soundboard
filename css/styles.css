@@ -1556,3 +1556,14 @@ body[data-theme="light"]{
   filter: none !important;
   image-rendering: pixelated;
 }
+
+
+/* Language toggle */
+#btnLang{
+  min-width:44px;
+  font-family:var(--font-mono);
+  font-size:13px;
+  letter-spacing:.06em;
+  font-weight:700;
+}
+#btnLang span{display:inline!important}
