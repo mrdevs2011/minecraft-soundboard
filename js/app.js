@@ -54,6 +54,7 @@ const I18N = {
     splash_sub: "LOADING SOUNDS...",
     splash_tag: "Find all the sounds in Minecraft – 100%",
     nav_root: "root",
+    files: "files",
   },
   uz: {
     search: "Tovushlarni qidirish...",
@@ -103,6 +104,7 @@ const I18N = {
     splash_sub: "TOVUSHLAR YUKLANMOQDA...",
     splash_tag: "Minecraft dagi barcha tovushlar – 100%",
     nav_root: "ildiz",
+    files: "fayl",
   }
 };
 
@@ -114,10 +116,10 @@ function t(key) {
 /* Path segment dictionary for display names only (not URLs/paths) */
 const SEG_UZ = {
   /* compound folder names first */
-  mob_effects:"effektlar", entity_effects:"effektlar", status_effects:"effektlar",
+  mob_effects:"mavjudot effektlari", entity_effects:"mavjudot effektlari", status_effects:"effektlar",
   music_disc:"musiqa_diski", note_block:"nota_bloki", sculk_sensor:"skalk_sensor",
   ambient:"atrof", block:"blok", entity:"mavjudot", item:"buyum", mob:"mavjudot",
-  effects:"effektlar", effect:"effekt", raid:"reyd", event:"hodisa",
+  effects:"effektlar", effect:"effekt", raid:"reyd", event:"hodisa", damage:"zarar", dig:"qazish", fireworks:"feeyerverk", firework:"feeyerverk", liquid:"suyuqlik", minecart:"vagoncha", records:"plastinkalar", tile:"kafel", note:"nota", boss:"bos",
   music:"musiqa", record:"plastinka", ui:"interfeys", weather:"ob-havo",
   random:"tasodifiy", step:"qadam", break:"sindirish", place:"qo\u2018yish",
   hit:"zarba", fall:"tushish", hurt:"jarohat", death:"o\u2018lim", say:"ovoz",
@@ -196,7 +198,7 @@ function trSeg(seg) {
         i++;
       }
     }
-    return out.join("_");
+    return out.join(" ");
   }
   return seg;
 }
@@ -781,7 +783,7 @@ function renderStage(query) {
       fh += '<button class="folder-card" type="button" data-folder="' + esc(name) + '">' +
         '<img class=\"icon\" src=\"/svg/folder.svg\" alt=\"\">' +
         '<div class="fn">' + esc(trSeg(name)) + '</div>' +
-        '<div class="fc">' + n + ' files</div></button>';
+        '<div class="fc">' + n + ' ' + t("files") + '</div></button>';
     });
     folderGrid.innerHTML = fh;
     folderGrid.classList.add("show");
