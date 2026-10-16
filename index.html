@@ -2,764 +2,817 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minecraft Soundboard — 4961 Sounds + Groq AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>MCSND — Minecraft Sound Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a0e14; --bg2: #111820; --card: #1a2332; --card-hover: #243044;
-  --accent: #55c57a; --accent2: #3d9e5f; --text: #e8f0e9; --muted: #8b9bab;
-  --border: #2a3548; --glow: 0 0 20px rgba(85,197,122,.25); --ai: #7c9cff;
+  --bg: #050505;
+  --bg2: #0c0c0c;
+  --surface: #121212;
+  --surface2: #1a1a1a;
+  --border: #2a2a2a;
+  --border2: #3d3d3d;
+  --text: #f5f5f5;
+  --muted: #8a8a8a;
+  --dim: #555;
+  --invert: #ffffff;
+  --safe-b: env(safe-area-inset-bottom, 0px);
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
+[data-theme="light"] {
+  --bg: #f4f4f4;
+  --bg2: #ebebeb;
+  --surface: #ffffff;
+  --surface2: #f0f0f0;
+  --border: #d4d4d4;
+  --border2: #b8b8b8;
+  --text: #0a0a0a;
+  --muted: #666;
+  --dim: #999;
+  --invert: #000000;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
 body {
-  font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text);
-  min-height: 100vh; overflow-x: hidden;
+  font-family: "Syne", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+  line-height: 1.4;
 }
+/* grain */
 body::before {
-  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(ellipse at 20% 20%, rgba(85,197,122,.06) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 70%, rgba(124,156,255,.05) 0%, transparent 50%),
-    linear-gradient(180deg, #0a0e14, #0d1219);
+  content: "";
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none; opacity: .04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-header {
+/* scanline */
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(128,128,128,.015) 2px, rgba(128,128,128,.015) 4px);
+}
+
+/* ===== HEADER ===== */
+.top {
   position: sticky; top: 0; z-index: 100;
-  background: rgba(10,14,20,.92); backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(16px) saturate(1.2);
   border-bottom: 1px solid var(--border);
-  padding: 10px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 0 clamp(12px, 3vw, 28px);
 }
-.logo {
-  font-family: 'Press Start 2P', monospace; font-size: 13px; color: var(--accent);
-  text-shadow: 0 0 12px rgba(85,197,122,.5); white-space: nowrap;
+.top-inner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  max-width: 1600px;
+  margin: 0 auto;
 }
-.logo span { color: #fff; }
-.search-box { flex: 1; min-width: 160px; max-width: 360px; position: relative; }
-.search-box input {
-  width: 100%; padding: 9px 12px 9px 36px; background: var(--bg2);
-  border: 1px solid var(--border); border-radius: 10px; color: var(--text);
-  font-size: 13px; outline: none;
+@media (max-width: 720px) {
+  .top-inner { grid-template-columns: auto 1fr; grid-template-rows: auto auto; gap: 8px; padding: 10px 0; }
+  .top-actions { grid-column: 1 / -1; justify-content: space-between; }
 }
-.search-box input:focus { border-color: var(--accent); box-shadow: var(--glow); }
-.search-box::before {
-  content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); opacity: .6; font-size: 13px;
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--text);
 }
-.controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.btn {
-  padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border);
-  background: var(--card); color: var(--text); font-size: 12px; font-weight: 500;
-  cursor: pointer; transition: .15s; display: flex; align-items: center; gap: 5px;
+.brand-mark {
+  width: 28px; height: 28px; border: 1.5px solid var(--text);
+  display: grid; place-items: center; flex-shrink: 0;
 }
-.btn:hover { background: var(--card-hover); border-color: var(--accent); }
-.btn.ai-btn { border-color: rgba(124,156,255,.4); color: var(--ai); }
-.btn.ai-btn:hover, .btn.ai-btn.active { background: rgba(124,156,255,.15); border-color: var(--ai); }
-.btn.primary { background: var(--accent); color: #0a0e14; border-color: var(--accent); font-weight: 600; }
-.stats { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.brand-mark svg { width: 14px; height: 14px; }
+.brand-text {
+  font-weight: 800; font-size: 15px; letter-spacing: .12em; text-transform: uppercase;
+}
+.brand-text span { color: var(--muted); font-weight: 500; }
+.search-wrap { position: relative; max-width: 480px; width: 100%; justify-self: center; }
+.search-wrap svg {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; opacity: .45; pointer-events: none;
+}
+.search-wrap input {
+  width: 100%; height: 40px; padding: 0 14px 0 38px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  font-family: "IBM Plex Mono", monospace; font-size: 13px; outline: none;
+  border-radius: 0; transition: border-color .15s;
+}
+.search-wrap input:focus { border-color: var(--text); }
+.search-wrap input::placeholder { color: var(--dim); }
+.top-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.icon-btn {
+  height: 36px; min-width: 36px; padding: 0 10px;
+  background: transparent; border: 1px solid var(--border); color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; font-family: "IBM Plex Mono", monospace; font-size: 11px;
+  letter-spacing: .04em; text-transform: uppercase; transition: .15s;
+}
+.icon-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+.icon-btn:hover, .icon-btn.on { background: var(--text); color: var(--bg); border-color: var(--text); }
+.icon-btn.on svg, .icon-btn:hover svg { stroke: currentColor; }
+.meta-count {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted);
+  letter-spacing: .08em; white-space: nowrap;
+}
 
-.layout {
-  display: grid; grid-template-columns: 200px 1fr;
-  min-height: calc(100vh - 54px);
+/* ===== SHELL ===== */
+.shell {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  max-width: 1600px; margin: 0 auto;
+  min-height: calc(100dvh - 56px);
 }
-.layout.chat-open { grid-template-columns: 200px 1fr 340px; }
-@media (max-width: 900px) {
-  .layout, .layout.chat-open { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
-  .chat-panel { position: fixed; right: 0; top: 54px; bottom: 0; width: min(340px,100%); z-index: 90; }
+.shell.chat-on { grid-template-columns: 200px minmax(0, 1fr) minmax(280px, 360px); }
+@media (max-width: 1100px) {
+  .shell, .shell.chat-on { grid-template-columns: 160px minmax(0, 1fr); }
+  .chat { position: fixed; right: 0; top: 56px; bottom: 0; width: min(360px, 100vw); z-index: 80;
+    transform: translateX(100%); transition: transform .25s ease; border-left: 1px solid var(--border); }
+  .shell.chat-on .chat { transform: translateX(0); }
 }
-.sidebar {
-  background: var(--bg2); border-right: 1px solid var(--border);
-  padding: 12px 8px; overflow-y: auto; max-height: calc(100vh - 54px); position: sticky; top: 54px;
+@media (max-width: 720px) {
+  .shell, .shell.chat-on { grid-template-columns: 1fr; }
+  .nav { display: none; }
+  .nav.open {
+    display: block; position: fixed; inset: 56px 0 0 0; z-index: 70;
+    background: var(--bg); overflow-y: auto; padding: 16px;
+  }
 }
-.cat-btn {
-  display: flex; justify-content: space-between; align-items: center; width: 100%;
-  padding: 8px 10px; margin-bottom: 3px; border: none; border-radius: 8px;
-  background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; text-align: left;
-}
-.cat-btn:hover { background: var(--card); color: var(--text); }
-.cat-btn.active { background: rgba(85,197,122,.15); color: var(--accent); font-weight: 600; }
-.cat-btn .count {
-  font-size: 10px; opacity: .7; background: rgba(0,0,0,.3); padding: 1px 6px; border-radius: 8px;
-}
-.main { padding: 16px; overflow-y: auto; }
 
-.now-playing {
-  position: sticky; top: 0; z-index: 50;
-  background: linear-gradient(135deg, rgba(85,197,122,.12), rgba(61,158,95,.06));
-  border: 1px solid rgba(85,197,122,.3); border-radius: 14px; padding: 12px 16px;
-  margin-bottom: 16px; display: none; flex-direction: column; gap: 8px;
-  backdrop-filter: blur(10px); box-shadow: 0 8px 32px rgba(0,0,0,.25);
+/* NAV */
+.nav {
+  border-right: 1px solid var(--border); background: var(--bg2);
+  padding: 16px 10px; overflow-y: auto; max-height: calc(100dvh - 56px);
+  position: sticky; top: 56px;
 }
-.now-playing.visible { display: flex; }
-.np-top { display: flex; align-items: center; gap: 12px; }
-.np-icon {
-  width: 38px; height: 38px; background: var(--accent); border-radius: 10px;
-  display: flex; align-items: center; justify-content: center; font-size: 14px;
-  flex-shrink: 0; animation: pulse 1.5s infinite; color: #0a0e14; font-weight: 700;
+.nav-label {
+  font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--dim); padding: 0 8px 10px;
 }
-@keyframes pulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(85,197,122,.45); }
-  50% { box-shadow: 0 0 0 10px rgba(85,197,122,0); }
+.nav-item {
+  width: 100%; display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 10px; border: 1px solid transparent; background: transparent;
+  color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 11px;
+  cursor: pointer; text-align: left; transition: .12s; margin-bottom: 2px;
 }
-.np-info { flex: 1; min-width: 0; }
-.np-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.np-cat { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.np-controls { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-.vol-slider { width: 70px; accent-color: var(--accent); }
-.progress-row { display: flex; align-items: center; gap: 8px; width: 100%; }
-.time { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 34px; }
-.time.end { text-align: right; }
-.progress-track {
-  flex: 1; height: 7px; background: rgba(255,255,255,.08); border-radius: 99px;
-  cursor: pointer; position: relative; overflow: hidden;
+.nav-item:hover { color: var(--text); border-color: var(--border); background: var(--surface); }
+.nav-item.active {
+  color: var(--bg); background: var(--text); border-color: var(--text); font-weight: 600;
 }
-.progress-track:hover { height: 9px; }
-.progress-fill {
-  height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent));
-  border-radius: 99px; position: relative;
+.nav-item .n {
+  font-size: 9px; opacity: .7; border: 1px solid currentColor; padding: 1px 5px;
 }
-.progress-fill::after {
-  content: ''; position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
-  width: 11px; height: 11px; background: #fff; border-radius: 50%;
-  box-shadow: 0 0 8px rgba(85,197,122,.8); opacity: 0;
-}
-.progress-track:hover .progress-fill::after { opacity: 1; }
 
-#grid {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px;
+/* MAIN */
+.stage { padding: clamp(12px, 2.5vw, 24px); overflow-y: auto; }
+
+/* player */
+.player {
+  display: none; margin-bottom: 20px; border: 1px solid var(--border);
+  background: var(--surface); position: sticky; top: 0; z-index: 40;
 }
-.sound-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px 12px; display: flex; align-items: center; gap: 10px;
+.player.show { display: block; }
+.player-inner { padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; }
+.player-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.player-ico {
+  width: 40px; height: 40px; border: 1px solid var(--text);
+  display: grid; place-items: center; flex-shrink: 0; background: var(--text); color: var(--bg);
+}
+.player-ico svg { width: 16px; height: 16px; }
+.player-meta { flex: 1; min-width: 0; }
+.player-name {
+  font-weight: 700; font-size: 14px; letter-spacing: .02em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.player-path {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px;
+}
+.player-ctrls { display: flex; gap: 6px; align-items: center; }
+.prog {
+  display: grid; grid-template-columns: 40px 1fr 40px; gap: 10px; align-items: center;
+}
+.prog time {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted);
+}
+.prog time:last-child { text-align: right; }
+.track {
+  height: 3px; background: var(--border); cursor: pointer; position: relative;
+}
+.track:hover { height: 5px; }
+.fill {
+  height: 100%; width: 0%; background: var(--text); position: relative;
+}
+.fill::after {
+  content: ""; position: absolute; right: -4px; top: 50%; transform: translateY(-50%);
+  width: 9px; height: 9px; background: var(--text); border-radius: 50%; opacity: 0;
+}
+.track:hover .fill::after { opacity: 1; }
+.vol { width: 72px; accent-color: var(--text); height: 3px; }
+
+/* grid */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 8px;
+}
+.card {
+  position: relative; background: var(--surface); border: 1px solid var(--border);
+  padding: 12px 14px; display: flex; align-items: center; gap: 12px;
   cursor: pointer; transition: .15s; user-select: none;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }
-.sound-card:hover {
-  background: var(--card-hover); border-color: var(--accent); transform: translateY(-1px);
+.card::before, .card::after {
+  content: ""; position: absolute; width: 8px; height: 8px; border-color: var(--dim); border-style: solid;
 }
-.sound-card.playing {
-  border-color: var(--accent); background: rgba(85,197,122,.1); box-shadow: var(--glow);
+.card::before { top: 4px; left: 4px; border-width: 1px 0 0 1px; }
+.card::after { bottom: 4px; right: 4px; border-width: 0 1px 1px 0; }
+.card:hover {
+  border-color: var(--text); background: var(--surface2);
+  transform: translateY(-2px);
 }
-.play-btn {
-  width: 32px; height: 32px; border-radius: 50%; background: rgba(85,197,122,.15);
-  border: 1px solid rgba(85,197,122,.3); color: var(--accent);
-  display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;
+.card.playing {
+  border-color: var(--text); background: var(--text); color: var(--bg);
 }
-.sound-card:hover .play-btn, .sound-card.playing .play-btn {
-  background: var(--accent); color: #0a0e14;
+.card.playing .card-path { color: color-mix(in srgb, var(--bg) 55%, transparent); }
+.card.playing .card-play { background: var(--bg); color: var(--text); border-color: var(--bg); }
+.card-play {
+  width: 34px; height: 34px; border: 1px solid var(--border2);
+  display: grid; place-items: center; flex-shrink: 0; transition: .15s;
 }
-.sound-info { min-width: 0; flex: 1; }
-.sound-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sound-path { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-.empty { text-align: center; padding: 50px 16px; color: var(--muted); grid-column: 1 / -1; }
-.empty h2 { font-size: 16px; margin-bottom: 6px; color: var(--text); }
-.loading-wrap {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  height: 36vh; gap: 14px; grid-column: 1 / -1;
+.card-play svg { width: 12px; height: 12px; }
+.card:hover .card-play { border-color: var(--text); background: var(--text); color: var(--bg); }
+.card-body { min-width: 0; flex: 1; }
+.card-name {
+  font-size: 13px; font-weight: 600; letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.loading-bar { width: min(280px, 80%); height: 5px; background: var(--border); border-radius: 99px; overflow: hidden; }
-.loading-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .25s; }
-.loading-text { font-size: 12px; color: var(--muted); }
+.card-path {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px;
+}
 
-/* ===== CHAT PANEL ===== */
-.chat-panel {
+.empty {
+  grid-column: 1 / -1; text-align: center; padding: 64px 20px; color: var(--muted);
+}
+.empty h2 { font-size: 18px; color: var(--text); margin-bottom: 8px; font-weight: 700; }
+.load {
+  grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 40vh; gap: 14px;
+}
+.load-bar { width: min(280px, 70vw); height: 2px; background: var(--border); overflow: hidden; }
+.load-fill { height: 100%; width: 0%; background: var(--text); transition: width .3s; }
+.load-txt { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--muted); letter-spacing: .1em; }
+
+/* CHAT */
+.chat {
   display: none; flex-direction: column; background: var(--bg2);
-  border-left: 1px solid var(--border); max-height: calc(100vh - 54px);
-  position: sticky; top: 54px;
+  border-left: 1px solid var(--border); max-height: calc(100dvh - 56px);
+  position: sticky; top: 56px;
 }
-.layout.chat-open .chat-panel { display: flex; }
-.chat-header {
+.shell.chat-on .chat { display: flex; }
+.chat-hd {
   padding: 12px 14px; border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  display: flex; align-items: center; justify-content: space-between;
 }
-.chat-header h3 { font-size: 13px; color: var(--ai); display: flex; align-items: center; gap: 6px; }
-.chat-key-row {
-  padding: 10px 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px;
+.chat-hd h3 {
+  font-size: 12px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700;
+  display: flex; align-items: center; gap: 8px;
 }
-.chat-key-row label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.chat-key-row input, .chat-key-row select {
-  width: 100%; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border);
-  border-radius: 8px; color: var(--text); font-size: 12px; outline: none;
+.chat-hd h3 svg { width: 14px; height: 14px; }
+.chat-cfg {
+  padding: 12px; border-bottom: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px;
 }
-.chat-key-row input:focus, .chat-key-row select:focus { border-color: var(--ai); }
-.chat-messages {
+.chat-cfg label {
+  font-family: "IBM Plex Mono", monospace; font-size: 9px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--dim);
+}
+.chat-cfg input, .chat-cfg select {
+  width: 100%; height: 36px; padding: 0 10px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--text);
+  font-family: "IBM Plex Mono", monospace; font-size: 12px; outline: none; border-radius: 0;
+}
+.chat-cfg input:focus, .chat-cfg select:focus { border-color: var(--text); }
+.chat-log {
   flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px;
 }
-.msg {
-  max-width: 95%; padding: 9px 12px; border-radius: 12px; font-size: 13px; line-height: 1.45;
-  word-break: break-word;
+.bubble {
+  max-width: 94%; padding: 10px 12px; font-size: 13px; line-height: 1.45;
+  border: 1px solid var(--border); word-break: break-word;
 }
-.msg.user {
-  align-self: flex-end; background: rgba(85,197,122,.18); border: 1px solid rgba(85,197,122,.25);
-  border-bottom-right-radius: 4px;
+.bubble.user { align-self: flex-end; background: var(--text); color: var(--bg); border-color: var(--text); }
+.bubble.ai { align-self: flex-start; background: var(--surface); }
+.bubble.sys {
+  align-self: center; border: none; background: transparent; color: var(--muted);
+  font-family: "IBM Plex Mono", monospace; font-size: 11px;
 }
-.msg.ai {
-  align-self: flex-start; background: rgba(124,156,255,.12); border: 1px solid rgba(124,156,255,.22);
-  border-bottom-left-radius: 4px;
+.bubble .hint {
+  margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--border2);
+  font-family: "IBM Plex Mono", monospace; font-size: 11px; cursor: pointer;
 }
-.msg.ai .search-hint {
-  margin-top: 8px; padding: 7px 10px; background: rgba(0,0,0,.25); border-radius: 8px;
-  font-size: 12px; color: var(--accent); cursor: pointer; border: 1px dashed rgba(85,197,122,.35);
+.bubble .hint:hover { border-style: solid; border-color: var(--text); }
+.bubble .chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; padding: 5px 9px;
+  border: 1px solid var(--border2); cursor: pointer; background: var(--bg);
+  display: inline-flex; align-items: center; gap: 5px;
 }
-.msg.ai .search-hint:hover { background: rgba(85,197,122,.12); }
-.msg.sys { align-self: center; font-size: 11px; color: var(--muted); background: transparent; border: none; }
-.msg .play-links { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 5px; }
-.msg .play-chip {
-  font-size: 11px; padding: 4px 9px; border-radius: 99px; cursor: pointer;
-  background: rgba(85,197,122,.15); border: 1px solid rgba(85,197,122,.35); color: var(--accent);
+.chip svg { width: 10px; height: 10px; }
+.chip:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+.chat-in {
+  padding: 10px 12px calc(10px + var(--safe-b)); border-top: 1px solid var(--border);
+  display: flex; gap: 8px;
 }
-.msg .play-chip:hover { background: var(--accent); color: #0a0e14; }
-.chat-input-row {
-  padding: 10px 12px; border-top: 1px solid var(--border); display: flex; gap: 8px;
+.chat-in input {
+  flex: 1; height: 40px; padding: 0 12px; background: var(--surface);
+  border: 1px solid var(--border); color: var(--text);
+  font-family: "IBM Plex Mono", monospace; font-size: 13px; outline: none; border-radius: 0;
 }
-.chat-input-row input {
-  flex: 1; padding: 9px 12px; background: var(--bg); border: 1px solid var(--border);
-  border-radius: 10px; color: var(--text); font-size: 13px; outline: none;
+.chat-in input:focus { border-color: var(--text); }
+.chat-in button {
+  height: 40px; padding: 0 16px; background: var(--text); color: var(--bg);
+  border: 1px solid var(--text); font-family: "Syne", sans-serif; font-weight: 700;
+  font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
 }
-.chat-input-row input:focus { border-color: var(--ai); }
-.chat-input-row button {
-  padding: 9px 14px; border-radius: 10px; border: none; background: var(--ai);
-  color: #0a0e14; font-weight: 600; font-size: 13px; cursor: pointer;
+.chat-in button:disabled { opacity: .4; cursor: not-allowed; }
+
+.backdrop {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 75;
 }
-.chat-input-row button:disabled { opacity: .5; cursor: not-allowed; }
-.typing { font-size: 12px; color: var(--muted); padding: 4px 8px; }
+.shell.chat-on .backdrop { display: block; }
+@media (min-width: 1101px) { .backdrop { display: none !important; } }
 </style>
 </head>
-<body>
-<header>
-  <div class="logo">MC<span>SOUND</span></div>
-  <div class="search-box">
-    <input type="search" id="search" placeholder="Search 4961 Minecraft sounds..." autocomplete="off">
+<body data-theme="dark">
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="#">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h3l2-7 4 14 2-7h5"/></svg>
+      </div>
+      <div class="brand-text">MC<span>SND</span></div>
+    </a>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+      <input type="search" id="search" placeholder="Filter archive..." autocomplete="off">
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btnNav" title="Categories" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <button class="icon-btn" id="btnRand" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6v6H4zM14 14h6v6h-6zM14 4l6 6M4 20l6-6"/></svg>
+        <span>RND</span>
+      </button>
+      <button class="icon-btn" id="btnStop" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12"/></svg>
+      </button>
+      <button class="icon-btn" id="btnTheme" type="button" title="Theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="themeIcon"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <button class="icon-btn" id="btnChat" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v10H8l-4 4V6z"/></svg>
+        <span>AI</span>
+      </button>
+      <span class="meta-count" id="stats">—</span>
+    </div>
   </div>
-  <div class="controls">
-    <button class="btn" id="btn-random">🎲 Random</button>
-    <button class="btn" id="btn-stop">⏹ Stop</button>
-    <button class="btn ai-btn" id="btn-chat" title="Groq AI">🤖 AI Chat</button>
-  </div>
-  <div class="stats" id="stats">Loading...</div>
 </header>
 
-<div class="layout" id="layout">
-  <aside class="sidebar" id="sidebar"></aside>
-  <main class="main">
-    <div class="now-playing" id="nowPlaying">
-      <div class="np-top">
-        <div class="np-icon" id="npIcon">▶</div>
-        <div class="np-info">
-          <div class="np-name" id="npName">—</div>
-          <div class="np-cat" id="npCat">—</div>
+<div class="backdrop" id="backdrop"></div>
+
+<div class="shell" id="shell">
+  <nav class="nav" id="nav"></nav>
+
+  <main class="stage">
+    <div class="player" id="player">
+      <div class="player-inner">
+        <div class="player-row">
+          <div class="player-ico" id="pIco">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </div>
+          <div class="player-meta">
+            <div class="player-name" id="pName">—</div>
+            <div class="player-path" id="pPath">—</div>
+          </div>
+          <div class="player-ctrls">
+            <input type="range" class="vol" id="vol" min="0" max="1" step="0.05" value="0.7">
+            <button class="icon-btn" id="pPause" type="button">
+              <svg viewBox="0 0 24 24" fill="currentColor" id="pPauseSvg"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+            </button>
+            <button class="icon-btn" id="pStop" type="button">
+              <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+            </button>
+          </div>
         </div>
-        <div class="np-controls">
-          <input type="range" class="vol-slider" id="volume" min="0" max="1" step="0.05" value="0.7">
-          <button class="btn" id="npPause">⏸</button>
-          <button class="btn" id="npStop">⏹</button>
+        <div class="prog">
+          <time id="tCur">0:00</time>
+          <div class="track" id="track"><div class="fill" id="fill"></div></div>
+          <time id="tTot">0:00</time>
         </div>
-      </div>
-      <div class="progress-row">
-        <span class="time" id="timeCurrent">0:00</span>
-        <div class="progress-track" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
-        <span class="time end" id="timeTotal">0:00</span>
       </div>
     </div>
-    <div id="grid">
-      <div class="loading-wrap">
-        <div class="loading-bar"><div class="loading-fill" id="loadFill"></div></div>
-        <div class="loading-text" id="loadText">Loading sound library...</div>
+    <div class="cards" id="grid">
+      <div class="load">
+        <div class="load-bar"><div class="load-fill" id="loadFill"></div></div>
+        <div class="load-txt" id="loadTxt">INDEXING ARCHIVE</div>
       </div>
     </div>
   </main>
 
-  <aside class="chat-panel" id="chatPanel">
-    <div class="chat-header">
-      <h3>🤖 Groq AI</h3>
-      <button class="btn" id="btn-chat-close" style="padding:4px 8px">✕</button>
+  <aside class="chat" id="chat">
+    <div class="chat-hd">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v10H8l-4 4V6z"/></svg>
+        Groq AI
+      </h3>
+      <button class="icon-btn" id="chatClose" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
-    <div class="chat-key-row">
-      <label>Groq API Key</label>
+    <div class="chat-cfg">
+      <label>API Key</label>
       <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off">
       <label>Model</label>
       <select id="groqModel">
         <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-        <option value="llama-3.1-8b-instant">Llama 3.1 8B (tez)</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
         <option value="openai/gpt-oss-120b">GPT OSS 120B</option>
         <option value="openai/gpt-oss-20b">GPT OSS 20B</option>
         <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
         <option value="gemma2-9b-it">Gemma2 9B</option>
       </select>
     </div>
-    <div class="chat-messages" id="chatMessages">
-      <div class="msg sys">API key kiriting va so‘rang — masalan: «molning ovozi kerak»</div>
+    <div class="chat-log" id="chatLog">
+      <div class="bubble sys">API key + so‘rov — masalan: molning ovozi kerak</div>
     </div>
-    <div class="chat-input-row">
-      <input type="text" id="chatInput" placeholder="Qanday ovoz kerak?" autocomplete="off">
-      <button id="chatSend">Yubor</button>
+    <div class="chat-in">
+      <input type="text" id="chatInput" placeholder="Qanday ovoz?" autocomplete="off">
+      <button type="button" id="chatSend">Send</button>
     </div>
   </aside>
 </div>
 
 <script>
-const SOUNDS_BASE = 'sounds/';
-let data = null;
-let allPaths = [];
-let currentAudio = null;
-let currentCard = null;
-let activeCategory = 'all';
-let isSeeking = false;
-let rafId = null;
-let chatHistory = [];
+const BASE = "sounds/";
+let data = null, all = [], audio = null, cardEl = null, cat = "all", seeking = false, raf = null, hist = [];
 
-function fmt(sec) {
-  if (!isFinite(sec) || sec < 0) return '0:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return m + ':' + String(s).padStart(2, '0');
+const $ = (id) => document.getElementById(id);
+
+function fmt(s) {
+  if (!isFinite(s) || s < 0) return "0:00";
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return m + ":" + String(sec).padStart(2, "0");
 }
-
-function setLoadProgress(pct, text) {
-  const fill = document.getElementById('loadFill');
-  const txt = document.getElementById('loadText');
-  if (fill) fill.style.width = pct + '%';
-  if (txt && text) txt.textContent = text;
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML.replace(/"/g, "&" + "quot;");
 }
 
 async function init() {
   try {
-    setLoadProgress(20, 'Fetching sounds.json...');
-    const res = await fetch('sounds.json');
-    setLoadProgress(60, 'Parsing library...');
+    $("loadFill").style.width = "25%";
+    $("loadTxt").textContent = "FETCHING INDEX";
+    const res = await fetch("sounds.json");
+    $("loadFill").style.width = "60%";
     data = await res.json();
-    allPaths = [];
-    for (const c of data.categories) {
-      for (const p of data.sounds[c] || []) allPaths.push({ path: p, cat: c });
-    }
-    setLoadProgress(85, 'Building UI...');
-    document.getElementById('stats').textContent = data.total.toLocaleString() + ' sounds';
-    buildSidebar();
-    setLoadProgress(100, 'Ready!');
-    setTimeout(() => renderSounds('all'), 150);
-    setupEvents();
-    loadKey();
+    all = [];
+    for (const c of data.categories) for (const p of (data.sounds[c] || [])) all.push({ path: p, cat: c });
+    $("stats").textContent = data.total.toLocaleString() + " FILES";
+    $("loadFill").style.width = "100%";
+    $("loadTxt").textContent = "READY";
+    buildNav();
+    setTimeout(() => render("all"), 120);
+    bind();
+    const k = localStorage.getItem("groq_api_key");
+    const m = localStorage.getItem("groq_model");
+    const th = localStorage.getItem("mcsnd_theme");
+    if (k) $("groqKey").value = k;
+    if (m) $("groqModel").value = m;
+    if (th === "light") setTheme("light");
   } catch (e) {
-    document.getElementById('grid').innerHTML = '<div class="empty"><h2>Failed</h2><p>' + e.message + '</p></div>';
+    $("grid").innerHTML = "<div class=\"empty\"><h2>LOAD FAILED</h2><p>" + esc(e.message) + "</p></div>";
   }
 }
 
-function loadKey() {
-  const k = localStorage.getItem('groq_api_key');
-  const m = localStorage.getItem('groq_model');
-  if (k) document.getElementById('groqKey').value = k;
-  if (m) document.getElementById('groqModel').value = m;
+function setTheme(t) {
+  document.body.setAttribute("data-theme", t);
+  localStorage.setItem("mcsnd_theme", t);
 }
 
-function buildSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  let html = `<button class="cat-btn active" data-cat="all"><span>All Sounds</span><span class="count">${data.total}</span></button>`;
-  for (const cat of data.categories) {
-    const count = data.sounds[cat]?.length || 0;
-    html += `<button class="cat-btn" data-cat="${cat}"><span>${cat}</span><span class="count">${count}</span></button>`;
+function buildNav() {
+  let h = "<div class=\"nav-label\">Categories</div>";
+  h += "<button class=\"nav-item active\" data-c=\"all\"><span>ALL</span><span class=\"n\">" + data.total + "</span></button>";
+  for (const c of data.categories) {
+    const n = (data.sounds[c] || []).length;
+    h += "<button class=\"nav-item\" data-c=\"" + esc(c) + "\"><span>" + esc(c) + "</span><span class=\"n\">" + n + "</span></button>";
   }
-  sidebar.innerHTML = html;
-  sidebar.querySelectorAll('.cat-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      sidebar.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      activeCategory = btn.dataset.cat;
-      document.getElementById('search').value = '';
-      renderSounds(activeCategory);
+  $("nav").innerHTML = h;
+  $("nav").querySelectorAll(".nav-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $("nav").querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      cat = btn.dataset.c;
+      $("search").value = "";
+      render(cat);
+      $("nav").classList.remove("open");
     });
   });
 }
 
-function getFilteredList(cat, query) {
-  let list = cat === 'all' ? allPaths.slice() : allPaths.filter(s => s.cat === cat);
-  if (query) {
-    const q = query.toLowerCase().trim();
-    const tokens = q.split(/\s+/).filter(Boolean);
+function filterList(c, q) {
+  let list = c === "all" ? all.slice() : all.filter(s => s.cat === c);
+  if (q) {
+    const tokens = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
     list = list.filter(s => tokens.every(t => s.path.toLowerCase().includes(t)));
   }
   return list;
 }
 
-function searchLibrary(query, limit = 40) {
-  const q = query.toLowerCase();
-  // Uzbek/Russian common aliases → english minecraft terms
+function searchLib(query, limit) {
+  limit = limit || 40;
   const aliases = {
-    mol: 'cow', sigir: 'cow', cow: 'cow',
-    tovuq: 'chicken', chicken: 'chicken',
-    cho'chqa: 'pig', chochqa: 'pig', pig: 'pig',
-    qo'y: 'sheep', qoy: 'sheep', sheep: 'sheep',
-    ot: 'horse', horse: 'horse',
-    it: 'wolf', wolf: 'wolf', kuchuk: 'wolf',
-    mushuk: 'cat', cat: 'cat',
-    zombi: 'zombie', zombie: 'zombie',
-    skelet: 'skeleton', skeleton: 'skeleton',
-    kriper: 'creeper', creeper: 'creeper',
-    enderman: 'enderman', ender: 'enderman',
-    o'rgimchak: 'spider', orgimchak: 'spider', spider: 'spider',
-    slime: 'slime',
-    ghast: 'ghast',
-    portal: 'portal',
-    momaqaldiroq: 'thunder', yomgir: 'rain', rain: 'rain',
-    port: 'portal', eshik: 'door', door: 'door',
-    suv: 'water', water: 'water', lava: 'lava',
-    o't: 'fire', otash: 'fire', fire: 'fire',
-    musiqa: 'music', music: 'music', nota: 'note',
-    qilich: 'sword', sword: 'sword',
-    blok: 'block', block: 'block',
-    yurish: 'step', step: 'step',
-    portlash: 'explode', explode: 'explode',
-    damage: 'damage', zarar: 'hurt', hurt: 'hurt',
-    olish: 'death', death: 'death', o'lim: 'death',
-    ambient: 'ambient', atrof: 'ambient',
-    baby: 'baby', bola: 'baby',
-    milk: 'milk', sut: 'milk',
+    "mol": "cow", "sigir": "cow", "cow": "cow",
+    "tovuq": "chicken", "chicken": "chicken",
+    "chochqa": "pig", "pig": "pig",
+    "qoy": "sheep", "sheep": "sheep",
+    "ot": "horse", "horse": "horse",
+    "it": "wolf", "wolf": "wolf", "kuchuk": "wolf",
+    "mushuk": "cat", "cat": "cat",
+    "zombi": "zombie", "zombie": "zombie",
+    "skelet": "skeleton", "skeleton": "skeleton",
+    "kriper": "creeper", "creeper": "creeper",
+    "enderman": "enderman", "ender": "enderman",
+    "orgimchak": "spider", "spider": "spider",
+    "slime": "slime", "ghast": "ghast", "portal": "portal",
+    "yomgir": "rain", "rain": "rain", "eshik": "door", "door": "door",
+    "suv": "water", "water": "water", "lava": "lava",
+    "otash": "fire", "fire": "fire", "musiqa": "music", "music": "music",
+    "nota": "note", "qilich": "sword", "sword": "sword",
+    "blok": "block", "block": "block", "yurish": "step", "step": "step",
+    "portlash": "explode", "explode": "explode", "zarar": "hurt", "hurt": "hurt",
+    "olim": "death", "death": "death", "ambient": "ambient", "sut": "milk", "milk": "milk"
   };
-  let tokens = q.split(/[^a-zA-Z0-9'_\u0400-\u04FF]+/).filter(t => t.length > 1);
-  const expanded = new Set();
-  for (const t of tokens) {
-    expanded.add(t);
-    if (aliases[t]) expanded.add(aliases[t]);
-  }
-  // also add original phrase bits
-  const terms = [...expanded];
-  if (!terms.length) terms.push(q);
-
+  const q = query.toLowerCase();
+  const tokens = q.split(/[^a-zA-Z0-9_\u0400-\u04FF]+/).filter(t => t.length > 1);
+  const terms = new Set();
+  tokens.forEach(t => { terms.add(t); if (aliases[t]) terms.add(aliases[t]); });
+  if (!terms.size) terms.add(q);
   const scored = [];
-  for (const s of allPaths) {
+  for (const s of all) {
     const p = s.path.toLowerCase();
     let score = 0;
     for (const t of terms) {
-      if (p.includes(t)) score += t.length + (p.split('/').pop().includes(t) ? 5 : 0);
+      if (p.includes(t)) score += t.length + (p.split("/").pop().includes(t) ? 5 : 0);
     }
-    if (score > 0) scored.push({ ...s, score });
+    if (score) scored.push(Object.assign({}, s, { score: score }));
   }
   scored.sort((a, b) => b.score - a.score);
   return scored.slice(0, limit);
 }
 
-function renderSounds(cat, query = '') {
-  const grid = document.getElementById('grid');
-  const list = getFilteredList(cat, query);
+function render(c, q) {
+  q = q || "";
+  const list = filterList(c, q);
+  const grid = $("grid");
   if (!list.length) {
-    grid.innerHTML = '<div class="empty"><h2>Topilmadi</h2><p>Boshqa so‘z yoki kategoriya sinab ko‘ring</p></div>';
+    grid.innerHTML = "<div class=\"empty\"><h2>NO MATCH</h2><p>Try another filter</p></div>";
     return;
   }
   const MAX = 400;
   const slice = list.slice(0, MAX);
-  let html = '';
+  let h = "";
   for (const s of slice) {
-    const name = s.path.split('/').pop().replace(/\.ogg$/i, '');
-    html += `<div class="sound-card" data-path="${s.path}" data-cat="${s.cat}">
-      <div class="play-btn">▶</div>
-      <div class="sound-info">
-        <div class="sound-name">${name}</div>
-        <div class="sound-path">${s.path}</div>
-      </div>
-    </div>`;
+    const name = s.path.split("/").pop().replace(/\.ogg$/i, "");
+    h += "<div class=\"card\" data-path=\"" + esc(s.path) + "\" data-cat=\"" + esc(s.cat) + "\">" +
+      "<div class=\"card-play\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg></div>" +
+      "<div class=\"card-body\"><div class=\"card-name\">" + esc(name) + "</div>" +
+      "<div class=\"card-path\">" + esc(s.path) + "</div></div></div>";
   }
-  if (list.length > MAX) html += `<div class="empty"><p>Birinchi ${MAX} / ${list.length}. Search bilan toraytiring.</p></div>`;
-  grid.innerHTML = html;
-  grid.querySelectorAll('.sound-card').forEach(card => {
-    card.addEventListener('click', () => playPath(card.dataset.path, card.dataset.cat, card));
+  if (list.length > MAX) h += "<div class=\"empty\"><p>Showing " + MAX + " / " + list.length + "</p></div>";
+  grid.innerHTML = h;
+  grid.querySelectorAll(".card").forEach(el => {
+    el.addEventListener("click", () => play(el.dataset.path, el.dataset.cat, el));
   });
 }
 
-function updateProgress() {
-  if (!currentAudio || isSeeking) return;
-  const a = currentAudio;
-  const pct = a.duration ? (a.currentTime / a.duration) * 100 : 0;
-  document.getElementById('progressFill').style.width = pct + '%';
-  document.getElementById('timeCurrent').textContent = fmt(a.currentTime);
-  document.getElementById('timeTotal').textContent = fmt(a.duration);
-  rafId = requestAnimationFrame(updateProgress);
+function tick() {
+  if (!audio || seeking) return;
+  const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
+  $("fill").style.width = pct + "%";
+  $("tCur").textContent = fmt(audio.currentTime);
+  $("tTot").textContent = fmt(audio.duration);
+  raf = requestAnimationFrame(tick);
 }
 
-function playPath(path, cat, card) {
-  stopAll(false);
-  const name = path.split('/').pop();
-  const audio = new Audio(SOUNDS_BASE + path);
-  audio.volume = parseFloat(document.getElementById('volume').value);
-  audio.play().catch(() => {});
-  currentAudio = audio;
-  currentCard = card || null;
-  if (card) card.classList.add('playing');
-
-  document.getElementById('nowPlaying').classList.add('visible');
-  document.getElementById('npName').textContent = name;
-  document.getElementById('npCat').textContent = (cat || '') + ' • ' + path;
-  document.getElementById('npIcon').textContent = '▶';
-  document.getElementById('npPause').textContent = '⏸';
-  document.getElementById('progressFill').style.width = '0%';
-  document.getElementById('timeCurrent').textContent = '0:00';
-  document.getElementById('timeTotal').textContent = '0:00';
-
-  audio.addEventListener('loadedmetadata', () => {
-    document.getElementById('timeTotal').textContent = fmt(audio.duration);
+function play(path, c, el) {
+  stop(false);
+  const a = new Audio(BASE + path);
+  a.volume = parseFloat($("vol").value);
+  a.play().catch(function(){});
+  audio = a; cardEl = el || null;
+  if (el) el.classList.add("playing");
+  $("player").classList.add("show");
+  $("pName").textContent = path.split("/").pop();
+  $("pPath").textContent = (c || "") + "  ·  " + path;
+  $("fill").style.width = "0%";
+  $("tCur").textContent = "0:00";
+  $("tTot").textContent = "0:00";
+  a.addEventListener("loadedmetadata", () => { $("tTot").textContent = fmt(a.duration); });
+  a.addEventListener("ended", () => {
+    if (el) el.classList.remove("playing");
+    $("player").classList.remove("show");
+    audio = null; cardEl = null; cancelAnimationFrame(raf);
   });
-  audio.addEventListener('ended', () => {
-    if (card) card.classList.remove('playing');
-    document.getElementById('nowPlaying').classList.remove('visible');
-    currentAudio = null; currentCard = null;
-    cancelAnimationFrame(rafId);
-  });
-  cancelAnimationFrame(rafId);
-  rafId = requestAnimationFrame(updateProgress);
+  cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
 }
 
-function stopAll(hide = true) {
-  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-  if (currentCard) currentCard.classList.remove('playing');
-  currentCard = null;
-  cancelAnimationFrame(rafId);
-  if (hide) document.getElementById('nowPlaying').classList.remove('visible');
+function stop(hide) {
+  if (hide === undefined) hide = true;
+  if (audio) { audio.pause(); audio = null; }
+  if (cardEl) cardEl.classList.remove("playing");
+  cardEl = null; cancelAnimationFrame(raf);
+  if (hide) $("player").classList.remove("show");
 }
 
 function togglePause() {
-  if (!currentAudio) return;
-  if (currentAudio.paused) {
-    currentAudio.play();
-    document.getElementById('npPause').textContent = '⏸';
-    document.getElementById('npIcon').textContent = '▶';
-    rafId = requestAnimationFrame(updateProgress);
+  if (!audio) return;
+  if (audio.paused) {
+    audio.play();
+    $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+    raf = requestAnimationFrame(tick);
   } else {
-    currentAudio.pause();
-    document.getElementById('npPause').textContent = '▶';
-    document.getElementById('npIcon').textContent = '⏸';
-    cancelAnimationFrame(rafId);
+    audio.pause();
+    $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+    cancelAnimationFrame(raf);
   }
 }
 
 function seek(e) {
-  if (!currentAudio || !currentAudio.duration) return;
-  const track = document.getElementById('progressTrack');
-  const rect = track.getBoundingClientRect();
-  const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-  currentAudio.currentTime = ratio * currentAudio.duration;
-  document.getElementById('progressFill').style.width = (ratio * 100) + '%';
-  document.getElementById('timeCurrent').textContent = fmt(currentAudio.currentTime);
+  if (!audio || !audio.duration) return;
+  const r = $("track").getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+  audio.currentTime = ratio * audio.duration;
+  $("fill").style.width = (ratio * 100) + "%";
+  $("tCur").textContent = fmt(audio.currentTime);
 }
 
 function applySearch(q) {
-  document.getElementById('search').value = q;
-  activeCategory = 'all';
-  document.querySelectorAll('.cat-btn').forEach(b => b.classList.toggle('active', b.dataset.cat === 'all'));
-  renderSounds('all', q);
+  $("search").value = q;
+  cat = "all";
+  $("nav").querySelectorAll(".nav-item").forEach(b => b.classList.toggle("active", b.dataset.c === "all"));
+  render("all", q);
 }
 
-/* ===== GROQ CHAT ===== */
-function appendMsg(role, html) {
-  const box = document.getElementById('chatMessages');
-  const div = document.createElement('div');
-  div.className = 'msg ' + role;
-  div.innerHTML = html;
-  box.appendChild(div);
-  box.scrollTop = box.scrollHeight;
-  return div;
+function appendBubble(role, html) {
+  const d = document.createElement("div");
+  d.className = "bubble " + role;
+  d.innerHTML = html;
+  $("chatLog").appendChild(d);
+  $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  return d;
 }
 
-function parseAIResponse(text) {
-  // Extract SEARCH: and PLAY: lines
-  let search = null;
-  const plays = [];
-  const lines = text.split('\n');
+function parseAI(text) {
+  let search = null, plays = [];
   const clean = [];
-  for (const line of lines) {
+  text.split("\n").forEach(line => {
     const s = line.match(/^SEARCH:\s*(.+)$/i);
     const p = line.match(/^PLAY:\s*(.+)$/i);
-    if (s) { search = s[1].trim(); continue; }
+    if (s) { search = s[1].trim(); return; }
     if (p) {
-      p[1].split(',').map(x => x.trim()).filter(Boolean).forEach(path => {
-        // normalize
-        let pp = path.replace(/^sounds\//, '').replace(/^\//, '');
-        if (!pp.endsWith('.ogg')) {
-          // try find full path
-          const hit = allPaths.find(x => x.path.includes(pp) || x.path.endsWith(pp + '.ogg'));
+      p[1].split(",").map(x => x.trim()).filter(Boolean).forEach(path => {
+        let pp = path.replace(/^sounds\//, "").replace(/^\//, "");
+        if (!pp.endsWith(".ogg")) {
+          const hit = all.find(x => x.path.includes(pp) || x.path.endsWith(pp + ".ogg"));
           if (hit) pp = hit.path;
-          else if (!pp.includes('/')) {
-            const hit2 = allPaths.find(x => x.path.split('/').pop().replace('.ogg','') === pp);
-            if (hit2) pp = hit2.path;
-          }
         }
-        if (allPaths.some(x => x.path === pp)) plays.push(pp);
+        if (all.some(x => x.path === pp)) plays.push(pp);
       });
-      continue;
+      return;
     }
     clean.push(line);
-  }
-  return { text: clean.join('\n').trim(), search, plays };
+  });
+  return { text: clean.join("\n").trim(), search: search, plays: plays };
 }
 
 async function sendChat() {
-  const key = document.getElementById('groqKey').value.trim();
-  const model = document.getElementById('groqModel').value;
-  const input = document.getElementById('chatInput');
-  const msg = input.value.trim();
+  const key = $("groqKey").value.trim();
+  const model = $("groqModel").value;
+  const msg = $("chatInput").value.trim();
   if (!msg) return;
-  if (!key) {
-    appendMsg('sys', 'Avval Groq API key kiriting (console.groq.com)');
-    return;
-  }
-  localStorage.setItem('groq_api_key', key);
-  localStorage.setItem('groq_model', model);
+  if (!key) { appendBubble("sys", "Groq API key kerak"); return; }
+  localStorage.setItem("groq_api_key", key);
+  localStorage.setItem("groq_model", model);
+  $("chatInput").value = "";
+  appendBubble("user", esc(msg));
+  const wait = appendBubble("sys", "...");
+  $("chatSend").disabled = true;
 
-  input.value = '';
-  appendMsg('user', escapeHtml(msg));
-  const typing = appendMsg('sys', '⏳ O‘ylayapti...');
-  document.getElementById('chatSend').disabled = true;
+  const matches = searchLib(msg, 35);
+  const matchList = matches.map(m => m.path).join("\n");
+  const system = "Sen Minecraft Soundboard yordamchisisan. 4961 ta .ogg bor.\n" +
+    "1) SEARCH: qatorida search sozini ber.\n" +
+    "2) PLAY: qatorida aniq pathlarni vergul bilan ber.\n" +
+    "3) Qisqa ozbekcha javob yoz.\n" +
+    "Format:\nmatn\nSEARCH: soz\nPLAY: path1.ogg, path2.ogg\n\n" +
+    "Kategoriyalar: " + data.categories.join(", ") + "\n\nMos ovozlar:\n" +
+    (matchList || "(topilmadi)") + "\n\nPLAY da faqat shu royxatdan tanla. 1-5 ta.";
 
-  // Local search for context
-  const matches = searchLibrary(msg, 35);
-  const matchList = matches.map(m => m.path).join('\n');
-
-  const system = `Sen Minecraft Soundboard yordamchisisan. Kutubxonada 4961 ta .ogg ovoz bor.
-Foydalanuvchi o'zbek/rus/ingliz tilida so'rashi mumkin.
-
-Vazifang:
-1) Qaysi ovoz(lar) kerakligini aniqlа.
-2) SEARCH: qatorida search maydoniga yoziladigan qisqa so'zni ber (inglizcha, masalan: cow yoki entity/cow).
-3) PLAY: qatorida aniq fayl yo'llarini vergul bilan ber (faqat ro'yxatdagi yo'llardan).
-4) Oddiy o'zbekcha qisqa javob yoz — nima topganingni ayt.
-
-Format (majburiy):
-...matn...
-SEARCH: soz
-PLAY: path1.ogg, path2.ogg
-
-Kategoriyalar: ${data.categories.join(', ')}
-
-Foydalanuvchi so'roviga mos topilgan ovozlar (shulardan tanla):
-${matchList || '(mos keladigan topilmadi — umumiy maslahat ber)'}
-
-Qoida: PLAY da faqat yuqoridagi ro'yxatdagi aniq path'larni yoz. 1-5 ta ovoz yetarli.`;
-
-  chatHistory.push({ role: 'user', content: msg });
-  // keep history short
-  if (chatHistory.length > 12) chatHistory = chatHistory.slice(-12);
+  hist.push({ role: "user", content: msg });
+  if (hist.length > 12) hist = hist.slice(-12);
 
   try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + key
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.3,
-        max_tokens: 600,
-        messages: [
-          { role: 'system', content: system },
-          ...chatHistory
-        ]
-      })
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+      body: JSON.stringify({ model: model, temperature: 0.3, max_tokens: 600,
+        messages: [{ role: "system", content: system }].concat(hist) })
     });
     const json = await res.json();
-    typing.remove();
+    wait.remove();
     if (!res.ok) {
-      appendMsg('sys', 'Xato: ' + (json.error?.message || res.status));
-      document.getElementById('chatSend').disabled = false;
-      return;
+      appendBubble("sys", "Error: " + (json.error && json.error.message ? json.error.message : res.status));
+      $("chatSend").disabled = false; return;
     }
-    const raw = json.choices?.[0]?.message?.content || '';
-    chatHistory.push({ role: 'assistant', content: raw });
-    const parsed = parseAIResponse(raw);
-
-    let html = escapeHtml(parsed.text || raw).replace(/\n/g, '<br>');
+    const raw = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || "";
+    hist.push({ role: "assistant", content: raw });
+    const parsed = parseAI(raw);
+    let html = esc(parsed.text || raw).replace(/\n/g, "<br>");
     if (parsed.search) {
-      html += `<div class="search-hint" data-q="${escapeAttr(parsed.search)}">🔍 Search ga yoz: <b>${escapeHtml(parsed.search)}</b> (bosib qo‘llash)</div>`;
+      html += "<div class=\"hint\" data-q=\"" + esc(parsed.search) + "\">SEARCH: <b>" + esc(parsed.search) + "</b></div>";
     }
     if (parsed.plays.length) {
-      html += '<div class="play-links">';
-      for (const p of parsed.plays) {
-        const short = p.split('/').pop();
-        html += `<span class="play-chip" data-path="${escapeAttr(p)}">▶ ${escapeHtml(short)}</span>`;
-      }
-      html += '</div>';
-    }
-    const el = appendMsg('ai', html);
-
-    // wire chips & search hint
-    el.querySelectorAll('.search-hint').forEach(h => {
-      h.addEventListener('click', () => applySearch(h.dataset.q));
-    });
-    el.querySelectorAll('.play-chip').forEach(c => {
-      c.addEventListener('click', () => {
-        const path = c.dataset.path;
-        const meta = allPaths.find(x => x.path === path);
-        playPath(path, meta?.cat || '', null);
-        // highlight in grid if visible
-        applySearch(parsed.search || path.split('/')[1] || path.split('/').pop().replace('.ogg',''));
+      html += "<div class=\"chips\">";
+      parsed.plays.forEach(p => {
+        html += "<span class=\"chip\" data-path=\"" + esc(p) + "\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg>" +
+          esc(p.split("/").pop()) + "</span>";
       });
-    });
-
-    // Auto-play first sound
+      html += "</div>";
+    }
+    const el = appendBubble("ai", html);
+    el.querySelectorAll(".hint").forEach(h => h.addEventListener("click", () => applySearch(h.dataset.q)));
+    el.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+      const path = c.dataset.path;
+      const meta = all.find(x => x.path === path);
+      play(path, meta ? meta.cat : "", null);
+      applySearch(parsed.search || path.split("/").pop().replace(".ogg", ""));
+    }));
     if (parsed.plays.length) {
       const path = parsed.plays[0];
-      const meta = allPaths.find(x => x.path === path);
-      playPath(path, meta?.cat || '', null);
+      const meta = all.find(x => x.path === path);
+      play(path, meta ? meta.cat : "", null);
       if (parsed.search) applySearch(parsed.search);
-    } else if (parsed.search) {
-      applySearch(parsed.search);
-    }
+    } else if (parsed.search) applySearch(parsed.search);
   } catch (e) {
-    typing.remove();
-    appendMsg('sys', 'Tarmoq xatosi: ' + e.message);
+    wait.remove();
+    appendBubble("sys", "Network: " + e.message);
   }
-  document.getElementById('chatSend').disabled = false;
+  $("chatSend").disabled = false;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/&/g,'&').replace(/</g,'<').replace(/>/g,'>').replace(/"/g,'"');
-}
-function escapeAttr(s) {
-  return escapeHtml(s).replace(/'/g,'&#39;');
-}
-
-function setupEvents() {
-  let searchTimeout;
-  document.getElementById('search').addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => renderSounds(activeCategory, e.target.value.trim()), 160);
+function bind() {
+  let t;
+  $("search").addEventListener("input", e => {
+    clearTimeout(t);
+    t = setTimeout(() => render(cat, e.target.value.trim()), 150);
   });
-
-  document.getElementById('btn-random').addEventListener('click', () => {
-    const list = getFilteredList(activeCategory, document.getElementById('search').value.trim());
+  $("btnRand").addEventListener("click", () => {
+    const list = filterList(cat, $("search").value.trim());
     if (!list.length) return;
     const item = list[Math.floor(Math.random() * list.length)];
-    playPath(item.path, item.cat, null);
+    play(item.path, item.cat, null);
   });
-
-  document.getElementById('btn-stop').addEventListener('click', () => stopAll(true));
-  document.getElementById('npStop').addEventListener('click', () => stopAll(true));
-  document.getElementById('npPause').addEventListener('click', togglePause);
-  document.getElementById('volume').addEventListener('input', (e) => {
-    if (currentAudio) currentAudio.volume = parseFloat(e.target.value);
+  $("btnStop").addEventListener("click", () => stop(true));
+  $("pStop").addEventListener("click", () => stop(true));
+  $("pPause").addEventListener("click", togglePause);
+  $("vol").addEventListener("input", e => { if (audio) audio.volume = parseFloat(e.target.value); });
+  $("track").addEventListener("click", seek);
+  $("track").addEventListener("mousedown", e => {
+    seeking = true; seek(e);
+    const mv = ev => seek(ev);
+    const up = () => { seeking = false; document.removeEventListener("mousemove", mv); document.removeEventListener("mouseup", up); };
+    document.addEventListener("mousemove", mv);
+    document.addEventListener("mouseup", up);
   });
-
-  const track = document.getElementById('progressTrack');
-  track.addEventListener('click', seek);
-  track.addEventListener('mousedown', (e) => {
-    isSeeking = true; seek(e);
-    const onMove = (ev) => seek(ev);
-    const onUp = () => { isSeeking = false; document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
+  $("btnTheme").addEventListener("click", () => {
+    const cur = document.body.getAttribute("data-theme") === "light" ? "dark" : "light";
+    setTheme(cur);
   });
-
-  // Chat UI
-  const layout = document.getElementById('layout');
-  const chatBtn = document.getElementById('btn-chat');
-  document.getElementById('btn-chat').addEventListener('click', () => {
-    layout.classList.toggle('chat-open');
-    chatBtn.classList.toggle('active', layout.classList.contains('chat-open'));
-  });
-  document.getElementById('btn-chat-close').addEventListener('click', () => {
-    layout.classList.remove('chat-open');
-    chatBtn.classList.remove('active');
-  });
-  document.getElementById('chatSend').addEventListener('click', sendChat);
-  document.getElementById('chatInput').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') sendChat();
-  });
+  $("btnNav").addEventListener("click", () => $("nav").classList.toggle("open"));
+  const toggleChat = () => {
+    $("shell").classList.toggle("chat-on");
+    $("btnChat").classList.toggle("on", $("shell").classList.contains("chat-on"));
+  };
+  $("btnChat").addEventListener("click", toggleChat);
+  $("chatClose").addEventListener("click", toggleChat);
+  $("backdrop").addEventListener("click", toggleChat);
+  $("chatSend").addEventListener("click", sendChat);
+  $("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
 }
 
 init();
