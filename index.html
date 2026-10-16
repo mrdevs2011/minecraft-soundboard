@@ -31,13 +31,13 @@
   --px: 2px;
 }
 [data-theme="light"] {
-  /* Oak plank / dirt daytime - no pure white UI */
-  --bg:#b8956a; --bg2:#a67f52; --surface:#c6a87a; --surface2:#b8956a;
-  --border:#5c4030; --border2:#8b6b45; --text:#2a1a0a; --muted:#5a4030; --dim:#7a5a40;
-  --accent:#3f7a2a; --accent2:#2a5a1a; --accent-soft:rgba(63,122,42,.18); --accent-glow:rgba(63,122,42,.3);
-  --accent-hi:#5d9c3f; --gold:#deb12d; --dirt:#8b6b45; --stone:#8a8a6a;
-  --danger:#8b3a3a;
-  --bevel-light:#d4c4a0; --bevel-dark:#6b4e32;
+  /* Soft cream daylight - subtle warm, not heavy brown */
+  --bg:#f3efe6; --bg2:#ebe6dc; --surface:#faf7f0; --surface2:#efe9de;
+  --border:#c4b8a4; --border2:#a89880; --text:#1c1a16; --muted:#5c564c; --dim:#8a8278;
+  --accent:#3f7a2a; --accent2:#2a5a1a; --accent-soft:rgba(63,122,42,.14); --accent-glow:rgba(63,122,42,.28);
+  --accent-hi:#5d9c3f; --gold:#c9a227; --dirt:#a89070; --stone:#9a9488;
+  --danger:#a04040;
+  --bevel-light:#ffffff; --bevel-dark:#b0a490;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%;image-rendering:pixelated}
@@ -112,7 +112,7 @@ body::before{
 /* early apply from localStorage before body theme */
 html[data-theme-early="light"] #splash,
 [data-theme="light"] #splash{
-  background:#b8956a;
+  background:#f3efe6;
 }
 html[data-theme-early="dark"] #splash,
 [data-theme="dark"] #splash,
@@ -638,10 +638,10 @@ html[data-theme-early="light"] .splash-bar,
   background-size:10px 10px;
 }
 ::-webkit-scrollbar-corner{background:#2b2b2b}
-[data-theme="light"] *{scrollbar-color:#8a8a6a #d4d0b0}
-[data-theme="light"] ::-webkit-scrollbar-track{background:#d4d0b0;border-left:2px solid #b0b090;border-right:2px solid #e8e4c8}
-[data-theme="light"] ::-webkit-scrollbar-thumb{background:#8a8a6a;border-color:#c0c0a0 #5a5a3a #5a5a3a #c0c0a0}
-[data-theme="light"] ::-webkit-scrollbar-button:single-button{background-color:#8a8a6a;border-color:#c0c0a0 #5a5a3a #5a5a3a #c0c0a0}
+[data-theme="light"] *{scrollbar-color:#a89880 #ebe6dc}
+[data-theme="light"] ::-webkit-scrollbar-track{background:#ebe6dc;border-left:2px solid #d4cbb8;border-right:2px solid #faf7f0}
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:#a89880;border-color:#d4cbb8 #7a6e5c #7a6e5c #d4cbb8}
+[data-theme="light"] ::-webkit-scrollbar-button:single-button{background-color:#a89880;border-color:#d4cbb8 #7a6e5c #7a6e5c #d4cbb8}
 
 /* no left nav - center only */
 .shell,.shell.chat-on{grid-template-columns:minmax(0,1fr)!important}
@@ -760,8 +760,8 @@ body{
 [data-theme="light"] body,
 body[data-theme="light"]{
   background-image:
-    linear-gradient(rgba(255,230,180,.12), rgba(80,50,20,.08)),
-    radial-gradient(ellipse at 30% 0%, rgba(61,122,42,.12) 0%, transparent 45%);
+    linear-gradient(rgba(255,252,245,.4), rgba(240,235,225,.15)),
+    radial-gradient(ellipse at 30% 0%, rgba(61,122,42,.06) 0%, transparent 45%);
 }
 .card,.folder-card,.icon-btn,.mc-btn,.player{
   transition: filter .08s steps(2), transform .08s steps(2);
