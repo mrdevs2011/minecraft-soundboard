@@ -59,7 +59,7 @@ const I18N = {
   uz: {
     search: "Tovushlarni qidirish...",
     sounds: "tovush",
-    root: "ILDIZ",
+    root: "BOSH",
     search_title: "QIDIRUV",
     loading: "YUKLANMOQDA",
     failed: "XATO",
@@ -115,68 +115,78 @@ function t(key) {
 
 /* Path segment dictionary for display names only (not URLs/paths) */
 const SEG_UZ = {
-  /* compound folder names first */
-  mob_effects:"mavjudot effektlari", entity_effects:"mavjudot effektlari", status_effects:"effektlar",
-  music_disc:"musiqa_diski", note_block:"nota_bloki", sculk_sensor:"skalk_sensor",
-  ambient:"atrof", block:"blok", entity:"mavjudot", item:"buyum", mob:"mavjudot",
-  effects:"effektlar", effect:"effekt", raid:"reyd", event:"hodisa", damage:"zarar", dig:"qazish", fireworks:"feeyerverk", firework:"feeyerverk", liquid:"suyuqlik", minecart:"vagoncha", records:"plastinkalar", tile:"kafel", note:"nota", boss:"bos",
-  music:"musiqa", record:"plastinka", ui:"interfeys", weather:"ob-havo",
-  random:"tasodifiy", step:"qadam", break:"sindirish", place:"qo\u2018yish",
-  hit:"zarba", fall:"tushish", hurt:"jarohat", death:"o\u2018lim", say:"ovoz",
-  ambient:"atrof", cave:"g\u2018or", underwater:"suv osti", nether:"nether",
-  end:"oxir", portal:"portal", door:"eshik", chest:"sandiq", button:"tugma",
-  lever:"richag", pressure:"bosim", plate:"plastinka", fence:"panjara",
-  gate:"darvoza", trapdoor:"lyuk", wood:"yog\u2018och", stone:"tosh",
-  grass:"o\u2018t", dirt:"tuproq", sand:"qum", gravel:"shag\u2018al", snow:"qor",
-  ice:"muz", metal:"metall", glass:"oyna", cloth:"mato", ladder:"narvon",
-  anvil:"anvil", furnace:"pech", brew:"qaynash", enchant:"sehr",
-  explode:"portlash", fire:"olov", water:"suv", lava:"lava", swim:"suzish",
-  splash:"sachrash", rain:"yomg\u2018ir", thunder:"momaqaldiroq",
-  cow:"sigir", pig:"cho\u2018chqa", sheep:"qo\u2018y", chicken:"tovuq",
-  horse:"ot", wolf:"bo\u2018ri", cat:"mushuk", villager:"qishloq aholisi",
-  zombie:"zombi", skeleton:"skelet", creeper:"kriper", spider:"o\u2018rgimchak",
-  enderman:"enderman", slime:"shilimshiq", ghast:"ghast", blaze:"blaze",
-  wither:"wither", dragon:"ajdar", player:"o\u2018yinchi", arrow:"o\u2018q",
-  bow:"kamon", crossbow:"arbalet", sword:"qilich", tool:"asbob",
-  armor:"zirh", shield:"qalqon", bucket:"chelak", bottle:"shisha",
-  book:"kitob", note:"nota", block:"blok", cluster:"klaster",
-  amethyst:"ametist", deepslate:"chuqur tosh", netherite:"neterit",
-  copper:"mis", bamboo:"bambuk", cherry:"gilos", sculk:"skalk",
-  frog:"qurbaqa", allay:"allay", sniffer:"sniffer", camel:"tuya",
-  goat:"echki", axolotl:"aksolotl", bee:"ari", fox:"tulki",
-  panda:"panda", parrot:"to\u2018ti", dolphin:"delfin", squid:"kalmar",
-  glow:"yorug\u2018", berry:"meva", crop:"hosil", plant:"o\u2018simlik",
-  harvest:"yig\u2018im", eat:"yemoq", drink:"ichmoq", burp:"kesak",
-  levelup:"daraja", orb:"shar", experience:"tajriba", click:"bosish",
-  open:"ochish", close:"yopish", close_door:"yopish", open_door:"ochish",
-  lock:"qulf", unlock:"ochish", insert:"kiritish", take:"olish",
-  pop:"pop", fizz:"shivir", fuse:"fitil", ignite:"yoqish",
-  extinguish:"o\u2018chirish", breath:"nafas", flap:"qanot", roar:"bo\u2018kirish",
-  growl:"xirillash", howl:"uvlash", purr:"mirillash", hiss:"xish",
-  scream:"qichqiriq", laugh:"kulgi", cry:"yig\u2018i", idle:"tinch",
-  walk:"yurish", run:"yugurish", jump:"sakrash", land:"qo\u2018nish",
-  swim:"suzish", splash:"sachrash", dig:"qazish", mine:"qazish",
-  attack:"hujum", shoot:"otish", throw:"otish", teleport:"teleport",
-  charge:"zaryad", discharge:"bo\u2018shatish", activate:"faollashtirish",
-  deactivate:"o\u2018chirish", power:"quvvat", redstone:"redstone",
-  piston:"piston", note_block:"nota bloki", jukebox:"pleyer",
-  beacon:"mayoq", conduit:"kanal", sculk_sensor:"skalk sensor",
-  calibrator:"kalibrator", shrieker:"qichqiruvchi", catalyst:"katalizator",
-  music_disc:"musiqa diski", disc:"disk", creative:"ijodiy",
-  menu:"menyu", toast:"toast", toast_in:"kirish", toast_out:"chiqish",
-  hover:"ustiga", select:"tanlash", confirm:"tasdiqlash",
-  back:"orqaga", forward:"oldinga", left:"chap", right:"o\u2018ng",
-  up:"yuqori", down:"past", small:"kichik", big:"katta",
-  large:"katta", soft:"yumshoq", hard:"qattiq", heavy:"og\u2018ir",
-  light:"yorug\u2018", dark:"qorong\u2018u", high:"yuqori", low:"past",
-  short:"qisqa", long:"uzun", quick:"tez", slow:"sekin",
-  generic:"umumiy", normal:"oddiy", special:"maxsus",
+  ambient:"atrof muhit", block:"blok", damage:"zarar", dig:"qazish", enchant:"sehr",
+  entity:"mavjudot", event:"hodisa", fire:"olov", fireworks:"feyerverk", firework:"feyerverk",
+  item:"buyum", liquid:"suyuqlik", minecart:"vagoncha", mob:"mavjudot", music:"musiqa",
+  note:"nota", portal:"portal", random:"tasodifiy", records:"plastinkalar", record:"plastinka",
+  step:"qadam", tile:"kafel", ui:"interfeys", weather:"ob-havo",
+  mob_effects:"mavjudot effektlari", entity_effects:"mavjudot effektlari",
+  status_effects:"status effektlari", music_disc:"musiqa diski", note_block:"nota bloki",
+  sculk_sensor:"skalk sensor", goat_horn:"echki shoxi", underwater_ambience:"suv osti atrof",
+  nether_wastes:"neter cho\u2018li", soul_sand_valley:"ruh qumi vodiyi",
+  crimson_forest:"qirmizi o\u2018rmon", warped_forest:"egri o\u2018rmon", basalt_deltas:"bazalt deltalari",
+  break:"sindirish", place:"qo\u2018yish", hit:"zarba", fall:"tushish", hurt:"jarohat",
+  death:"o\u2018lim", say:"ovoz", open:"ochish", close:"yopish", click:"bosish",
+  attack:"hujum", shoot:"otish", throw:"otish", teleport:"teleport", walk:"yurish",
+  run:"yugurish", jump:"sakrash", land:"qo\u2018nish", swim:"suzish", splash:"sachrash",
+  mine:"qazish", eat:"yemoq", drink:"ichmoq", sleep:"uyqu", wake:"uyg\u2018onish", breed:"nasl",
+  idle:"tinch", explode:"portlash", ignite:"yoqish", extinguish:"o\u2018chirish", fuse:"fitil",
+  charge:"zaryad", discharge:"bo\u2018shatish", activate:"yoqish", deactivate:"o\u2018chirish",
+  insert:"kiritish", take:"olish", pop:"pop", fizz:"shivir", roar:"bo\u2018kirish",
+  growl:"xirillash", howl:"uvlash", purr:"mirillash", hiss:"xishlash",
+  scream:"qichqiriq", laugh:"kulgi", cry:"yig\u2018i", flap:"qanot", breath:"nafas",
+  harvest:"yig\u2018im", plant:"o\u2018simlik", crop:"hosil", till:"haydash",
+  shear:"qirqish", milk:"sog\u2018ish", fish:"baliq", reel:"o\u2018rash",
+  craft:"yasash", smith:"temirchilik", smelt:"eritish", brew:"qaynash",
+  levelup:"daraja", experience:"tajriba", orb:"shar", equip:"kiymoq", unequip:"yechmoq",
+  crossbow:"arbalet", bow:"kamon", shield:"qalqon", trident:"uch tish",
+  axe:"bolta", pickaxe:"kaysa", shovel:"belkurak", hoe:"ketmon", sword:"qilich", armor:"zirh",
+  wood:"yog\u2018och", stone:"tosh", grass:"o\u2018t", dirt:"tuproq", sand:"qum",
+  gravel:"shag\u2018al", snow:"qor", ice:"muz", metal:"metall", glass:"oyna",
+  cloth:"mato", wool:"jun", ladder:"narvon", anvil:"anvil", furnace:"pech",
+  chest:"sandiq", door:"eshik", button:"tugma", lever:"richag", fence:"panjara",
+  gate:"darvoza", trapdoor:"lyuk", pressure:"bosim", plate:"plastinka",
+  amethyst:"ametist", cluster:"klaster", deepslate:"chuqur tosh", netherite:"neterit",
+  copper:"mis", bamboo:"bambuk", cherry:"gilos", sculk:"skalk", basalt:"bazalt",
+  netherrack:"neter tosh", soul:"ruh", soil:"tuproq", leaves:"barg", log:"yog\u2018och",
+  plank:"taxta", slab:"plita", stairs:"zinapoya", wall:"devor", carpet:"gilam",
+  bed:"karavot", sign:"belgi", banner:"bayroq", torch:"mash\u2018al", lantern:"fonar",
+  candle:"sham", campfire:"o\u2018choq", water:"suv", lava:"lava", rain:"yomg\u2018ir",
+  thunder:"momaqaldiroq", cave:"g\u2018or", nether:"neter", end:"oxir", overworld:"oddiy dunyo",
+  cow:"sigir", pig:"cho\u2018chqa", sheep:"qo\u2018y", chicken:"tovuq", horse:"ot",
+  wolf:"bo\u2018ri", cat:"mushuk", villager:"qishloq aholisi", zombie:"zombi",
+  skeleton:"skelet", creeper:"kriper", spider:"o\u2018rgimchak", enderman:"enderman",
+  slime:"shilimshiq", ghast:"ghast", blaze:"blaze", wither:"wither", dragon:"ajdar",
+  player:"o\u2018yinchi", frog:"qurbaqa", allay:"allay", sniffer:"sniffer", camel:"tuya",
+  goat:"echki", axolotl:"aksolotl", bee:"ari", fox:"tulki", panda:"panda",
+  parrot:"to\u2018ti", dolphin:"delfin", squid:"kalmar", glow:"yorug\u2018", berry:"meva",
+  bat:"ko\u2018rshapalak", witch:"jodugar", iron:"temir", golem:"golem",
+  guardian:"qo\u2018riqchi", elder:"keksa", phantom:"fantom", drowned:"cho\u2018kib ketgan",
+  husk:"husk", stray:"adashgan", pillager:"talonchi", vindicator:"himoyachi",
+  evoker:"chorlovchi", vex:"vex", ravager:"vayronkor", hoglin:"hoglin", piglin:"piglin",
+  zoglin:"zoglin", strider:"strider", warden:"warden", breeze:"shamol", bogged:"botqoq",
+  armadillo:"armadillo", menu:"menyu", toast:"bildirishnoma", hover:"ustiga",
+  select:"tanlash", confirm:"tasdiqlash", back:"orqaga", forward:"oldinga",
+  left:"chap", right:"o\u2018ng", up:"yuqori", down:"past", small:"kichik", big:"katta",
+  large:"katta", soft:"yumshoq", hard:"qattiq", heavy:"og\u2018ir", light:"yorug\u2018",
+  dark:"qorong\u2018u", high:"yuqori", low:"past", short:"qisqa", long:"uzun",
+  quick:"tez", slow:"sekin", generic:"umumiy", normal:"oddiy", special:"maxsus",
+  effects:"effektlar", effect:"effekt", raid:"reyd", boss:"bos", horn:"shox",
+  disc:"disk", creative:"ijodiy", jukebox:"pleyer", beacon:"mayoq", conduit:"kanal",
+  piston:"piston", redstone:"redstone", power:"quvvat", book:"kitob", bottle:"shisha",
+  bucket:"chelak", arrow:"o\u2018q", tool:"asbob", underwater:"suv osti",
 };
+
 
 function trSeg(seg) {
   if (lang !== "uz" || !seg) return seg;
   const key = String(seg).toLowerCase();
   if (SEG_UZ[key]) return SEG_UZ[key];
+  // single token with trailing digits: break3
+  var one = key.match(/^([a-z]+)(\d+)$/);
+  if (one && !key.includes("_")) {
+    return (SEG_UZ[one[1]] || one[1]) + " " + one[2];
+  }
   if (key.indexOf("_") >= 0) {
     // prefer longest compound match, else per-token
     const parts = key.split("_");
@@ -194,7 +204,13 @@ function trSeg(seg) {
         }
       }
       if (!matched) {
-        out.push(SEG_UZ[parts[i]] || parts[i]);
+        var tok = parts[i];
+        var nm = tok.match(/^([a-zA-Z]+)(\d+)$/);
+        if (nm) {
+          out.push((SEG_UZ[nm[1]] || nm[1]) + " " + nm[2]);
+        } else {
+          out.push(SEG_UZ[tok] || tok);
+        }
         i++;
       }
     }
