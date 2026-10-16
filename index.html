@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minecraft Soundboard — 4961 Sounds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e14;
+  --bg2: #111820;
+  --card: #1a2332;
+  --card-hover: #243044;
+  --accent: #55c57a;
+  --accent2: #3d9e5f;
+  --text: #e8f0e9;
+  --muted: #8b9bab;
+  --border: #2a3548;
+  --danger: #e74c3c;
+  --glow: 0 0 20px rgba(85, 197, 122, 0.25);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+/* Animated subtle background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 20% 20%, rgba(85,197,122,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(61,158,95,0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #0a0e14 0%, #0d1219 100%);
+  z-index: -1;
+  pointer-events: none;
+}
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,14,20,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.logo {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 14px;
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(85,197,122,0.5);
+  white-space: nowrap;
+}
+.logo span { color: #fff; }
+.search-box {
+  flex: 1;
+  min-width: 180px;
+  max-width: 420px;
+  position: relative;
+}
+.search-box input {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-box input:focus {
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+.search-box::before {
+  content: '🔍';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.6;
+}
+.controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover { background: var(--card-hover); border-color: var(--accent); }
+.btn.primary {
+  background: var(--accent);
+  color: #0a0e14;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn.primary:hover { background: var(--accent2); }
+.btn.active { background: var(--accent); color: #0a0e14; }
+.stats {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  min-height: calc(100vh - 60px);
+}
+@media (max-width: 768px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .sidebar.open { display: block; position: fixed; inset: 0; z-index: 200; background: var(--bg); overflow-y: auto; padding: 20px; }
+}
+.sidebar {
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  overflow-y: auto;
+  max-height: calc(100vh - 60px);
+  position: sticky;
+  top: 60px;
+}
+.cat-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: all .15s;
+}
+.cat-btn:hover { background: var(--card); color: var(--text); }
+.cat-btn.active {
+  background: rgba(85,197,122,0.15);
+  color: var(--accent);
+  font-weight: 600;
+}
+.cat-btn .count {
+  font-size: 11px;
+  opacity: 0.7;
+  background: rgba(0,0,0,0.3);
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+.main {
+  padding: 20px;
+  overflow-y: auto;
+}
+.now-playing {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: linear-gradient(90deg, rgba(85,197,122,0.12), rgba(61,158,95,0.08));
+  border: 1px solid rgba(85,197,122,0.3);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: none;
+  align-items: center;
+  gap: 14px;
+  backdrop-filter: blur(8px);
+}
+.now-playing.visible { display: flex; }
+.np-icon {
+  width: 40px; height: 40px;
+  background: var(--accent);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(85,197,122,0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(85,197,122,0); }
+}
+.np-info { flex: 1; min-width: 0; }
+.np-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-cat { font-size: 12px; color: var(--muted); }
+.np-controls { display: flex; gap: 8px; align-items: center; }
+.vol-slider {
+  width: 80px;
+  accent-color: var(--accent);
+}
+#grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+.sound-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+}
+.sound-card:hover {
+  background: var(--card-hover);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.sound-card.playing {
+  border-color: var(--accent);
+  background: rgba(85,197,122,0.1);
+  box-shadow: var(--glow);
+}
+.play-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: rgba(85,197,122,0.15);
+  border: 1px solid rgba(85,197,122,0.3);
+  color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.sound-card:hover .play-btn, .sound-card.playing .play-btn {
+  background: var(--accent);
+  color: #0a0e14;
+}
+.sound-info { min-width: 0; flex: 1; }
+.sound-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sound-path {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--muted);
+}
+.empty h2 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 40vh;
+  font-size: 14px;
+  color: var(--muted);
+}
+.footer-note {
+  text-align: center;
+  padding: 30px;
+  font-size: 12px;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">MC<span>SOUND</span></div>
+  <div class="search-box">
+    <input type="search" id="search" placeholder="Search 4961 Minecraft sounds..." autocomplete="off">
+  </div>
+  <div class="controls">
+    <button class="btn" id="btn-random" title="Play random sound">🎲 Random</button>
+    <button class="btn" id="btn-stop" title="Stop all">⏹ Stop</button>
+    <button class="btn" id="btn-cats" style="display:none">Categories</button>
+  </div>
+  <div class="stats" id="stats">Loading...</div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar"></aside>
+  <main class="main">
+    <div class="now-playing" id="nowPlaying">
+      <div class="np-icon">▶</div>
+      <div class="np-info">
+        <div class="np-name" id="npName">—</div>
+        <div class="np-cat" id="npCat">—</div>
+      </div>
+      <div class="np-controls">
+        <input type="range" class="vol-slider" id="volume" min="0" max="1" step="0.05" value="0.7" title="Volume">
+        <button class="btn" id="npStop">⏹</button>
+      </div>
+    </div>
+    <div id="grid" class="loading">Loading sound library...</div>
+  </main>
+</div>
+
+<script>
+const SOUNDS_BASE = 'sounds/'; // will be relative path
+let data = null;
+let currentAudio = null;
+let currentCard = null;
+let activeCategory = 'all';
+
+async function init() {
+  try {
+    const res = await fetch('sounds.json');
+    data = await res.json();
+    document.getElementById('stats').textContent = data.total.toLocaleString() + ' sounds';
+    buildSidebar();
+    renderSounds('all');
+    setupEvents();
+  } catch (e) {
+    document.getElementById('grid').innerHTML = '<div class="empty"><h2>Failed to load sounds.json</h2><p>' + e.message + '</p></div>';
+  }
+}
+
+function buildSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  let html = `<button class="cat-btn active" data-cat="all"><span>All Sounds</span><span class="count">${data.total}</span></button>`;
+  for (const cat of data.categories) {
+    const count = data.sounds[cat]?.length || 0;
+    html += `<button class="cat-btn" data-cat="${cat}"><span>${cat}</span><span class="count">${count}</span></button>`;
+  }
+  sidebar.innerHTML = html;
+  sidebar.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      sidebar.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeCategory = btn.dataset.cat;
+      document.getElementById('search').value = '';
+      renderSounds(activeCategory);
+    });
+  });
+}
+
+function getFilteredList(cat, query) {
+  let list = [];
+  if (cat === 'all') {
+    for (const c of data.categories) {
+      for (const path of data.sounds[c] || []) {
+        list.push({ path, cat: c });
+      }
+    }
+  } else {
+    for (const path of data.sounds[cat] || []) {
+      list.push({ path, cat });
+    }
+  }
+  if (query) {
+    const q = query.toLowerCase();
+    list = list.filter(s => s.path.toLowerCase().includes(q));
+  }
+  return list;
+}
+
+function renderSounds(cat, query = '') {
+  const grid = document.getElementById('grid');
+  const list = getFilteredList(cat, query);
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="empty"><h2>No sounds found</h2><p>Try another category or search term</p></div>';
+    return;
+  }
+  // Limit initial render for performance (virtual-ish)
+  const MAX = 400;
+  const slice = list.slice(0, MAX);
+  let html = '';
+  for (const s of slice) {
+    const name = s.path.split('/').pop().replace(/\.ogg$/i, '');
+    html += `<div class="sound-card" data-path="${s.path}" data-cat="${s.cat}">
+      <div class="play-btn">▶</div>
+      <div class="sound-info">
+        <div class="sound-name">${name}</div>
+        <div class="sound-path">${s.path}</div>
+      </div>
+    </div>`;
+  }
+  if (list.length > MAX) {
+    html += `<div class="empty" style="grid-column:1/-1"><p>Showing first ${MAX} of ${list.length} results. Use search to narrow down.</p></div>`;
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.sound-card').forEach(card => {
+    card.addEventListener('click', () => playSound(card));
+  });
+}
+
+function playSound(card) {
+  const path = card.dataset.path;
+  const cat = card.dataset.cat;
+  const name = path.split('/').pop();
+
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (currentCard) currentCard.classList.remove('playing');
+
+  const audio = new Audio(SOUNDS_BASE + path);
+  audio.volume = parseFloat(document.getElementById('volume').value);
+  audio.play().catch(e => console.warn('Play failed', e));
+  currentAudio = audio;
+  currentCard = card;
+  card.classList.add('playing');
+
+  document.getElementById('nowPlaying').classList.add('visible');
+  document.getElementById('npName').textContent = name;
+  document.getElementById('npCat').textContent = cat + ' • ' + path;
+
+  audio.onended = () => {
+    card.classList.remove('playing');
+    document.getElementById('nowPlaying').classList.remove('visible');
+    currentAudio = null;
+    currentCard = null;
+  };
+}
+
+function stopAll() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  if (currentCard) currentCard.classList.remove('playing');
+  document.getElementById('nowPlaying').classList.remove('visible');
+}
+
+function setupEvents() {
+  let searchTimeout;
+  document.getElementById('search').addEventListener('input', (e) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      renderSounds(activeCategory, e.target.value.trim());
+    }, 180);
+  });
+
+  document.getElementById('btn-random').addEventListener('click', () => {
+    const list = getFilteredList(activeCategory, document.getElementById('search').value.trim());
+    if (!list.length) return;
+    const item = list[Math.floor(Math.random() * list.length)];
+    // find or create a temporary card
+    const cards = document.querySelectorAll('.sound-card');
+    let found = null;
+    cards.forEach(c => { if (c.dataset.path === item.path) found = c; });
+    if (found) {
+      playSound(found);
+      found.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      // play directly
+      stopAll();
+      const audio = new Audio(SOUNDS_BASE + item.path);
+      audio.volume = parseFloat(document.getElementById('volume').value);
+      audio.play();
+      currentAudio = audio;
+      document.getElementById('nowPlaying').classList.add('visible');
+      document.getElementById('npName').textContent = item.path.split('/').pop();
+      document.getElementById('npCat').textContent = item.cat + ' • ' + item.path;
+      audio.onended = () => document.getElementById('nowPlaying').classList.remove('visible');
+    }
+  });
+
+  document.getElementById('btn-stop').addEventListener('click', stopAll);
+  document.getElementById('npStop').addEventListener('click', stopAll);
+  document.getElementById('volume').addEventListener('input', (e) => {
+    if (currentAudio) currentAudio.volume = parseFloat(e.target.value);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
