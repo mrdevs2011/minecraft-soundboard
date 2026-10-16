@@ -626,6 +626,10 @@ function searchLib(query, limit) {
     const p = s.path.toLowerCase();
     let score = 0;
     for (const t of terms) if (p.includes(t)) score += t.length + (p.split("/").pop().includes(t) ? 5 : 0);
+    if (q.includes("qoshiq") || q.includes("musiqa") || q.includes("song") || q.includes("music")) {
+      if (p.startsWith("music/")) score += 40;
+      if (p.startsWith("note/")) score += 15;
+    }
     if (score) scored.push(Object.assign({}, s, { score }));
   }
   scored.sort((a, b) => b.score - a.score);
@@ -683,14 +687,18 @@ async function sendChat() {
   const folderHint = navPath.length ? "Hozir foydalanuvchi papkasi: " + navPath.join("/") + "\n" : "";
 
   const system =
-    "Minecraft Sound Archive expert. 4961 .ogg files in folder tree (mob/cow/say1.ogg, music/game/..., note/...).\n" +
-    "User language: Uzbek/Russian/English.\n" +
-    "Understand intent: animal sounds, blocks, music/qoshiq=music tracks + note/*, ambience, combat, etc.\n" +
-    "If user mixes words (e.g. lava + chicken + qoshiq) pick best matches for EACH concept, prefer music/* for songs.\n" +
-    "Reply: 1 short sentence in user's language. Then ONLY lines: PLAY: full/path1.ogg, full/path2.ogg\n" +
-    "No SEARCH. No markdown. Max 8 paths. Only paths from the list below.\n" +
-    (navPath.length ? "Current folder: " + navPath.join("/") + "\n" : "") +
-    "Candidates:\n" + (matchList || "(none)");
+    "Minecraft sound finder. Paths: music/game/calm1.ogg, mob/chicken/say1.ogg, liquid/lava.ogg.
+" +
+    "qoshiq/musiqa/song = MUST return music/* tracks first. Never answer qoshiq with only SFX.
+" +
+    "Multi-word: cover EACH topic. Order music first if song requested.
+" +
+    "1 short sentence. Then PLAY: path1.ogg, path2.ogg (max 8 from Candidates only). No SEARCH.
+" +
+    (navPath.length ? "Folder: " + navPath.join("/") + "
+" : "") +
+    "Candidates:
+" + (matchList || "(none)");
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 10) hist = hist.slice(-10);
@@ -719,17 +727,27 @@ async function sendChat() {
 
     const low = msg.toLowerCase();
     // light client assist: ensure key topics appear if AI missed them
+    const wantSong = /\b(qoshiq|musiqa|music|song)\b/.test(low);
     const topicMap = [
       { re: /\b(mol|cow|moo|muu|sigir)\b/, test: p => p.includes("cow") && /say|moody\/ambient/.test(p) },
-      { re: /\b(chicken|tovuq)\b/, test: p => p.includes("chicken") },
+      { re: /\b(chicken|tovuq)\b/, test: p => /\/chicken/.test(p) },
       { re: /\b(lava)\b/, test: p => p.includes("lava") },
-      { re: /\b(qoshiq|musiqa|music|song)\b/, test: p => p.startsWith("music/") || p.startsWith("note/") }
+      { re: /\b(qoshiq|musiqa|music|song)\b/, test: p => p.startsWith("music/") }
     ];
     for (const t of topicMap) {
       if (!t.re.test(low)) continue;
-      all.filter(x => t.test(x.path)).slice(0, 4).forEach(x => {
+      all.filter(x => t.test(x.path)).slice(0, 6).forEach(x => {
         if (!parsed.plays.includes(x.path)) parsed.plays.push(x.path);
       });
+    }
+    if (wantSong) {
+      const music = parsed.plays.filter(p => p.startsWith("music/"));
+      const rest = parsed.plays.filter(p => !p.startsWith("music/"));
+      // if AI forgot music entirely, inject top music tracks
+      if (!music.length) {
+        all.filter(x => x.path.startsWith("music/")).slice(0, 6).forEach(x => music.push(x.path));
+      }
+      parsed.plays = music.concat(rest);
     }
     parsed.plays = parsed.plays.slice(0, 8);
 
