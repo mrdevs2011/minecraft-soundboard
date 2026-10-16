@@ -925,7 +925,7 @@ html[data-theme-early="light"] .splash-bar,
 }
 .ask-hero .ask-sub{font-family:var(--font-mono);font-size:16px;color:var(--muted);letter-spacing:.1em}
 .key-status{font-family:var(--font-mono);font-size:14px;margin-top:4px}
-.key-status.ok{color:var(--accent)}
+.key-status.ok{color:var(--accent);font-weight:700;letter-spacing:.04em}
 .key-status.err{color:var(--danger)}
 
 /* ===== RESPONSIVE: desktop / tablet / mobile ===== */

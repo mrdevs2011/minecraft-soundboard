@@ -437,20 +437,47 @@ function syncKeyIcon() {
   if (key) key.src = light ? "/svg/key-light.svg" : "/svg/key-dark.svg";
 }
 
-function syncKeyUI() {
+function maskKeyInInput(showSuccess) {
+  const inp = $("groqKey");
+  const key = getApiKey();
+  if (!inp) return;
+  if (key) {
+    inp.type = "password";
+    inp.value = key; // browser shows as dots
+    inp.readOnly = true;
+    inp.autocomplete = "off";
+  } else {
+    inp.type = "text";
+    inp.value = "";
+    inp.readOnly = false;
+  }
+  if (showSuccess) {
+    const st = $("keyStatus");
+    if (st) { st.textContent = t("saved"); st.className = "key-status ok"; }
+  }
+}
+
+function syncKeyUI(opts) {
+  opts = opts || {};
   const has = !!getApiKey();
   const conn = $("keyConnected");
   const entry = $("keyEntry");
   if (conn) conn.hidden = !has;
-  if (entry) entry.hidden = has;
-  const inp = $("groqKey");
-  if (inp) inp.value = ""; // never show stored secret in the field
-  const st = $("keyStatus");
-  if (st && has) { st.textContent = ""; st.className = "key-status"; }
+  if (entry) entry.hidden = false; // always show entry so masked key + status visible
+  maskKeyInInput(!!opts.success);
+  if (!opts.success) {
+    const st = $("keyStatus");
+    if (st && !opts.keepStatus) {
+      if (has) { st.textContent = t("saved"); st.className = "key-status ok"; }
+      else if (!st.classList.contains("err")) { st.textContent = ""; st.className = "key-status"; }
+    }
+  }
 }
 async function saveApiKeyFromInput() {
   const inp = $("groqKey");
   const st = $("keyStatus");
+  // if readonly masked, ignore re-save of same
+  if (inp && inp.readOnly) return;
   const k = (inp && inp.value || "").trim();
   if (!k) {
     if (st) { st.textContent = t("paste_first"); st.className = "key-status err"; }
@@ -460,9 +487,8 @@ async function saveApiKeyFromInput() {
   try {
     await validateGroqKey(k);
     localStorage.setItem("groq_api_key", k);
-    if (inp) inp.value = "";
     if (st) { st.textContent = t("saved"); st.className = "key-status ok"; }
-    syncKeyUI();
+    syncKeyUI({ success: true });
     const hero = $("askHero");
     if (hero) {
       const sub = hero.querySelector(".ask-sub");
@@ -470,8 +496,9 @@ async function saveApiKeyFromInput() {
     }
   } catch (e) {
     try { localStorage.removeItem("groq_api_key"); } catch (x) {}
+    if (inp) { inp.type = "text"; inp.readOnly = false; }
     if (st) { st.textContent = e.message || t("invalid_key"); st.className = "key-status err"; }
-    syncKeyUI();
+    syncKeyUI({ keepStatus: true });
   }
 }
 
@@ -480,7 +507,7 @@ function showAskHero(log) {
   if (!log) return;
   const hasKey = !!getApiKey();
   log.innerHTML = '<div class="ask-hero" id="askHero"><div class="ask-title">' + t("ask_ai") + '</div><div class="ask-sub">' +
-    (hasKey ? "TYPE YOUR QUESTION" : "ENTER API KEY TO START") + "</div></div>";
+    (hasKey ? t("type_q") : t("enter_key")) + "</div></div>";
 }
 async function validateGroqKey(key) {
   const res = await fetch("https://api.groq.com/openai/v1/models", {
@@ -1736,13 +1763,23 @@ function bind() {
   });
   on("keyChange", "click", () => {
     const conn = $("keyConnected");
-    const entry = $("keyEntry");
     if (conn) conn.hidden = true;
-    if (entry) entry.hidden = false;
-    if ($("groqKey")) { $("groqKey").value = ""; $("groqKey").focus(); }
+    const inp = $("groqKey");
+    if (inp) {
+      inp.type = "text";
+      inp.readOnly = false;
+      inp.value = "";
+      inp.focus();
+    }
+    const st = $("keyStatus");
+    if (st) { st.textContent = ""; st.className = "key-status"; }
   });
   on("keyRemove", "click", () => {
     try { localStorage.removeItem("groq_api_key"); } catch (e) {}
+    const inp = $("groqKey");
+    if (inp) { inp.type = "text"; inp.readOnly = false; inp.value = ""; }
+    const st = $("keyStatus");
+    if (st) { st.textContent = ""; st.className = "key-status"; }
     syncKeyUI();
     const hero = $("askHero");
     if (hero) {
