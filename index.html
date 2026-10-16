@@ -438,12 +438,12 @@ body::after {
       <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off">
       <label>Model</label>
       <select id="groqModel">
-        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
-        <option value="llama-3.1-8b-instant">Llama 3.1 8B</option>
-        <option value="openai/gpt-oss-120b">GPT OSS 120B</option>
         <option value="openai/gpt-oss-20b">GPT OSS 20B</option>
-        <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
-        <option value="gemma2-9b-it">Gemma2 9B</option>
+        <option value="openai/gpt-oss-120b">GPT OSS 120B</option>
+        <option value="llama-3.1-8b-instant">Llama 3.1 8B Instant</option>
+        <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+        <option value="meta-llama/llama-4-scout-17b-16e-instruct">Llama 4 Scout</option>
+        <option value="qwen/qwen3.8-27b">Qwen3.8 27B</option>
       </select>
     </div>
     <div class="chat-log" id="chatLog">
@@ -492,7 +492,10 @@ async function init() {
     const m = localStorage.getItem("groq_model");
     const th = localStorage.getItem("mcsnd_theme");
     if (k) $("groqKey").value = k;
-    if (m) $("groqModel").value = m;
+    if (m) {
+      const opt = Array.from($("groqModel").options).some(o => o.value === m);
+      $("groqModel").value = opt ? m : "openai/gpt-oss-20b";
+    }
     if (th === "light") setTheme("light");
   } catch (e) {
     $("grid").innerHTML = "<div class=\"empty\"><h2>LOAD FAILED</h2><p>" + esc(e.message) + "</p></div>";
@@ -812,6 +815,16 @@ function bind() {
   $("chatClose").addEventListener("click", toggleChat);
   $("backdrop").addEventListener("click", toggleChat);
   $("chatSend").addEventListener("click", sendChat);
+  // persist key/model immediately
+  const saveKey = () => {
+    const k = $("groqKey").value.trim();
+    if (k) localStorage.setItem("groq_api_key", k);
+  };
+  const saveModel = () => localStorage.setItem("groq_model", $("groqModel").value);
+  $("groqKey").addEventListener("input", saveKey);
+  $("groqKey").addEventListener("change", saveKey);
+  $("groqKey").addEventListener("blur", saveKey);
+  $("groqModel").addEventListener("change", saveModel);
   $("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
 }
 
