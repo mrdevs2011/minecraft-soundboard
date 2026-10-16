@@ -14,11 +14,13 @@
 :root {
   --bg:#050505; --bg2:#0a0a0a; --surface:#111; --surface2:#181818;
   --border:#2a2a2a; --border2:#3a3a3a; --text:#f5f5f5; --muted:#c0c0c0; --dim:#9a9a9a;
+  --accent:#5b9fff; --accent2:#3d7aed; --accent-soft:rgba(91,159,255,.14); --accent-glow:rgba(91,159,255,.35);
   --safe-b: env(safe-area-inset-bottom, 0px);
 }
 [data-theme="light"] {
   --bg:#f3f3f3; --bg2:#eaeaea; --surface:#fff; --surface2:#f6f6f6;
   --border:#d0d0d0; --border2:#bbb; --text:#0a0a0a; --muted:#666; --dim:#999;
+  --accent:#3d7aed; --accent2:#2b5fd4; --accent-soft:rgba(61,122,237,.12); --accent-glow:rgba(61,122,237,.28);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{-webkit-text-size-adjust:100%}
@@ -180,13 +182,49 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 .shell.chat-on .backdrop{display:block}
 @media(min-width:1101px){.backdrop{display:none!important}}
 .chat-hd .icon-btn.hidden{display:none}
+
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.icon-btn:hover,.icon-btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.folder:hover{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.folder.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card:hover{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent-soft)}
+.card.playing{border-color:var(--accent);background:var(--accent);color:#fff}
+.card.playing .card-path,.card.playing .card-meta{color:rgba(255,255,255,.75)}
+.card.playing .card-play{background:#fff;color:var(--accent);border-color:#fff}
+.fill{background:var(--accent)}
+.player{box-shadow:0 16px 48px rgba(0,0,0,.5),0 0 0 1px var(--accent-soft)}
+.player-ico{background:var(--accent);border-color:var(--accent);color:#fff}
+.spin-ring{border-top-color:#fff}
+.bubble.user{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chip:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.chat-in input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.chat-in button{background:var(--accent);border-color:var(--accent);color:#fff}
+.chat-in button:hover{background:var(--accent2)}
+.key-pop input:focus{border-color:var(--accent)}
+.vol{accent-color:var(--accent)}
+.brand-mark{border-color:var(--accent)}
+.brand-mark svg{stroke:var(--accent)}
+.ask-hero{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:42%;padding:32px 16px;text-align:center;gap:8px;user-select:none;
+}
+.ask-hero .ask-title{
+  font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(135deg,var(--text) 0%,var(--accent) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.ask-hero .ask-sub{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);letter-spacing:.08em}
+.key-status{font-family:"IBM Plex Mono",monospace;font-size:10px;margin-top:4px}
+.key-status.ok{color:var(--accent)}
+.key-status.err{color:#ff6b6b}
+
 </style>
 </head>
 <body data-theme="dark">
 <header class="top">
   <div class="top-inner">
     <a class="brand" href="#" id="brandHome">
-      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h3l2-7 4 14 2-7h5"/></svg></div>
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h4l2-6 4 12 2-6h4"/></svg></div>
       <div class="brand-text">MC<span>SND</span></div>
     </a>
     <div class="search-wrap">
@@ -245,9 +283,10 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
     <div class="key-pop" id="keyPop">
       <label>Groq API Key</label>
       <input type="password" id="groqKey" placeholder="gsk_..." autocomplete="off">
+      <div class="key-status" id="keyStatus"></div>
     </div>
     <div class="chat-log" id="chatLog">
-      <div class="bubble sys">Kalit ikonka orqali API key → so‘rang: molning ovozi</div>
+      <div class="ask-hero" id="askHero"><div class="ask-title">Ask Qwen…</div><div class="ask-sub">API KEY ORQALI BOSHLANG</div></div>
     </div>
     <div class="chat-in">
       <input type="text" id="chatInput" placeholder="Qanday ovoz?" autocomplete="off">
@@ -281,7 +320,7 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 
 <script>
 const BASE = "sounds/";
-const MODEL = "openai/gpt-oss-120b";
+const MODEL = "qwen/qwen3.8-27b";
 let data = null, all = [], tree = {}, navPath = [];
 let audio = null, cardEl = null, seeking = false, raf = null, hist = [];
 let chatUIHist = []; // {role, html} persisted
@@ -668,7 +707,7 @@ function loadChatFromStorage() {
   const log = $("chatLog");
   log.innerHTML = "";
   if (!chatUIHist.length) {
-    log.innerHTML = "<div class=\"bubble sys\">Kalit ikonka orqali API key → so‘rang</div>";
+    showAskHero(log);
     updateClearBtn();
     return;
   }
@@ -684,7 +723,7 @@ function clearChat() {
   hist = [];
   chatLoaded = 0;
   saveChatUI();
-  $("chatLog").innerHTML = "<div class=\"bubble sys\">Chat tozalandi</div>";
+  showAskHero($("chatLog"));
   updateClearBtn();
 }
 function appendBubble(role, html, hasCards) {
@@ -766,7 +805,12 @@ async function sendChat() {
     const json = await res.json();
     wait.remove();
     if (!res.ok) {
-      appendBubble("sys", "Error: " + ((json.error && json.error.message) || res.status));
+      const em = (json.error && json.error.message) || String(res.status);
+      if (/invalid|revoked|expired|auth/i.test(em)) {
+        localStorage.removeItem("groq_api_key");
+        $("groqKey").value = "";
+      }
+      appendBubble("sys", "Error: " + em);
       $("chatSend").disabled = false;
       return;
     }
@@ -876,9 +920,31 @@ function bind() {
     chatLoaded = more;
     log.scrollTop = log.scrollHeight - prevH;
   });
-  $("groqKey").addEventListener("input", () => {
+  $("groqKey").addEventListener("change", async () => {
     const k = $("groqKey").value.trim();
-    if (k) localStorage.setItem("groq_api_key", k);
+    const st = $("keyStatus");
+    if (!k) {
+      localStorage.removeItem("groq_api_key");
+      st.textContent = "";
+      st.className = "key-status";
+      return;
+    }
+    st.textContent = "Checking…";
+    st.className = "key-status";
+    try {
+      await validateGroqKey(k);
+      localStorage.setItem("groq_api_key", k);
+      st.textContent = "Key OK";
+      st.className = "key-status ok";
+      const hero = $("askHero");
+      if (hero) hero.querySelector(".ask-sub").textContent = "SAVOLINGIZNI YOZING";
+      else if (!$("chatLog").querySelector(".bubble.user")) showAskHero($("chatLog"));
+    } catch (e) {
+      localStorage.removeItem("groq_api_key");
+      $("groqKey").value = "";
+      st.textContent = "Rejected: " + e.message;
+      st.className = "key-status err";
+    }
   });
   $("chatSend").addEventListener("click", sendChat);
   $("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
