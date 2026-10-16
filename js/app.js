@@ -550,12 +550,17 @@ function renderCards(list, total) {
   });
 }
 
+function setThumb(pct) {
+  const t = $("thumb");
+  if (t) t.style.left = Math.max(0, Math.min(100, pct)) + "%";
+}
 function tick() {
   if (!audio) return;
   // While seeking, keep the loop alive but don't overwrite the scrub position
   if (!seeking && isFinite(audio.duration) && audio.duration > 0) {
     const pct = (audio.currentTime / audio.duration) * 100;
     $("fill").style.width = pct + "%";
+    setThumb(pct);
     $("tCur").textContent = fmt(audio.currentTime);
     $("tTot").textContent = fmt(audio.duration);
   }
@@ -587,6 +592,7 @@ function play(path, c, el) {
   $("pName").textContent = path.split("/").pop();
   $("pPath").textContent = "LOADING  -  " + sizeStr + "  -  " + path;
   $("fill").style.width = "0%";
+  setThumb(0);
   $("tCur").textContent = "0:00";
   $("tTot").textContent = mt.dur != null ? fmt(mt.dur) : "...";
   $("pIcoSvg").src = "/svg/pause.svg";
@@ -635,6 +641,7 @@ function play(path, c, el) {
       if (el) el.classList.remove("playing");
       a.currentTime = 0;
       $("fill").style.width = "0%";
+      setThumb(0);
       $("tCur").textContent = "0:00";
       $("pIcoSvg").src = "/svg/play.svg";
       cancelAnimationFrame(raf);
@@ -706,6 +713,7 @@ function stop(hide) {
   cardEl = null;
   cancelAnimationFrame(raf);
   $("fill").style.width = "0%";
+  setThumb(0);
   $("tCur").textContent = "0:00";
   const ico = $("pIcoSvg");
   if (ico) ico.src = "/svg/play.svg";
@@ -734,7 +742,9 @@ function seek(e) {
   const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
   const wasPlaying = !audio.paused;
   try { audio.currentTime = ratio * audio.duration; } catch (err) {}
-  $("fill").style.width = (ratio * 100) + "%";
+  const pct = ratio * 100;
+  $("fill").style.width = pct + "%";
+  setThumb(pct);
   $("tCur").textContent = fmt(audio.currentTime);
   // Some browsers pause on seek - resume if it was playing
   if (wasPlaying && audio.paused) {
@@ -1226,10 +1236,13 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     if (!audio) return;
     e.preventDefault();
     seeking = true;
+    const tr = $("track");
+    if (tr) tr.classList.add("scrubbing");
     seek(e);
     const move = ev => { if (seeking) seek(ev); };
     const end = () => {
       seeking = false;
+      if (tr) tr.classList.remove("scrubbing");
       document.removeEventListener("mousemove", move);
       document.removeEventListener("mouseup", end);
       document.removeEventListener("touchmove", move);
