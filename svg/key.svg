@@ -1,9 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">
-  <path d="M5 2h6v1h1v1h1v3h-1v1H11v1H5V8H4V7H3V4h1V3h1V2z" fill="#ffffff"/>
-  <path d="M6 3h4v1H6V3zM5 4h1v3H5V4zM10 4h1v3h-1V4zM6 7h4v1H6V7z" fill="#888888"/>
-  <path d="M7 4h2v2H7V4z" fill="#333333"/>
-  <path d="M7 8h2v6H7V8z" fill="#ffffff"/>
-  <path d="M8 8h1v6H8V8z" fill="#888888"/>
-  <path d="M9 10h2v2H9v-2z" fill="#ffffff"/>
-  <path d="M10 11h1v1h-1v-1z" fill="#333333"/>
+  <!-- Key bow outer -->
+  <rect x="2" y="2" width="6" height="6" fill="#ffffff"/>
+  <!-- Key bow hole -->
+  <rect x="4" y="4" width="2" height="2" fill="#1b1b1b"/>
+  <!-- Shaft -->
+  <rect x="4" y="8" width="2" height="6" fill="#ffffff"/>
+  <!-- Teeth -->
+  <rect x="6" y="9" width="2" height="1" fill="#ffffff"/>
+  <rect x="6" y="11" width="3" height="1" fill="#ffffff"/>
 </svg>
