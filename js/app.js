@@ -113,7 +113,11 @@ function t(key) {
 
 /* Path segment dictionary for display names only (not URLs/paths) */
 const SEG_UZ = {
+  /* compound folder names first */
+  mob_effects:"effektlar", entity_effects:"effektlar", status_effects:"effektlar",
+  music_disc:"musiqa_diski", note_block:"nota_bloki", sculk_sensor:"skalk_sensor",
   ambient:"atrof", block:"blok", entity:"mavjudot", item:"buyum", mob:"mavjudot",
+  effects:"effektlar", effect:"effekt", raid:"reyd", event:"hodisa",
   music:"musiqa", record:"plastinka", ui:"interfeys", weather:"ob-havo",
   random:"tasodifiy", step:"qadam", break:"sindirish", place:"qo\u2018yish",
   hit:"zarba", fall:"tushish", hurt:"jarohat", death:"o\u2018lim", say:"ovoz",
@@ -171,9 +175,28 @@ function trSeg(seg) {
   if (lang !== "uz" || !seg) return seg;
   const key = String(seg).toLowerCase();
   if (SEG_UZ[key]) return SEG_UZ[key];
-  // multi-part: amethyst_cluster
   if (key.indexOf("_") >= 0) {
-    return key.split("_").map(function(p){ return SEG_UZ[p] || p; }).join("_");
+    // prefer longest compound match, else per-token
+    const parts = key.split("_");
+    const out = [];
+    let i = 0;
+    while (i < parts.length) {
+      let matched = false;
+      for (let len = Math.min(3, parts.length - i); len >= 2; len--) {
+        const compound = parts.slice(i, i + len).join("_");
+        if (SEG_UZ[compound]) {
+          out.push(SEG_UZ[compound]);
+          i += len;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) {
+        out.push(SEG_UZ[parts[i]] || parts[i]);
+        i++;
+      }
+    }
+    return out.join("_");
   }
   return seg;
 }
@@ -181,7 +204,7 @@ function trSeg(seg) {
 function displayFileName(path) {
   const base = path.split("/").pop().replace(/\.ogg$/i, "");
   if (lang !== "uz") return base;
-  return base.split("_").map(function(p){ return SEG_UZ[p.toLowerCase()] || p; }).join("_");
+  return trSeg(base);
 }
 
 function displayPathSegs(segs) {
