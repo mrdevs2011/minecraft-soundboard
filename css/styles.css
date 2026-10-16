@@ -1595,3 +1595,7 @@ body[data-theme="light"]{
   #btnLang{min-width:40px;width:auto;padding:0 8px}
   #btnLang span#langLabel{display:inline!important;color:inherit;font-size:12px}
 }
+
+/* Download modal: status on the left, byte-based percent on the right */
+.dl-progress .txt{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dl-progress .dl-pct{font-variant-numeric:tabular-nums;white-space:nowrap}

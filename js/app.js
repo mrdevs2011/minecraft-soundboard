@@ -1500,6 +1500,14 @@ function triggerBlobDownload(blob, filename) {
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
 }
 
+const soundSizeMap = new Map(); // path -> size in bytes (filled once, reused)
+function tt(key, fallback) { const v = t(key); return v && v !== key ? v : fallback; }
+function setDlPct(p) {
+  const v = Math.max(0, Math.min(100, p));
+  $("dlBar").style.width = v + "%";
+  $("dlPct").textContent = v + "%";
+}
+
 async function downloadOneSound(path) {
   if (!path) return;
   const url = BASE + path.split("/").map(encodeURIComponent).join("/");
@@ -1525,7 +1533,7 @@ async function downloadOneSound(path) {
 function openDlModal() {
   zipAbort = false;
   $("dlProgress").classList.remove("show");
-  $("dlBar").style.width = "0%";
+  setDlPct(0);
   $("dlStatus").textContent = "";
   $("dlConfirm").disabled = false;
   $("dlConfirm").textContent = t("yes_dl");
@@ -1560,21 +1568,61 @@ async function downloadAllSoundsZip() {
   let done = 0;
   let failed = 0;
   const concurrency = 6;
+  const urlOf = p => BASE + p.split("/").map(encodeURIComponent).join("/");
+
+  // Step 1: learn each file's size in bytes (HEAD requests, cached across runs).
+  let sizeDone = 0;
+  let si = 0;
+  async function sizeOne(p) {
+    if (soundSizeMap.has(p)) return;
+    try {
+      const res = await fetch(urlOf(p), { method: "HEAD", cache: "force-cache" });
+      const len = Number(res.headers.get("content-length"));
+      if (res.ok && len > 0) soundSizeMap.set(p, len);
+    } catch (e) { /* size unknown: estimated below */ }
+  }
+  async function sizeWorker() {
+    while (si < total && !zipAbort) {
+      const p = paths[si++];
+      await sizeOne(p);
+      sizeDone++;
+      $("dlStatus").textContent = tt("calc_size", "Calculating size") + " " + sizeDone + " / " + total;
+    }
+  }
+  setDlPct(0);
+  await Promise.all(Array.from({ length: 16 }, () => sizeWorker()));
+
+  // Files whose size the server did not report are estimated with the average size.
+  let knownSum = 0;
+  let knownCount = 0;
+  for (const p of paths) {
+    const s = soundSizeMap.get(p);
+    if (s) { knownSum += s; knownCount++; }
+  }
+  const avgSize = knownCount ? knownSum / knownCount : 1;
+  const sizeOf = p => soundSizeMap.get(p) || avgSize;
+  const totalBytes = paths.reduce((sum, p) => sum + sizeOf(p), 0) || 1;
+  let doneBytes = 0;
+  const addBytes = n => {
+    doneBytes += n;
+    setDlPct(Math.floor((doneBytes / totalBytes) * 100));
+  };
+
+  $("dlStatus").textContent = "0 / " + total;
 
   async function fetchOne(p) {
     if (zipAbort) return;
-    const url = BASE + p.split("/").map(encodeURIComponent).join("/");
     try {
-      const res = await fetch(url, { cache: "force-cache" });
+      const res = await fetch(urlOf(p), { cache: "force-cache" });
       if (!res.ok) throw new Error(String(res.status));
       const buf = await res.arrayBuffer();
       folder.file(p, buf);
+      addBytes(buf.byteLength);
     } catch (e) {
       failed++;
+      addBytes(sizeOf(p));
     } finally {
       done++;
-      const pct = Math.round((done / total) * 100);
-      $("dlBar").style.width = pct + "%";
       $("dlStatus").textContent = done + " / " + total + (failed ? "  -  failed: " + failed : "");
     }
   }
@@ -1603,14 +1651,13 @@ async function downloadAllSoundsZip() {
       { type: "blob", compression: "STORE" },
       meta => {
         if (meta && meta.percent != null) {
-          $("dlBar").style.width = Math.round(meta.percent) + "%";
-          $("dlStatus").textContent = "ZIP: " + Math.round(meta.percent) + "%";
+          setDlPct(Math.round(meta.percent));
         }
       }
     );
     triggerBlobDownload(blob, "mcsnd-sounds.zip");
     $("dlStatus").textContent = t("done_dl") + (failed ? " (" + failed + ")" : "");
-    $("dlBar").style.width = "100%";
+    setDlPct(100);
     $("dlConfirm").textContent = t("download_again");
     $("dlConfirm").disabled = false;
     $("dlCancel").textContent = t("close");
