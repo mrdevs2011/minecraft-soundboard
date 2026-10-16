@@ -750,17 +750,12 @@ function seek(e) {
   if (clientX == null) return;
   const r = $("track").getBoundingClientRect();
   const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
-  const wasPlaying = !audio.paused;
   try { audio.currentTime = ratio * audio.duration; } catch (err) {}
   const pct = ratio * 100;
   $("fill").style.width = pct + "%";
   setThumb(pct);
   $("tCur").textContent = fmt(audio.currentTime);
-  // Some browsers pause on seek - resume if it was playing
-  if (wasPlaying && audio.paused) {
-    const p = audio.play();
-    if (p && p.catch) p.catch(function () {});
-  }
+  // Do NOT auto-play here — pause stays pause until user hits play
 }
 
 function searchLib(query, limit) {
@@ -1252,6 +1247,7 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
     if (!audio) return;
     e.preventDefault();
     seeking = true;
+    const wasPlayingBeforeScrub = !audio.paused;
     const tr = $("track");
     if (tr) tr.classList.add("scrubbing");
     seek(e);
@@ -1264,13 +1260,21 @@ window.addEventListener("popstate", () => goNav(urlToPath(), false));
       document.removeEventListener("touchmove", move);
       document.removeEventListener("touchend", end);
       document.removeEventListener("touchcancel", end);
-      // ensure progress loop is running and playback continues
-      if (audio && audio.paused && !audio.ended) {
-        const p = audio.play();
-        if (p && p.catch) p.catch(function () {});
+      // Resume ONLY if it was already playing before scrub
+      if (wasPlayingBeforeScrub && audio && !audio.ended) {
+        if (audio.paused) {
+          const p = audio.play();
+          if (p && p.catch) p.catch(function () {});
+        }
+        $("pIcoSvg").src = "/svg/pause.svg";
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(tick);
+      } else {
+        // Stay paused — keep play icon, no auto-start
+        if (audio) audio.pause();
+        $("pIcoSvg").src = "/svg/play.svg";
+        cancelAnimationFrame(raf);
       }
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(tick);
     };
     document.addEventListener("mousemove", move);
     document.addEventListener("mouseup", end);
