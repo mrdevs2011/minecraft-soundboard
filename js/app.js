@@ -589,7 +589,7 @@ function play(path, c, el) {
   $("fill").style.width = "0%";
   $("tCur").textContent = "0:00";
   $("tTot").textContent = mt.dur != null ? fmt(mt.dur) : "...";
-  $("pIcoSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+  $("pIcoSvg").src = "/svg/pause.svg";
   setSpin(true, 0);
 
   const url = BASE + path.split("/").map(encodeURIComponent).join("/");
@@ -628,7 +628,7 @@ function play(path, c, el) {
     a.addEventListener("playing", () => {
       if (myGen !== playGen || audio !== a) return;
       setSpin(false, 100);
-      $("pIcoSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+      $("pIcoSvg").src = "/svg/pause.svg";
     });
     a.addEventListener("ended", () => {
       if (myGen !== playGen || audio !== a) return;
@@ -636,7 +636,7 @@ function play(path, c, el) {
       a.currentTime = 0;
       $("fill").style.width = "0%";
       $("tCur").textContent = "0:00";
-      $("pIcoSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+      $("pIcoSvg").src = "/svg/play.svg";
       cancelAnimationFrame(raf);
       setSpin(false, 0);
     });
@@ -650,7 +650,7 @@ function play(path, c, el) {
     if (p && p.catch) p.catch(() => {
       if (myGen !== playGen || audio !== a) return;
       setSpin(false, 0);
-      $("pIcoSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+      $("pIcoSvg").src = "/svg/play.svg";
     });
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(tick);
@@ -708,7 +708,7 @@ function stop(hide) {
   $("fill").style.width = "0%";
   $("tCur").textContent = "0:00";
   const ico = $("pIcoSvg");
-  if (ico) ico.innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+  if (ico) ico.src = "/svg/play.svg";
   if (hide) $("player").classList.remove("show");
 }
 
@@ -717,11 +717,11 @@ function togglePause() {
   if (audio.paused) {
     if (audio.ended || (audio.duration && audio.currentTime >= audio.duration - 0.05)) audio.currentTime = 0;
     audio.play();
-    $("pIcoSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+    $("pIcoSvg").src = "/svg/pause.svg";
     raf = requestAnimationFrame(tick);
   } else {
     audio.pause();
-    $("pIcoSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+    $("pIcoSvg").src = "/svg/play.svg";
     cancelAnimationFrame(raf);
   }
 }

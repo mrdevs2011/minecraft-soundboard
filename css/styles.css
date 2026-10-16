@@ -860,3 +860,12 @@ body[data-theme="light"]{
   height: 14px;
 }
 
+
+/* Player play/pause icon */
+.player-ico .icon,
+#pIcoSvg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
