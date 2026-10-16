@@ -686,19 +686,7 @@ async function sendChat() {
   const matchList = matches.map(m => m.path).join("\n");
   const folderHint = navPath.length ? "Hozir foydalanuvchi papkasi: " + navPath.join("/") + "\n" : "";
 
-  const system =
-    "Minecraft sound finder. Paths: music/game/calm1.ogg, mob/chicken/say1.ogg, liquid/lava.ogg.
-" +
-    "qoshiq/musiqa/song = MUST return music/* tracks first. Never answer qoshiq with only SFX.
-" +
-    "Multi-word: cover EACH topic. Order music first if song requested.
-" +
-    "1 short sentence. Then PLAY: path1.ogg, path2.ogg (max 8 from Candidates only). No SEARCH.
-" +
-    (navPath.length ? "Folder: " + navPath.join("/") + "
-" : "") +
-    "Candidates:
-" + (matchList || "(none)");
+  const system = "Minecraft sound finder. qoshiq/musiqa/song MUST use music/* first. Multi-topic: cover each word. 1 short sentence then PLAY: paths (max 8 from Candidates only). No SEARCH. " + (navPath.length ? "Folder: " + navPath.join("/") + ". " : "") + "Candidates: " + (matchList || "(none)");
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 10) hist = hist.slice(-10);
