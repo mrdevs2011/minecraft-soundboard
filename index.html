@@ -622,6 +622,14 @@ function render(c, q) {
   grid.innerHTML = h;
   grid.querySelectorAll(".card").forEach(el => {
     el.addEventListener("click", () => play(el.dataset.path, el.dataset.cat, el));
+    el.addEventListener("mouseenter", () => {
+      const u = BASE + el.dataset.path.split("/").map(encodeURIComponent).join("/");
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.as = "audio";
+      link.href = u;
+      document.head.appendChild(link);
+    }, { once: true });
   });
 }
 
@@ -636,28 +644,92 @@ function tick() {
 
 function play(path, c, el) {
   stop(false);
-  const a = new Audio(BASE + path);
-  a.volume = parseFloat($("vol").value);
-  a.play().catch(function(){});
-  audio = a; cardEl = el || null;
+  if (cardEl) cardEl.classList.remove("playing");
+  cardEl = el || null;
   if (el) el.classList.add("playing");
   $("player").classList.add("show");
   $("pName").textContent = path.split("/").pop();
-  $("pPath").textContent = (c || "") + "  ·  " + path;
+  $("pPath").textContent = "LOADING  ·  " + path;
   $("fill").style.width = "0%";
   $("tCur").textContent = "0:00";
-  $("tTot").textContent = "0:00";
-  a.addEventListener("loadedmetadata", () => { $("tTot").textContent = fmt(a.duration); });
-  a.addEventListener("ended", () => {
-    if (el) el.classList.remove("playing");
-    a.currentTime = 0;
-    $("fill").style.width = "0%";
-    $("tCur").textContent = "0:00";
-    $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+  $("tTot").textContent = "...";
+  $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+
+  const url = BASE + path.split("/").map(encodeURIComponent).join("/");
+  let tries = 0;
+
+  function bindAudio(a, fromBlob) {
+    a.preload = "auto";
+    a.volume = parseFloat($("vol").value);
+    audio = a;
+    const onReady = () => {
+      $("pPath").textContent = (c || "") + "  ·  " + path;
+      $("tTot").textContent = fmt(a.duration);
+    };
+    a.addEventListener("loadedmetadata", onReady);
+    a.addEventListener("canplay", onReady);
+    a.addEventListener("waiting", () => {
+      if ($("pPath").textContent.indexOf("LOADING") === -1)
+        $("pPath").textContent = "BUFFERING  ·  " + path;
+    });
+    a.addEventListener("playing", () => {
+      $("pPath").textContent = (c || "") + "  ·  " + path;
+      $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+    });
+    a.addEventListener("ended", () => {
+      if (el) el.classList.remove("playing");
+      a.currentTime = 0;
+      $("fill").style.width = "0%";
+      $("tCur").textContent = "0:00";
+      $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+      cancelAnimationFrame(raf);
+    });
+    a.addEventListener("error", () => {
+      if (tries < 1 && !fromBlob) {
+        tries++;
+        loadViaBlob();
+        return;
+      }
+      $("pPath").textContent = "FAILED  ·  " + path;
+      $("tTot").textContent = "0:00";
+      if (el) el.classList.remove("playing");
+    });
+    const p = a.play();
+    if (p && p.catch) p.catch(function () {
+      $("pPath").textContent = "TAP PLAY  ·  " + path;
+      $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+    });
     cancelAnimationFrame(raf);
-    // keep player visible + audio object for replay via pause button
-  });
-  cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+    raf = requestAnimationFrame(tick);
+  }
+
+  function loadDirect() {
+    const a = new Audio();
+    a.crossOrigin = "anonymous";
+    a.src = url;
+    bindAudio(a, false);
+  }
+
+  function loadViaBlob() {
+    $("pPath").textContent = "RETRY  ·  " + path;
+    fetch(url, { cache: "force-cache" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.blob();
+      })
+      .then(function (blob) {
+        const a = new Audio();
+        a.src = URL.createObjectURL(blob);
+        bindAudio(a, true);
+      })
+      .catch(function (e) {
+        $("pPath").textContent = "FAILED  ·  " + (e.message || path);
+        $("tTot").textContent = "0:00";
+        if (el) el.classList.remove("playing");
+      });
+  }
+
+  loadDirect();
 }
 
 function stop(hide) {
