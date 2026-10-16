@@ -2,8 +2,14 @@ const BASE = "/sounds/";
 
 /* ===== i18n EN / UZ ===== */
 let lang = (function(){
-  try { return localStorage.getItem("mcsnd_lang") === "uz" ? "uz" : "en"; } catch(e) { return "en"; }
+  try {
+    const v = localStorage.getItem("mcsnd_lang");
+    if (v === "uz" || v === "ru" || v === "en") return v;
+  } catch(e) {}
+  return "en";
 })();
+const LANG_CYCLE = ["en", "uz", "ru"];
+const LANG_NEXT_LABEL = { en: "UZ", uz: "RU", ru: "EN" };
 
 const I18N = {
   en: {
@@ -111,6 +117,59 @@ const I18N = {
     key_help: "Bepul kalit: console.groq.com/keys",
     key_help_html: 'Bepul kalitni <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a> dan oling',
     files: "fayl",
+  }  ,
+  ru: {
+    search: "Поиск звуков...",
+    sounds: "звуков",
+    root: "КОРЕНЬ",
+    search_title: "ПОИСК",
+    loading: "ЗАГРУЗКА",
+    failed: "ОШИБКА",
+    load_failed: "ОШИБКА ЗАГРУЗКИ",
+    load_error: "Что-то пошло не так",
+    no_subfolders: "Нет подпапок",
+    showing: "Показано",
+    folders: "Папки",
+    download_all: "Скачать все звуки",
+    theme: "Тема",
+    language: "Язык",
+    ai: "AI",
+    ask_ai: "СПРОСИТЬ AI",
+    enter_key: "ВВЕДИТЕ API КЛЮЧ ДЛЯ СТАРТА",
+    type_q: "ВВЕДИТЕ ВОПРОС",
+    what_sound: "Какой звук?",
+    paste_key: "Вставьте ключ (gsk_...)",
+    groq_key: "Groq API ключ",
+    save: "Сохранить",
+    checking: "Проверка...",
+    saved: "Сохранено",
+    paste_first: "Сначала вставьте ключ",
+    invalid_key: "Неверный ключ",
+    api_connected: "API ключ подключён",
+    change: "Изменить",
+    remove: "Удалить",
+    clear_chat: "Очистить чат",
+    dl_title: "Скачать всё?",
+    dl_text: "Скачать все звуки?<br>Только .ogg файлы ({n} шт., ~370 МБ). Код не включён.",
+    yes_dl: "Да, скачать",
+    cancel: "Отмена",
+    close: "Закрыть",
+    stop: "Стоп",
+    downloading: "Скачивание...",
+    building_zip: "Сборка ZIP...",
+    done_dl: "Готово! Скачано",
+    retry: "Повтор",
+    download_again: "Скачать снова",
+    list_empty: "Список пуст",
+    jszip_fail: "JSZip не загрузился — проверьте сеть",
+    stopped: "Остановлено",
+    zip_err: "Ошибка ZIP",
+    splash_sub: "ЗАГРУЗКА ЗВУКОВ...",
+    splash_tag: "Все звуки Minecraft – 100%",
+    nav_root: "корень",
+    key_help: "Бесплатный ключ: console.groq.com/keys",
+    key_help_html: 'Бесплатный ключ на <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">console.groq.com/keys</a>',
+    files: "файлов",
   }
 };
 
@@ -183,18 +242,87 @@ const SEG_UZ = {
   bucket:"chelak", arrow:"o\u2018q", tool:"asbob", underwater:"suv osti",
 };
 
+const SEG_RU = {
+  ambient:"окружение", block:"блок", damage:"урон", dig:"копание", enchant:"зачарование",
+  entity:"существо", event:"событие", fire:"огонь", fireworks:"фейерверк", firework:"фейерверк",
+  item:"предмет", liquid:"жидкость", minecart:"вагонетка", mob:"моб", music:"музыка",
+  note:"нота", portal:"портал", random:"случайный", records:"пластинки", record:"пластинка",
+  step:"шаг", tile:"плитка", ui:"интерфейс", weather:"погода",
+  mob_effects:"эффекты существ", entity_effects:"эффекты существ",
+  status_effects:"статус-эффекты", music_disc:"музыкальный диск", note_block:"нотный блок",
+  sculk_sensor:"скалк-сенсор", goat_horn:"рог козы", underwater_ambience:"подводная атмосфера",
+  nether_wastes:"пустыни Незера", soul_sand_valley:"долина песка душ",
+  crimson_forest:"багровый лес", warped_forest:"искажённый лес", basalt_deltas:"базальтовые дельты",
+  break:"разрушение", place:"установка", hit:"удар", fall:"падение", hurt:"боль",
+  death:"смерть", say:"голос", open:"открытие", close:"закрытие", click:"клик",
+  attack:"атака", shoot:"выстрел", throw:"бросок", teleport:"телепорт", walk:"ходьба",
+  run:"бег", jump:"прыжок", land:"приземление", swim:"плавание", splash:"всплеск",
+  mine:"добыча", eat:"еда", drink:"питьё", sleep:"сон", wake:"пробуждение", breed:"разведение",
+  idle:"покой", explode:"взрыв", ignite:"поджог", extinguish:"тушение", fuse:"фитиль",
+  charge:"заряд", discharge:"разряд", activate:"включение", deactivate:"выключение",
+  insert:"вставка", take:"взятие", pop:"хлопок", fizz:"шипение", roar:"рёв",
+  growl:"рычание", howl:"вой", purr:"мурлыканье", hiss:"шипение",
+  scream:"крик", laugh:"смех", cry:"плач", flap:"взмах", breath:"дыхание",
+  harvest:"сбор", plant:"растение", crop:"урожай", till:"вспашка",
+  shear:"стрижка", milk:"доение", fish:"рыба", reel:"сматывание",
+  craft:"крафт", smith:"ковка", smelt:"плавка", brew:"варка",
+  levelup:"уровень", experience:"опыт", orb:"сфера", equip:"экипировка", unequip:"снятие",
+  crossbow:"арбалет", bow:"лук", shield:"щит", trident:"трезубец",
+  axe:"топор", pickaxe:"кирка", shovel:"лопата", hoe:"мотыга", sword:"меч", armor:"броня",
+  wood:"дерево", stone:"камень", grass:"трава", dirt:"земля", sand:"песок",
+  gravel:"гравий", snow:"снег", ice:"лёд", metal:"металл", glass:"стекло",
+  cloth:"ткань", wool:"шерсть", ladder:"лестница", anvil:"наковальня", furnace:"печь",
+  chest:"сундук", door:"дверь", button:"кнопка", lever:"рычаг", fence:"забор",
+  gate:"калитка", trapdoor:"люк", pressure:"давление", plate:"плита",
+  amethyst:"аметист", cluster:"кластер", deepslate:"глубинный сланец", netherite:"незерит",
+  copper:"медь", bamboo:"бамбук", cherry:"вишня", sculk:"скалк", basalt:"базальт",
+  netherrack:"незерак", soul:"душа", soil:"почва", leaves:"листва", log:"бревно",
+  plank:"доска", slab:"плита", stairs:"ступеньки", wall:"стена", carpet:"ковёр",
+  bed:"кровать", sign:"табличка", banner:"флаг", torch:"факел", lantern:"фонарь",
+  candle:"свеча", campfire:"костёр", water:"вода", lava:"лава", rain:"дождь",
+  thunder:"гром", cave:"пещера", nether:"Незер", end:"Энд", overworld:"Верхний мир",
+  cow:"корова", pig:"свинья", sheep:"овца", chicken:"курица", horse:"лошадь",
+  wolf:"волк", cat:"кот", villager:"житель", zombie:"зомби",
+  skeleton:"скелет", creeper:"крипер", spider:"паук", enderman:"эндермен",
+  slime:"слизь", ghast:"гаст", blaze:"ифрит", wither:"иссушитель", dragon:"дракон",
+  player:"игрок", frog:"лягушка", allay:"аллай", sniffer:"нюхач", camel:"верблюд",
+  goat:"коза", axolotl:"аксолотль", bee:"пчела", fox:"лиса", panda:"панда",
+  parrot:"попугай", dolphin:"дельфин", squid:"кальмар", glow:"свечение", berry:"ягода",
+  bat:"летучая мышь", witch:"ведьма", iron:"железо", golem:"голем",
+  guardian:"страж", elder:"древний", phantom:"фантом", drowned:"утопленник",
+  husk:"кадавр", stray:"зимний скелет", pillager:"разбойник", vindicator:"поборник",
+  evoker:"заклинатель", vex:"вредина", ravager:"разоритель", hoglin:"хоглин", piglin:"пиглин",
+  zoglin:"зоглин", strider:"страйдер", warden:"хранитель", breeze:"бриз", bogged:"болотный",
+  armadillo:"броненосец", menu:"меню", toast:"уведомление", hover:"наведение",
+  select:"выбор", confirm:"подтверждение", back:"назад", forward:"вперёд",
+  left:"лево", right:"право", up:"верх", down:"низ", small:"малый", big:"большой",
+  large:"крупный", soft:"мягкий", hard:"твёрдый", heavy:"тяжёлый", light:"светлый",
+  dark:"тёмный", high:"высокий", low:"низкий", short:"короткий", long:"длинный",
+  quick:"быстрый", slow:"медленный", generic:"общий", normal:"обычный", special:"особый",
+  effects:"эффекты", effect:"эффект", raid:"рейд", boss:"босс", horn:"рог",
+  disc:"диск", creative:"творческий", jukebox:"проигрыватель", beacon:"маяк", conduit:"провод",
+  piston:"поршень", redstone:"редстоун", power:"энергия", book:"книга", bottle:"бутылка",
+  bucket:"ведро", arrow:"стрела", tool:"инструмент", underwater:"под водой",
+};
+
+
+
+function activeSegMap() {
+  if (lang === "uz") return SEG_UZ;
+  if (lang === "ru") return SEG_RU;
+  return null;
+}
 
 function trSeg(seg) {
-  if (lang !== "uz" || !seg) return seg;
+  const SEG = activeSegMap();
+  if (!SEG || !seg) return seg;
   const key = String(seg).toLowerCase();
-  if (SEG_UZ[key]) return SEG_UZ[key];
-  // single token with trailing digits: break3
+  if (SEG[key]) return SEG[key];
   var one = key.match(/^([a-z]+)(\d+)$/);
-  if (one && !key.includes("_")) {
-    return (SEG_UZ[one[1]] || one[1]) + " " + one[2];
+  if (one && key.indexOf("_") < 0) {
+    return (SEG[one[1]] || one[1]) + " " + one[2];
   }
   if (key.indexOf("_") >= 0) {
-    // prefer longest compound match, else per-token
     const parts = key.split("_");
     const out = [];
     let i = 0;
@@ -202,8 +330,8 @@ function trSeg(seg) {
       let matched = false;
       for (let len = Math.min(3, parts.length - i); len >= 2; len--) {
         const compound = parts.slice(i, i + len).join("_");
-        if (SEG_UZ[compound]) {
-          out.push(SEG_UZ[compound]);
+        if (SEG[compound]) {
+          out.push(SEG[compound]);
           i += len;
           matched = true;
           break;
@@ -213,9 +341,9 @@ function trSeg(seg) {
         var tok = parts[i];
         var nm = tok.match(/^([a-zA-Z]+)(\d+)$/);
         if (nm) {
-          out.push((SEG_UZ[nm[1]] || nm[1]) + " " + nm[2]);
+          out.push((SEG[nm[1]] || nm[1]) + " " + nm[2]);
         } else {
-          out.push(SEG_UZ[tok] || tok);
+          out.push(SEG[tok] || tok);
         }
         i++;
       }
@@ -227,12 +355,12 @@ function trSeg(seg) {
 
 function displayFileName(path) {
   const base = path.split("/").pop().replace(/\.ogg$/i, "");
-  if (lang !== "uz") return base;
+  if (lang === "en") return base;
   return trSeg(base);
 }
 
 function displayPathSegs(segs) {
-  if (lang !== "uz") return segs.join(" / ");
+  if (lang === "en") return segs.join(" / ");
   return segs.map(trSeg).join(" / ");
 }
 
@@ -253,8 +381,7 @@ function applyStaticLang() {
   if (btnLang) {
     btnLang.title = t("language");
     const lab = $("langLabel");
-    // button shows the OTHER language you can switch to
-    if (lab) lab.textContent = lang === "en" ? "UZ" : "EN";
+    if (lab) lab.textContent = LANG_NEXT_LABEL[lang] || "UZ";
   }
   const btnChat = $("btnChat");
   if (btnChat) btnChat.title = t("ai");
@@ -284,7 +411,7 @@ function applyStaticLang() {
   if (askTitle) askTitle.textContent = t("ask_ai");
   const askSub = document.querySelector(".ask-sub");
   if (askSub) askSub.textContent = t("enter_key");
-  document.documentElement.lang = lang === "uz" ? "uz" : "en";
+  document.documentElement.lang = lang === "uz" ? "uz" : (lang === "ru" ? "ru" : "en");
 }
 
 const MODEL = "qwen/qwen3.8-27b";
@@ -1554,7 +1681,8 @@ function bind() {
     syncKeyIcon();
   });
   on("btnLang", "click", () => {
-    lang = lang === "en" ? "uz" : "en";
+    const i = LANG_CYCLE.indexOf(lang);
+    lang = LANG_CYCLE[(i < 0 ? 0 : i + 1) % LANG_CYCLE.length];
     try { localStorage.setItem("mcsnd_lang", lang); } catch (e) {}
     applyStaticLang();
     try { renderNav(); } catch (e) {}
