@@ -366,6 +366,32 @@ body::after {
 }
 .shell.chat-on .backdrop { display: block; }
 @media (min-width: 1101px) { .backdrop { display: none !important; } }
+
+.player-ico { position: relative; }
+.player-ico .spin-wrap {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--text); color: var(--bg);
+}
+.player-ico .spin-wrap.hidden { display: none; }
+.spin-ring {
+  width: 22px; height: 22px; border: 2px solid color-mix(in srgb, var(--bg) 25%, transparent);
+  border-top-color: var(--bg); border-radius: 50%; animation: spin .7s linear infinite;
+  position: absolute;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-pct {
+  font-family: "IBM Plex Mono", monospace; font-size: 8px; font-weight: 600;
+  position: relative; z-index: 1; line-height: 1;
+}
+.card-meta {
+  font-family: "IBM Plex Mono", monospace; font-size: 9px; color: var(--dim);
+  margin-top: 3px; letter-spacing: .02em;
+}
+.card.playing .card-meta { color: color-mix(in srgb, var(--bg) 50%, transparent); }
+.player-path .tag {
+  font-family: "IBM Plex Mono", monospace; font-size: 10px; color: var(--muted);
+}
+
 </style>
 </head>
 <body data-theme="dark">
@@ -414,7 +440,8 @@ body::after {
       <div class="player-inner">
         <div class="player-row">
           <div class="player-ico" id="pIco">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            <svg viewBox="0 0 24 24" fill="currentColor" id="pIcoSvg"><path d="M8 5v14l11-7z"/></svg>
+            <div class="spin-wrap hidden" id="pSpin"><div class="spin-ring"></div><span class="spin-pct" id="pPct">0%</span></div>
           </div>
           <div class="player-meta">
             <div class="player-name" id="pName">—</div>
@@ -488,6 +515,36 @@ function fmt(s) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
   return m + ":" + String(sec).padStart(2, "0");
 }
+
+function fmtSize(b) {
+  if (b == null || !isFinite(b)) return "—";
+  if (b < 1024) return b + " B";
+  if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
+  return (b / 1048576).toFixed(2) + " MB";
+}
+function fmtDur(s) {
+  if (s == null || !isFinite(s) || s < 0) return "—";
+  if (s < 60) return s.toFixed(1) + "s";
+  return fmt(s);
+}
+function getMeta(path) {
+  if (!data || !data.meta) return { size: null, dur: null };
+  return data.meta[path] || { size: null, dur: null };
+}
+function setSpin(on, pct) {
+  const w = $("pSpin");
+  const svg = $("pIcoSvg");
+  if (!w) return;
+  if (on) {
+    w.classList.remove("hidden");
+    if (svg) svg.style.opacity = "0";
+    $("pPct").textContent = (pct != null ? Math.max(0, Math.min(100, Math.round(pct))) : 0) + "%";
+  } else {
+    w.classList.add("hidden");
+    if (svg) svg.style.opacity = "1";
+  }
+}
+
 function esc(s) {
   const d = document.createElement("div");
   d.textContent = s;
@@ -613,12 +670,15 @@ function render(c, q) {
   const MAX = 400;
   const slice = list.slice(0, MAX);
   let h = "";
-  for (const s of slice) {
+    for (const s of slice) {
     const name = s.path.split("/").pop().replace(/\.ogg$/i, "");
+    const mt = getMeta(s.path);
+    const metaLine = fmtDur(mt.dur) + "  ·  " + fmtSize(mt.size);
     h += "<div class=\"card\" data-path=\"" + esc(s.path) + "\" data-cat=\"" + esc(s.cat) + "\">" +
       "<div class=\"card-play\"><svg viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M8 5v14l11-7z\"/></svg></div>" +
       "<div class=\"card-body\"><div class=\"card-name\">" + esc(name) + "</div>" +
-      "<div class=\"card-path\">" + esc(s.path) + "</div></div></div>";
+      "<div class=\"card-path\">" + esc(s.path) + "</div>" +
+      "<div class=\"card-meta\">" + metaLine + "</div></div></div>";
   }
   if (list.length > MAX) h += "<div class=\"empty\"><p>Showing " + MAX + " / " + list.length + "</p></div>";
   grid.innerHTML = h;
@@ -649,33 +709,43 @@ function play(path, c, el) {
   if (cardEl) cardEl.classList.remove("playing");
   cardEl = el || null;
   if (el) el.classList.add("playing");
+  const mt = getMeta(path);
   $("player").classList.add("show");
   $("pName").textContent = path.split("/").pop();
-  $("pPath").textContent = "LOADING  ·  " + path;
+  const sizeStr = fmtSize(mt.size);
+  const durStr = fmtDur(mt.dur);
+  $("pPath").textContent = "LOADING  ·  " + sizeStr + "  ·  " + path;
   $("fill").style.width = "0%";
   $("tCur").textContent = "0:00";
-  $("tTot").textContent = "...";
+  $("tTot").textContent = mt.dur != null ? fmt(mt.dur) : "...";
   $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+  setSpin(true, 0);
 
   const url = BASE + path.split("/").map(encodeURIComponent).join("/");
-  let tries = 0;
+  let aborted = false;
+  const knownSize = mt.size || 0;
+  // use progress fetch when file may take time (> ~50KB or >3s duration)
+  const useProgress = knownSize > 50000 || (mt.dur != null && mt.dur > 3) || knownSize === 0;
 
-  function bindAudio(a, fromBlob) {
+  function startAudioFromUrl(src, revoke) {
+    const a = new Audio();
     a.preload = "auto";
     a.volume = parseFloat($("vol").value);
+    a.src = src;
     audio = a;
-    const onReady = () => {
-      $("pPath").textContent = (c || "") + "  ·  " + path;
-      $("tTot").textContent = fmt(a.duration);
+    const ready = () => {
+      setSpin(false, 100);
+      const d = a.duration;
+      $("tTot").textContent = fmt(d);
+      $("pPath").textContent = (c || "") + "  ·  " + fmtDur(d) + "  ·  " + sizeStr + "  ·  " + path;
     };
-    a.addEventListener("loadedmetadata", onReady);
-    a.addEventListener("canplay", onReady);
+    a.addEventListener("loadedmetadata", ready);
+    a.addEventListener("canplay", () => setSpin(false, 100));
     a.addEventListener("waiting", () => {
-      if ($("pPath").textContent.indexOf("LOADING") === -1)
-        $("pPath").textContent = "BUFFERING  ·  " + path;
+      if (!aborted) setSpin(true, null);
     });
     a.addEventListener("playing", () => {
-      $("pPath").textContent = (c || "") + "  ·  " + path;
+      setSpin(false, 100);
       $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
     });
     a.addEventListener("ended", () => {
@@ -685,57 +755,63 @@ function play(path, c, el) {
       $("tCur").textContent = "0:00";
       $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
       cancelAnimationFrame(raf);
+      setSpin(false, 0);
     });
     a.addEventListener("error", () => {
-      if (tries < 1 && !fromBlob) {
-        tries++;
-        loadViaBlob();
-        return;
-      }
+      setSpin(false, 0);
       $("pPath").textContent = "FAILED  ·  " + path;
-      $("tTot").textContent = "0:00";
       if (el) el.classList.remove("playing");
     });
     const p = a.play();
     if (p && p.catch) p.catch(function () {
+      setSpin(false, 0);
       $("pPath").textContent = "TAP PLAY  ·  " + path;
       $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
     });
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(tick);
+    if (revoke) a.addEventListener("emptied", () => { try { URL.revokeObjectURL(src); } catch(e){} });
   }
 
-  function loadDirect() {
-    const a = new Audio();
-    a.crossOrigin = "anonymous";
-    a.src = url;
-    bindAudio(a, false);
+  if (!useProgress) {
+    startAudioFromUrl(url, false);
+    return;
   }
 
-  function loadViaBlob() {
-    $("pPath").textContent = "RETRY  ·  " + path;
-    fetch(url, { cache: "force-cache" })
-      .then(function (r) {
-        if (!r.ok) throw new Error("HTTP " + r.status);
-        return r.blob();
-      })
-      .then(function (blob) {
-        const a = new Audio();
-        a.src = URL.createObjectURL(blob);
-        bindAudio(a, true);
-      })
-      .catch(function (e) {
-        $("pPath").textContent = "FAILED  ·  " + (e.message || path);
-        $("tTot").textContent = "0:00";
-        if (el) el.classList.remove("playing");
-      });
-  }
-
-  loadDirect();
+  fetch(url, { cache: "force-cache" }).then(async function (res) {
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const total = Number(res.headers.get("content-length")) || knownSize || 0;
+    if (!res.body || !res.body.getReader) {
+      const blob = await res.blob();
+      setSpin(true, 100);
+      startAudioFromUrl(URL.createObjectURL(blob), true);
+      return;
+    }
+    const reader = res.body.getReader();
+    const chunks = [];
+    let received = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      received += value.length;
+      const pct = total ? (received / total) * 100 : Math.min(95, received / 5000);
+      setSpin(true, pct);
+      $("pPath").textContent = "LOADING " + Math.round(pct) + "%  ·  " + sizeStr + "  ·  " + path;
+    }
+    setSpin(true, 100);
+    const blob = new Blob(chunks, { type: "audio/ogg" });
+    startAudioFromUrl(URL.createObjectURL(blob), true);
+  }).catch(function (e) {
+    // fallback direct
+    $("pPath").textContent = "FALLBACK  ·  " + path;
+    startAudioFromUrl(url, false);
+  });
 }
 
 function stop(hide) {
   if (hide === undefined) hide = false;
+  setSpin(false, 0);
   if (audio) {
     try { audio.pause(); audio.currentTime = 0; } catch (e) {}
   }
