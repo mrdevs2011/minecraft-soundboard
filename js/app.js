@@ -646,7 +646,7 @@ function play(path, c, el) {
     });
     a.addEventListener("ended", () => {
       if (myGen !== playGen || audio !== a) return;
-      if (el) el.classList.remove("playing");
+      // Keep card highlighted as the last selected sound
       a.currentTime = 0;
       $("fill").style.width = "0%";
       setThumb(0);
