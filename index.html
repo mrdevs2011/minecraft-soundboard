@@ -841,6 +841,16 @@ body[data-theme="light"]{
   }
 }
 
+
+.creeper-shard-layer{
+  position:fixed;inset:0;pointer-events:none;z-index:10050;overflow:hidden;
+}
+.creeper-shard{
+  position:absolute;image-rendering:pixelated;
+  will-change:transform,opacity;
+  box-shadow:1px 1px 0 rgba(0,0,0,.25);
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
@@ -1175,50 +1185,188 @@ async function creeperFuseAndBoom(headEl, opts) {
   opts = opts || {};
   const duration = opts.duration || 3000;
   if (!headEl) return;
+
   headEl.classList.add("fusing");
+  headEl.classList.remove("boom");
   const t0 = performance.now();
-  // Minecraft: only the creeper body flashes white (not the whole screen)
+
+  // Slow white flash → accelerates (Minecraft fuse feel)
   let nextFlash = 0;
-  let interval = 280;
-  while (performance.now() - t0 < duration - 450) {
+  let interval = 320;
+  while (performance.now() - t0 < duration - 520) {
     const elapsed = performance.now() - t0;
     const fill = $("splashFill");
-    if (fill) fill.style.width = Math.min(100, (elapsed / duration) * 100) + "%";
+    if (fill) fill.style.width = Math.min(98, (elapsed / duration) * 100) + "%";
     if (elapsed >= nextFlash) {
       headEl.classList.add("flash-white");
-      await sleep(40 + Math.max(0, 80 - elapsed / 40));
+      const onMs = Math.max(28, 70 - elapsed / 55);
+      await sleep(onMs);
       headEl.classList.remove("flash-white");
       nextFlash = elapsed + interval;
-      interval = Math.max(40, interval * 0.82);
+      interval = Math.max(38, interval * 0.78);
     }
     await sleep(16);
   }
-  for (let i = 0; i < 6; i++) {
+
+  // Rapid final flashes
+  for (let i = 0; i < 7; i++) {
     headEl.classList.add("flash-white");
-    await sleep(35);
+    await sleep(28 + (i % 2) * 8);
     headEl.classList.remove("flash-white");
-    await sleep(25);
+    await sleep(18);
   }
-  headEl.classList.remove("fusing");
+
+  // Hold solid white a beat, then shatter
   headEl.classList.add("flash-white");
-  headEl.classList.add("boom");
-  let ring = document.querySelector(".boom-ring");
-  if (!ring) {
-    ring = document.createElement("div");
-    ring.className = "boom-ring";
-    document.body.appendChild(ring);
-  }
-  const rect = headEl.getBoundingClientRect();
-  ring.style.left = (rect.left + rect.width / 2) + "px";
-  ring.style.top = (rect.top + rect.height / 2) + "px";
-  ring.classList.remove("go");
-  void ring.offsetWidth;
-  ring.classList.add("go");
+  headEl.classList.remove("fusing");
   const fill = $("splashFill");
   if (fill) fill.style.width = "100%";
-  await sleep(400);
+  await sleep(180);
+
+  await shatterCreeperPixels(headEl);
+}
+
+async function shatterCreeperPixels(headEl) {
+  if (!headEl) return;
+  const rect = headEl.getBoundingClientRect();
+  if (rect.width < 2 || rect.height < 2) {
+    headEl.style.opacity = "0";
+    return;
+  }
+
+  const N = 8; // 8x8 = 64 physical pixels
+  const cellW = rect.width / N;
+  const cellH = rect.height / N;
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+
+  // Sample colors from creeper.png into offscreen canvas
+  const colors = await sampleCreeperGrid(N);
+
+  const layer = document.createElement("div");
+  layer.className = "creeper-shard-layer";
+  document.body.appendChild(layer);
+
+  const shards = [];
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      const px = rect.left + x * cellW;
+      const py = rect.top + y * cellH;
+      const midX = px + cellW / 2;
+      const midY = py + cellH / 2;
+      const dx = midX - cx;
+      const dy = midY - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      // outward blast + slight randomness
+      const power = 2.2 + Math.random() * 3.4;
+      const vx = (dx / dist) * power * (0.7 + Math.random() * 0.8) + (Math.random() - 0.5) * 1.2;
+      const vy = (dy / dist) * power * (0.7 + Math.random() * 0.8) - (1.2 + Math.random() * 2.5);
+      const rot = (Math.random() - 0.5) * 18;
+      const vr = (Math.random() - 0.5) * 0.6;
+
+      const el = document.createElement("div");
+      el.className = "creeper-shard";
+      const c = colors[y][x];
+      el.style.width = Math.ceil(cellW) + "px";
+      el.style.height = Math.ceil(cellH) + "px";
+      el.style.left = "0px";
+      el.style.top = "0px";
+      el.style.background = c;
+      el.style.transform = "translate(" + px + "px," + py + "px) rotate(0deg)";
+      el.style.opacity = "1";
+      layer.appendChild(el);
+      shards.push({ el: el, x: px, y: py, vx: vx, vy: vy, rot: 0, vr: vr });
+    }
+  }
+
+  // Hide original face during shatter
+  headEl.style.visibility = "hidden";
   headEl.classList.remove("flash-white");
-  await sleep(200);
+
+  const g = 0.18; // gravity
+  const tStart = performance.now();
+  const life = 900;
+
+  await new Promise(resolve => {
+    function frame(now) {
+      const t = now - tStart;
+      const damp = 1 - Math.min(1, t / life);
+      for (let i = 0; i < shards.length; i++) {
+        const s = shards[i];
+        s.vy += g;
+        s.x += s.vx;
+        s.y += s.vy;
+        s.rot += s.vr;
+        s.vx *= 0.995;
+        s.el.style.transform = "translate(" + s.x + "px," + s.y + "px) rotate(" + s.rot + "deg)";
+        s.el.style.opacity = String(Math.max(0, damp * 1.05));
+      }
+      if (t < life) requestAnimationFrame(frame);
+      else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+
+  if (layer.parentNode) layer.parentNode.removeChild(layer);
+  // keep head hidden until splash removed (splash flow); restore for logo reuse
+  if (headEl.classList.contains("brand-mark") || (headEl.closest && headEl.closest(".brand-mark"))) {
+    headEl.style.visibility = "";
+    headEl.style.opacity = "1";
+  }
+}
+
+function sampleCreeperGrid(n) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = function () {
+      try {
+        const c = document.createElement("canvas");
+        c.width = n; c.height = n;
+        const ctx = c.getContext("2d", { willReadFrequently: true });
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, n, n);
+        const data = ctx.getImageData(0, 0, n, n).data;
+        const grid = [];
+        for (let y = 0; y < n; y++) {
+          const row = [];
+          for (let x = 0; x < n; x++) {
+            const i = (y * n + x) * 4;
+            const a = data[i + 3];
+            if (a < 20) row.push("#5d9c3f");
+            else row.push("rgb(" + data[i] + "," + data[i + 1] + "," + data[i + 2] + ")");
+          }
+          grid.push(row);
+        }
+        resolve(grid);
+      } catch (e) {
+        resolve(fallbackCreeperGrid(n));
+      }
+    };
+    img.onerror = function () { resolve(fallbackCreeperGrid(n)); };
+    img.src = "/creeper.png";
+  });
+}
+
+function fallbackCreeperGrid(n) {
+  // Classic face mask scaled to n
+  const face8 = [
+    [0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],
+    [0,1,1,0,0,1,1,0],[0,1,1,0,0,1,1,0],
+    [0,0,0,1,1,0,0,0],[0,0,1,1,1,1,0,0],
+    [0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0]
+  ];
+  const grid = [];
+  for (let y = 0; y < n; y++) {
+    const row = [];
+    for (let x = 0; x < n; x++) {
+      const fx = Math.min(7, Math.floor(x * 8 / n));
+      const fy = Math.min(7, Math.floor(y * 8 / n));
+      row.push(face8[fy][fx] ? "#0a0a0a" : "#5d9c3f");
+    }
+    grid.push(row);
+  }
+  return grid;
 }
 
 
@@ -2050,68 +2198,34 @@ async function downloadAllSoundsZip() {
 
 function bind() {
   let t;
-  // Triple-click logo creeper → fuse + boom
+  
+  // Triple-click logo creeper → fuse + pixel shatter
   (function () {
     const mark = document.querySelector(".brand-mark");
     if (!mark) return;
     let clicks = 0, timer = null, busy = false;
     mark.style.cursor = "pointer";
-    mark.title = "...";
     mark.addEventListener("click", async e => {
       if (busy) { e.preventDefault(); e.stopPropagation(); return; }
       clicks++;
       clearTimeout(timer);
       timer = setTimeout(() => { clicks = 0; }, 450);
-      if (clicks < 3) return; // 1-2 clicks bubble to brandHome -> root
+      if (clicks < 3) return;
       e.preventDefault();
       e.stopPropagation();
       clicks = 0;
       busy = true;
-      mark.classList.add("fusing");
-      // mini fuse without full-screen requirement
-      const t0 = performance.now();
-      let interval = 220;
-      let next = 0;
-      while (performance.now() - t0 < 2600) {
-        const el = performance.now() - t0;
-        if (el >= next) {
-          mark.classList.add("flash-white");
-          await sleep(35);
-          mark.classList.remove("flash-white");
-          next = el + interval;
-          interval = Math.max(40, interval * 0.8);
-        }
-        await sleep(16);
-      }
-      for (let i = 0; i < 5; i++) {
-        mark.classList.add("flash-white");
-        await sleep(30);
-        mark.classList.remove("flash-white");
-        await sleep(20);
-      }
-      mark.classList.remove("fusing");
-      mark.classList.add("boom");
-      
-      await sleep(600);
-      mark.classList.remove("boom");
-      // restore by forcing reflow - clone svg state is fine after boom anim ends
-      mark.style.opacity = "0";
-      await sleep(50);
+      try {
+        await creeperFuseAndBoom(mark, { duration: 2800 });
+      } catch (err) {}
+      mark.style.visibility = "";
       mark.style.opacity = "1";
+      mark.classList.remove("flash-white", "fusing", "boom");
       busy = false;
     });
   })();
 
-
-  if ($("brandHome")) $("brandHome").addEventListener("click", e => {
-    e.preventDefault();
-    goNav([]);
-  });
-  if ($("btnBack")) $("btnBack").addEventListener("click", () => {
-    if (navPath.length) goNav(navPath.slice(0, -1));
-    else goNav([]);
-  });
-  window.addEventListener("popstate", () => goNav(urlToPath(), false));
+window.addEventListener("popstate", () => goNav(urlToPath(), false));
 
   if ($("pDl")) $("pDl").addEventListener("click", e => {
     e.stopPropagation();
