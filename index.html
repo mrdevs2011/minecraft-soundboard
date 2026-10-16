@@ -1923,11 +1923,13 @@ async function sendChat() {
   const matches = searchLib(msg, 28);
   const matchList = matches.map(m => m.path).join("\n");
 
-  const system = "You are a Minecraft sound finder. Reply in English only. " +
+  const system = "You are a Minecraft sound finder for MCSOUNDS. " +
+    "Always reply in the same language the user writes in (Uzbek, Russian, English, or any other). Match their language exactly for the short sentence. " +
     "For song/music requests prefer music/* first. Multi-topic: cover each word. " +
-    "Reply with 1 short sentence, then lines starting with PLAY: path (max 8 paths from Candidates only). No SEARCH. " +
+    "Reply with 1 short sentence in the user's language, then lines starting with PLAY: path (max 8 paths from Candidates only). No SEARCH. " +
     (navPath.length ? "Current folder: " + navPath.join("/") + ". " : "") +
-    "Candidates:\n" + (matchList || "(none)");
+    "Candidates:
+" + (matchList || "(none)");
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 10) hist = hist.slice(-10);
