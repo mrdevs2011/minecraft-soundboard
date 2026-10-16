@@ -473,7 +473,7 @@ function renderNav() {
     const sub = node.folders[name];
     const n = countFiles(sub);
     h += "<button class=\"folder\" type=\"button\" data-folder=\"" + esc(name) + "\">" +
-      "<img class="icon" src="/svg/folder.svg" alt="">" +
+      "<img class=\"icon\" src=\"/svg/folder.svg\" alt=\"\">" +
       "<span>" + esc(name) + "</span><span class=\"n\">" + n + "</span></button>";
   });
   $("navList").innerHTML = h || "<div style=\"padding:12px;color:var(--dim);font-size:11px;font-family:IBM Plex Mono,monospace\">No subfolders</div>";
@@ -509,7 +509,7 @@ function renderStage(query) {
       const sub = node.folders[name];
       const n = countFiles(sub);
       fh += '<button class="folder-card" type="button" data-folder="' + esc(name) + '">' +
-        '<img class="icon" src="/svg/folder.svg" alt="">' +
+        '<img class=\"icon\" src=\"/svg/folder.svg\" alt=\"\">' +
         '<div class="fn">' + esc(name) + '</div>' +
         '<div class="fc">' + n + ' files</div></button>';
     });
@@ -538,7 +538,7 @@ function renderCards(list, total) {
     const name = s.path.split("/").pop().replace(/\.ogg$/i, "");
     const mt = getMeta(s.path);
     h += "<div class=\"card\" data-path=\"" + esc(s.path) + "\" data-cat=\"" + esc(s.cat) + "\">" +
-      "<div class=\"card-play\"><img class="icon" src="/svg/play.svg" alt=""></div>" +
+      "<div class=\"card-play\"><img class=\"icon\" src=\"/svg/play.svg\" alt=\"\"></div>" +
       "<div class=\"card-body\"><div class=\"card-name\">" + esc(name) + "</div>" +
       "<div class=\"card-path\">" + esc(s.path) + "</div>" +
       "<div class=\"card-meta\">" + fmtDur(mt.dur) + "   -   " + fmtSize(mt.size) + "</div></div></div>";
@@ -897,8 +897,7 @@ async function sendChat() {
     "For song/music requests prefer music/* first. Multi-topic: cover each word. " +
     "Reply with 1 short sentence in the user's language, then lines starting with PLAY: path (max 8 paths from Candidates only). No SEARCH. " +
     (navPath.length ? "Current folder: " + navPath.join("/") + ". " : "") +
-    "Candidates:
-" + (matchList || "(none)");
+    "Candidates:\n" + (matchList || "(none)");
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 10) hist = hist.slice(-10);
@@ -1000,7 +999,7 @@ async function typeAIResponse(textPlain, plays) {
       chip.className = "chip";
       chip.dataset.path = p;
       chip.style.animationDelay = (i * 0.06) + "s";
-      chip.innerHTML = '<span class="chip-ico"><img class="icon" src="/svg/play.svg" alt=""></span>' +
+      chip.innerHTML = '<span class="chip-ico"><img class=\"icon\" src=\"/svg/play.svg\" alt=\"\"></span>' +
         '<span class="chip-body"><div class="chip-name">' + esc(nm) + '</div><div class="chip-path">' + esc(p) + '</div>' +
         '<div class="chip-meta">' + fmtDur(mt.dur) + '   -   ' + fmtSize(mt.size) + '</div></span>';
       chip.addEventListener("click", () => {
@@ -1023,7 +1022,7 @@ async function typeAIResponse(textPlain, plays) {
     plays.forEach(p => {
       const mt = getMeta(p);
       const nm = p.split("/").pop();
-      html += '<span class="chip" data-path="' + esc(p) + '"><span class="chip-ico"><img class="icon" src="/svg/play.svg" alt=""></span>' +
+      html += '<span class="chip" data-path="' + esc(p) + '"><span class="chip-ico"><img class=\"icon\" src=\"/svg/play.svg\" alt=\"\"></span>' +
         '<span class="chip-body"><div class="chip-name">' + esc(nm) + '</div><div class="chip-path">' + esc(p) + '</div>' +
         '<div class="chip-meta">' + fmtDur(mt.dur) + '   -   ' + fmtSize(mt.size) + '</div></span></span>';
     });
