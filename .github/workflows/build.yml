@@ -47,8 +47,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Test local server and bundled files (source)
+        run: npm test
+
       - name: Build installers
         run: npm run ${{ matrix.script }}
+
+      - name: Test the packaged app on this OS
+        run: npm run test:packaged
 
       - name: List output
         shell: bash
@@ -106,15 +112,17 @@ jobs:
 
   release:
     name: Publish GitHub Release
+    # The desktop installers are what matter: an Android failure must not block them.
     needs: [build, android]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: ${{ always() && needs.build.result == 'success' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
         with:
           path: release
+          pattern: installers-*
           merge-multiple: true
 
       - name: Read version

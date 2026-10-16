@@ -1,7 +1,8 @@
-const { app, BrowserWindow, shell, session } = require('electron');
-const http = require('http');
+'use strict';
+const { app, BrowserWindow, Menu, dialog, shell, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { start } = require('./server');
 
 // ---------------------------------------------------------------------------
 // Platform tweaks (must run before app is ready)
@@ -10,14 +11,19 @@ const path = require('path');
 // Let <audio> play without requiring a click first (same on all OSes).
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
-if (process.platform === 'linux' && process.env.MCSOUNDS_SANDBOX !== '1') {
-  // AppImage cannot ship a SUID chrome-sandbox helper, and recent distros
-  // (Ubuntu 23.10+/24.04, etc.) block unprivileged user namespaces, so the
-  // Chromium sandbox aborts at startup. The app only loads its own bundled
-  // content from 127.0.0.1 (nodeIntegration off, contextIsolation on, external
-  // links go to the system browser), so running without it is acceptable.
-  // Set MCSOUNDS_SANDBOX=1 to keep the sandbox on.
-  app.commandLine.appendSwitch('no-sandbox');
+if (process.platform === 'linux') {
+  // Native Wayland when available, X11 otherwise.
+  app.commandLine.appendSwitch('ozone-platform-hint', 'auto');
+
+  if (process.env.MCSOUNDS_SANDBOX !== '1') {
+    // AppImage cannot ship a SUID chrome-sandbox helper, and recent distros
+    // (Ubuntu 23.10+/24.04, Arch hardened kernels, etc.) block unprivileged user
+    // namespaces, so the Chromium sandbox aborts at startup. The app only loads its
+    // own bundled content from 127.0.0.1 (nodeIntegration off, contextIsolation on,
+    // external links go to the system browser), so running without it is acceptable.
+    // Set MCSOUNDS_SANDBOX=1 to keep the sandbox on.
+    app.commandLine.appendSwitch('no-sandbox');
+  }
 }
 
 if (process.platform === 'win32') {
@@ -26,7 +32,8 @@ if (process.platform === 'win32') {
 }
 
 // Project root (contains index.html, js/, css/, sounds/ ...).
-// Inside a packaged app this points into app.asar, which fs reads transparently.
+// Inside a packaged app this points into app.asar, which fs reads transparently
+// (sounds/ is unpacked next to it, see electron/server.js).
 const PUBLIC_DIR = path.join(__dirname, '..');
 
 // A fixed port keeps the page origin (http://127.0.0.1:PORT) identical between
@@ -34,143 +41,29 @@ const PUBLIC_DIR = path.join(__dirname, '..');
 // If it is taken we fall back to a random free port.
 const PREFERRED_PORT = 47831;
 
-const MIME = {
-  '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.ogg': 'audio/ogg',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.webmanifest': 'application/manifest+json',
-  '.txt': 'text/plain; charset=utf-8',
-  '.xml': 'application/xml; charset=utf-8',
-};
-
 let mainWindow = null;
 let server = null;
 let port = null;
 
-function sendFile(req, res, filePath, stat) {
-  const type = MIME[path.extname(filePath).toLowerCase()] || 'application/octet-stream';
-  const size = stat.size;
-  const base = { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache' };
-
-  // Range support is required so <audio> can seek.
-  const range = req.headers.range;
-  const m = range && /bytes=(\d*)-(\d*)/.exec(range);
-  if (m) {
-    let start;
-    let end;
-    if (m[1] === '') {
-      start = Math.max(0, size - Number(m[2]));
-      end = size - 1;
-    } else {
-      start = Number(m[1]);
-      end = m[2] === '' ? size - 1 : Math.min(Number(m[2]), size - 1);
-    }
-    if (start > end || start >= size) {
-      res.writeHead(416, { 'Content-Range': `bytes */${size}` });
-      return res.end();
-    }
-    res.writeHead(206, {
-      ...base,
-      'Content-Range': `bytes ${start}-${end}/${size}`,
-      'Content-Length': end - start + 1,
-    });
-    if (req.method === 'HEAD') return res.end();
-    return pipeFile(fs.createReadStream(filePath, { start, end }), res);
-  }
-
-  res.writeHead(200, { ...base, 'Content-Length': size });
-  if (req.method === 'HEAD') return res.end();
-  pipeFile(fs.createReadStream(filePath), res);
-}
-
-function pipeFile(stream, res) {
-  // A client aborting (e.g. seeking in <audio>) must never crash the app.
-  stream.on('error', () => res.destroy());
-  res.on('close', () => stream.destroy());
-  stream.pipe(res);
-}
-
-function handleRequest(req, res) {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.writeHead(405);
-    return res.end();
-  }
-
-  let pathname;
-  try {
-    pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
-  } catch {
-    res.writeHead(400);
-    return res.end();
-  }
-
-  // Block path traversal outside the project folder (works with both / and \).
-  const target = path.normalize(path.join(PUBLIC_DIR, pathname));
-  const root = path.normalize(PUBLIC_DIR);
-  if (target !== root && !target.startsWith(root + path.sep)) {
-    res.writeHead(403);
-    return res.end();
-  }
-
-  fs.stat(target, (err, stat) => {
-    if (!err && stat.isFile()) return sendFile(req, res, target, stat);
-
-    // Missing file with an extension -> real 404 (e.g. a missing sound).
-    if (path.extname(pathname)) {
-      res.writeHead(404);
-      return res.end('Not found');
-    }
-
-    // Client-side routes (/, /#/folder...) -> index.html, like the Vercel rewrite.
-    const index = path.join(PUBLIC_DIR, 'index.html');
-    fs.stat(index, (e2, s2) => {
-      if (e2) {
-        res.writeHead(500);
-        return res.end();
-      }
-      sendFile(req, res, index, s2);
-    });
-  });
-}
-
-function listen(p) {
-  return new Promise((resolve, reject) => {
-    const s = http.createServer(handleRequest);
-    s.once('error', reject);
-    // Bound to localhost only.
-    s.listen(p, '127.0.0.1', () => {
-      s.removeListener('error', reject);
-      s.on('error', () => {});
-      resolve(s);
-    });
-  });
-}
-
-async function startServer() {
-  try {
-    server = await listen(PREFERRED_PORT);
-  } catch {
-    server = await listen(0); // random free port
-  }
-  return server.address().port;
+// Windows forbids  < > : " / \ | ? *  and control characters in file names.
+function safeFileName(name) {
+  const cleaned = String(name || 'download')
+    .replace(path.sep === '\\' ? /[\\/]/g : /\//g, '_')
+    .replace(/[<>:"|?*\x00-\x1f]/g, '_')
+    .replace(/[. ]+$/, '');
+  return path.basename(cleaned) || 'download';
 }
 
 function setupDownloads() {
   // Make <a download> / blob downloads save straight to the Downloads folder.
   session.defaultSession.on('will-download', (event, item) => {
     const dir = app.getPath('downloads');
-    // Strip any path separators so a crafted name cannot escape Downloads.
-    const name = path.basename(item.getFilename() || 'download');
+    const name = safeFileName(item.getFilename());
     let target = path.join(dir, name);
     if (fs.existsSync(target)) {
       const ext = path.extname(name);
       const base = path.basename(name, ext);
-      target = path.join(dir, `${base}-${Date.now()}${ext}`);
+      target = path.join(dir, base + '-' + Date.now() + ext);
     }
     item.setSavePath(target);
   });
@@ -182,6 +75,7 @@ function createWindow() {
     height: 800,
     minWidth: 360,
     minHeight: 480,
+    show: false, // shown on ready-to-show: no white flash
     title: 'MCSOUNDS',
     backgroundColor: '#1b1b1b',
     icon: path.join(PUBLIC_DIR, 'png', 'icon-512.png'),
@@ -194,7 +88,21 @@ function createWindow() {
     },
   });
 
-  const appUrl = `http://127.0.0.1:${port}/`;
+  const appUrl = 'http://127.0.0.1:' + port + '/';
+  let retried = false;
+
+  mainWindow.once('ready-to-show', () => mainWindow && mainWindow.show());
+  // Safety net: never leave the user with an invisible window.
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) mainWindow.show();
+  }, 5000);
+
+  mainWindow.webContents.on('did-fail-load', (event, code, desc, url, isMainFrame) => {
+    if (!isMainFrame || code === -3 /* aborted */ || retried) return;
+    retried = true;
+    setTimeout(() => mainWindow && mainWindow.loadURL(appUrl), 500);
+  });
+
   mainWindow.loadURL(appUrl);
 
   // External links (AI, Groq, GitHub...) open in the system browser.
@@ -225,7 +133,20 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(async () => {
-    port = await startServer();
+    try {
+      const started = await start(PUBLIC_DIR, PREFERRED_PORT);
+      server = started.server;
+      port = started.port;
+    } catch (err) {
+      dialog.showErrorBox('MCSOUNDS', 'Could not start the local server:\n' + (err && err.message ? err.message : err));
+      app.quit();
+      return;
+    }
+
+    // Windows/Linux: no menu bar at all (Alt does not bring it back). macOS keeps a
+    // standard menu so Cmd+C / Cmd+V / Cmd+Q work (pasting the API key needs it).
+    if (process.platform !== 'darwin') Menu.setApplicationMenu(null);
+
     setupDownloads();
     createWindow();
   });

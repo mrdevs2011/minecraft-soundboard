@@ -1,7 +1,7 @@
 {
   "name": "mcsounds",
   "productName": "MCSOUNDS",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Find and play all Minecraft sounds — desktop app for Windows, macOS and Linux",
   "author": {
     "name": "MCSOUNDS",
@@ -12,10 +12,12 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build:win": "electron-builder --win --x64",
-    "build:mac": "electron-builder --mac --x64 --arm64",
-    "build:linux": "electron-builder --linux --x64",
-    "build:desktop": "electron-builder",
+    "test": "node electron/smoke.js",
+    "test:packaged": "node scripts/smoke-packaged.mjs",
+    "build:win": "electron-builder --win --x64 --publish never",
+    "build:mac": "electron-builder --mac --x64 --arm64 --publish never",
+    "build:linux": "electron-builder --linux --x64 --publish never",
+    "build:desktop": "electron-builder --publish never",
     "prepare:www": "node scripts/prepare-www.mjs",
     "android:sync": "node scripts/prepare-www.mjs && npx cap sync android",
     "android:build": "cd android && ./gradlew assembleDebug"
@@ -75,7 +77,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "${productName}-${version}-Setup.${ext}"
+      "artifactName": "${productName}-${version}-Setup.${ext}",
+      "shortcutName": "MCSOUNDS",
+      "uninstallDisplayName": "MCSOUNDS"
     },
     "mac": {
       "target": [
@@ -114,7 +118,10 @@
     },
     "deb": {
       "artifactName": "${productName}-${version}-${arch}.${ext}"
-    }
+    },
+    "asarUnpack": [
+      "sounds/**/*"
+    ]
   },
   "homepage": "https://minecraft-soundboard.vercel.app/",
   "repository": {
