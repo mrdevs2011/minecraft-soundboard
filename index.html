@@ -31,16 +31,16 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 .top-inner{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;min-height:54px;max-width:1600px;margin:0 auto}
 @media(max-width:720px){.top-inner{grid-template-columns:auto 1fr;gap:8px;padding:8px 0}.top-actions{grid-column:1/-1;justify-content:flex-end}}
 .brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none}
-.brand-mark{width:26px;height:26px;border:1.5px solid var(--text);display:grid;place-items:center}
+.brand-mark{width:26px;height:26px;border:1.5px solid var(--text);display:grid;place-items:center;border-radius:8px}
 .brand-mark svg{width:13px;height:13px}
 .brand-text{font-weight:800;font-size:14px;letter-spacing:.14em}
 .brand-text span{color:var(--muted);font-weight:500}
 .search-wrap{position:relative;max-width:420px;width:100%;justify-self:center}
 .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;opacity:.4;pointer-events:none}
-.search-wrap input{width:100%;height:38px;padding:0 12px 0 36px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:12px;outline:none;border-radius:0}
+.search-wrap input{width:100%;height:38px;padding:0 12px 0 36px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:12px;outline:none;border-radius:12px}
 .search-wrap input:focus{border-color:var(--text)}
 .top-actions{display:flex;align-items:center;gap:6px}
-.icon-btn{height:34px;min-width:34px;padding:0 9px;background:transparent;border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;transition:.15s}
+.icon-btn{height:34px;min-width:34px;padding:0 9px;background:transparent;border:1px solid var(--border);color:var(--text);display:inline-flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;transition:.15s;border-radius:10px}
 .icon-btn svg{width:14px;height:14px}
 .icon-btn:hover,.icon-btn.on{background:var(--text);color:var(--bg);border-color:var(--text)}
 .meta-count{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);letter-spacing:.06em}
@@ -68,12 +68,12 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 .folder,.file-row{
   width:100%;display:flex;align-items:center;gap:8px;padding:9px 10px;margin-bottom:2px;
   border:1px solid transparent;background:transparent;color:var(--text);
-  font-family:"IBM Plex Mono",monospace;font-size:11px;cursor:pointer;text-align:left;transition:.12s
+  font-family:"IBM Plex Mono",monospace;font-size:11px;cursor:pointer;text-align:left;transition:.12s;border-radius:10px
 }
 .folder:hover,.file-row:hover{color:var(--text);border-color:var(--border);background:var(--surface)}
 .folder.active{color:var(--bg);background:var(--text);border-color:var(--text)}
 .folder svg,.file-row svg{width:13px;height:13px;flex-shrink:0;opacity:.7}
-.folder .n{margin-left:auto;font-size:9px;opacity:.65;border:1px solid currentColor;padding:1px 5px}
+.folder .n{margin-left:auto;font-size:9px;opacity:.65;border:1px solid currentColor;padding:1px 5px;border-radius:6px}
 
 .stage{padding:clamp(12px,2vw,22px);overflow-y:auto;padding-bottom:130px}
 .stage-title{font-size:11px;font-family:"IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
@@ -82,7 +82,7 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
   display:none;position:fixed;left:12px;right:12px;bottom:calc(12px + var(--safe-b));z-index:200;
   border:1px solid var(--border);background:color-mix(in srgb,var(--surface) 92%,transparent);
   backdrop-filter:blur(18px);box-shadow:0 16px 48px rgba(0,0,0,.5);max-width:640px;margin:0 auto;
-  transition:left .25s,right .25s,max-width .25s
+  transition:left .25s,right .25s,max-width .25s;border-radius:16px
 }
 .player.show{display:block}
 @media(min-width:900px){.player{left:50%;right:auto;transform:translateX(-50%);width:min(640px,calc(100vw - 24px))}}
@@ -90,7 +90,7 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 @media(max-width:1100px){.shell.chat-on .player{left:12px;right:12px;max-width:none}}
 .player-inner{padding:12px 14px;display:flex;flex-direction:column;gap:10px}
 .player-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.player-ico{width:38px;height:38px;border:1px solid var(--text);display:grid;place-items:center;flex-shrink:0;background:var(--text);color:var(--bg);position:relative}
+.player-ico{width:38px;height:38px;border:1px solid var(--text);display:grid;place-items:center;flex-shrink:0;background:var(--text);color:var(--bg);position:relative;border-radius:12px;cursor:pointer}
 .player-ico svg{width:14px;height:14px}
 .spin-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--text);color:var(--bg)}
 .spin-wrap.hidden{display:none}
@@ -105,20 +105,19 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 .prog{display:grid;grid-template-columns:38px 1fr 38px;gap:8px;align-items:center}
 .prog time{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted)}
 .prog time:last-child{text-align:right}
-.track{height:3px;background:var(--border);cursor:pointer;position:relative}
+.track{height:3px;background:var(--border);cursor:pointer;position:relative;border-radius:4px;overflow:hidden}
 .track:hover{height:5px}
 .fill{height:100%;width:0%;background:var(--text);position:relative}
 
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:8px}
 .card{
   position:relative;background:var(--surface);border:1px solid var(--border);padding:11px 13px;
-  display:flex;align-items:center;gap:11px;cursor:pointer;transition:.15s;user-select:none;
-  clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,9px 100%,0 calc(100% - 9px))
+  display:flex;align-items:center;gap:11px;cursor:pointer;transition:.15s;user-select:none;border-radius:14px
 }
 .card:hover{border-color:var(--text);background:var(--surface2);transform:translateY(-2px)}
 .card.playing{border-color:var(--text);background:var(--text);color:var(--bg)}
 .card.playing .card-path,.card.playing .card-meta{color:color-mix(in srgb,var(--bg) 55%,transparent)}
-.card-play{width:32px;height:32px;border:1px solid var(--border2);display:grid;place-items:center;flex-shrink:0}
+.card-play{width:32px;height:32px;border:1px solid var(--border2);display:grid;place-items:center;flex-shrink:0;border-radius:10px}
 .card-play svg{width:11px;height:11px}
 .card:hover .card-play,.card.playing .card-play{border-color:var(--text);background:var(--text);color:var(--bg)}
 .card.playing .card-play{background:var(--bg);color:var(--text);border-color:var(--bg)}
@@ -127,7 +126,7 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 .card-path{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
 .card-meta{font-family:"IBM Plex Mono",monospace;font-size:9px;color:var(--dim);margin-top:3px}
 
-.folder-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:18px}
+.folder-grid{display:none}
 .folder-card{
   border:1px solid var(--border);background:var(--surface);padding:16px 14px;cursor:pointer;transition:.15s;
   display:flex;flex-direction:column;gap:8px;min-height:88px;color:var(--text)
@@ -153,10 +152,10 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 .key-pop{display:none;padding:10px 12px;border-bottom:1px solid var(--border);gap:8px;flex-direction:column}
 .key-pop.open{display:flex}
 .key-pop label{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
-.key-pop input{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:12px;outline:none}
+.key-pop input{height:36px;padding:0 10px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:12px;outline:none;border-radius:10px}
 .key-pop input:focus{border-color:var(--text)}
 .chat-log{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-.bubble{max-width:70%;padding:10px 12px;font-size:13px;line-height:1.45;border:1px solid var(--border);word-break:break-word}
+.bubble{max-width:70%;padding:10px 12px;font-size:13px;line-height:1.45;border:1px solid var(--border);word-break:break-word;border-radius:14px}
 .bubble.has-cards{max-width:100%;width:100%;align-self:stretch;box-sizing:border-box}
 .bubble.has-cards .chips{width:100%}
 .bubble.has-cards .chip{width:100%;box-sizing:border-box}
@@ -164,23 +163,23 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
 .bubble.ai{align-self:flex-start;background:var(--surface)}
 .bubble.sys{align-self:center;border:none;background:transparent;color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:11px}
 .chips{margin-top:10px;display:flex;flex-direction:column;gap:6px}
-.chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;text-align:left;transition:.15s;
-  clip-path:polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,8px 100%,0 calc(100% - 8px))}
+.chip{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border2);background:var(--surface);cursor:pointer;text-align:left;transition:.15s;border-radius:12px}
 .chip:hover{background:var(--text);color:var(--bg);border-color:var(--text)}
-.chip-ico{width:28px;height:28px;border:1px solid currentColor;display:grid;place-items:center;flex-shrink:0}
+.chip-ico{width:28px;height:28px;border:1px solid currentColor;display:grid;place-items:center;flex-shrink:0;border-radius:8px}
 .chip-ico svg{width:10px;height:10px}
 .chip-body{min-width:0;flex:1}
 .chip-name{font-weight:600;font-size:12px}
 .chip-path{font-family:"IBM Plex Mono",monospace;font-size:9px;opacity:.65;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip-meta{font-family:"IBM Plex Mono",monospace;font-size:9px;opacity:.5;margin-top:2px}
 .chat-in{padding:10px 12px calc(10px + var(--safe-b));border-top:1px solid var(--border);display:flex;gap:8px}
-.chat-in input{flex:1;height:40px;padding:0 12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:13px;outline:none}
+.chat-in input{flex:1;height:40px;padding:0 12px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:13px;outline:none;border-radius:12px}
 .chat-in input:focus{border-color:var(--text)}
-.chat-in button{height:40px;padding:0 14px;background:var(--text);color:var(--bg);border:1px solid var(--text);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+.chat-in button{height:40px;padding:0 14px;background:var(--text);color:var(--bg);border:1px solid var(--text);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;border-radius:12px}
 .chat-in button:disabled{opacity:.4;cursor:not-allowed}
 .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:75}
 .shell.chat-on .backdrop{display:block}
 @media(min-width:1101px){.backdrop{display:none!important}}
+.chat-hd .icon-btn.hidden{display:none}
 </style>
 </head>
 <body data-theme="dark">
@@ -232,6 +231,9 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
     <div class="chat-hd">
       <h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v10H8l-4 4V6z"/></svg> GROQ AI</h3>
       <div class="chat-hd-actions">
+        <button class="icon-btn hidden" id="btnClear" type="button" title="Clear chat">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M9 7V5h6v2M6 7l1 12h10l1-12"/></svg>
+        </button>
         <button class="icon-btn" id="btnKey" type="button" title="API Key">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="12" r="3"/><path d="M11 12h9M17 9v6M20 10v4"/></svg>
         </button>
@@ -267,9 +269,6 @@ body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
       </div>
       <div class="player-ctrls">
         <input type="range" class="vol" id="vol" min="0" max="1" step="0.05" value="0.7">
-        <button class="icon-btn" id="pPause" type="button" title="Space">
-          <svg viewBox="0 0 24 24" fill="currentColor" id="pPauseSvg"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
-        </button>
       </div>
     </div>
     <div class="prog">
@@ -285,6 +284,8 @@ const BASE = "sounds/";
 const MODEL = "openai/gpt-oss-120b";
 let data = null, all = [], tree = {}, navPath = [];
 let audio = null, cardEl = null, seeking = false, raf = null, hist = [];
+let chatUIHist = []; // {role, html} persisted
+let chatLoaded = 0;
 
 const $ = id => document.getElementById(id);
 
@@ -371,6 +372,7 @@ async function init() {
     const th = localStorage.getItem("mcsnd_theme");
     if (th === "light") document.body.setAttribute("data-theme", "light");
     bind();
+    loadChatFromStorage();
     goNav([]);
   } catch (e) {
     $("grid").innerHTML = "<div class=\"empty\"><h2>LOAD FAILED</h2><p>" + esc(e.message) + "</p></div>";
@@ -493,7 +495,7 @@ function play(path, c, el) {
   $("fill").style.width = "0%";
   $("tCur").textContent = "0:00";
   $("tTot").textContent = mt.dur != null ? fmt(mt.dur) : "...";
-  $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+  $("pIcoSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
   setSpin(true, 0);
 
   const url = BASE + path.split("/").map(encodeURIComponent).join("/");
@@ -515,14 +517,14 @@ function play(path, c, el) {
     a.addEventListener("waiting", () => setSpin(true, null));
     a.addEventListener("playing", () => {
       setSpin(false, 100);
-      $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+      $("pIcoSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
     });
     a.addEventListener("ended", () => {
       if (el) el.classList.remove("playing");
       a.currentTime = 0;
       $("fill").style.width = "0%";
       $("tCur").textContent = "0:00";
-      $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+      $("pIcoSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
       cancelAnimationFrame(raf);
       setSpin(false, 0);
     });
@@ -534,7 +536,7 @@ function play(path, c, el) {
     const p = a.play();
     if (p && p.catch) p.catch(() => {
       setSpin(false, 0);
-      $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+      $("pIcoSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
     });
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(tick);
@@ -569,17 +571,18 @@ function play(path, c, el) {
 function stop(hide) {
   if (hide === undefined) hide = false;
   setSpin(false, 0);
-  if (audio) { try { audio.pause(); audio.currentTime = 0; } catch (e) {} }
+  if (audio) {
+    try { audio.pause(); audio.currentTime = 0; audio.src = ""; audio.load(); } catch (e) {}
+    audio = null;
+  }
   if (cardEl) cardEl.classList.remove("playing");
   cardEl = null;
   cancelAnimationFrame(raf);
   $("fill").style.width = "0%";
   $("tCur").textContent = "0:00";
-  $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
-  if (hide) {
-    if (audio) { audio.src = ""; audio = null; }
-    $("player").classList.remove("show");
-  }
+  const ico = $("pIcoSvg");
+  if (ico) ico.innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+  if (hide) $("player").classList.remove("show");
 }
 
 function togglePause() {
@@ -587,11 +590,11 @@ function togglePause() {
   if (audio.paused) {
     if (audio.ended || (audio.duration && audio.currentTime >= audio.duration - 0.05)) audio.currentTime = 0;
     audio.play();
-    $("pPauseSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
+    $("pIcoSvg").innerHTML = "<path d=\"M6 5h4v14H6zm8 0h4v14h-4z\"/>";
     raf = requestAnimationFrame(tick);
   } else {
     audio.pause();
-    $("pPauseSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
+    $("pIcoSvg").innerHTML = "<path d=\"M8 5v14l11-7z\"/>";
     cancelAnimationFrame(raf);
   }
 }
@@ -636,12 +639,80 @@ function searchLib(query, limit) {
   return scored.slice(0, limit);
 }
 
-function appendBubble(role, html) {
+
+function saveChatUI() {
+  try { localStorage.setItem("mcsnd_chat_ui", JSON.stringify(chatUIHist)); } catch (e) {}
+}
+function updateClearBtn() {
+  const btn = $("btnClear");
+  if (!btn) return;
+  const has = chatUIHist.some(x => x.role === "user");
+  btn.classList.toggle("hidden", !has);
+}
+function renderChatSlice(from, to) {
+  const log = $("chatLog");
+  const slice = chatUIHist.slice(from, to);
+  const frag = document.createDocumentFragment();
+  slice.forEach(item => {
+    const d = document.createElement("div");
+    d.className = "bubble " + item.role + (item.hasCards ? " has-cards" : "");
+    d.innerHTML = item.html;
+    if (item.hasCards) {
+      d.querySelectorAll(".chip").forEach(c => {
+        c.addEventListener("click", () => {
+          const path = c.dataset.path;
+          const meta = all.find(x => x.path === path);
+          play(path, meta ? meta.cat : "", null);
+        });
+      });
+    }
+    frag.appendChild(d);
+  });
+  return frag;
+}
+function loadChatFromStorage() {
+  try {
+    chatUIHist = JSON.parse(localStorage.getItem("mcsnd_chat_ui") || "[]");
+    if (!Array.isArray(chatUIHist)) chatUIHist = [];
+  } catch (e) { chatUIHist = []; }
+  const log = $("chatLog");
+  log.innerHTML = "";
+  if (!chatUIHist.length) {
+    log.innerHTML = "<div class=\"bubble sys\">Kalit ikonka orqali API key → so‘rang</div>";
+    updateClearBtn();
+    return;
+  }
+  // load last 20 bubbles (~10 turns)
+  const start = Math.max(0, chatUIHist.length - 20);
+  chatLoaded = start;
+  log.appendChild(renderChatSlice(start, chatUIHist.length));
+  log.scrollTop = log.scrollHeight;
+  updateClearBtn();
+}
+function clearChat() {
+  chatUIHist = [];
+  hist = [];
+  chatLoaded = 0;
+  saveChatUI();
+  $("chatLog").innerHTML = "<div class=\"bubble sys\">Chat tozalandi</div>";
+  updateClearBtn();
+}
+function appendBubble(role, html, hasCards) {
+  hasCards = !!hasCards;
   const d = document.createElement("div");
-  d.className = "bubble " + role;
+  d.className = "bubble " + role + (hasCards ? " has-cards" : "");
   d.innerHTML = html;
   $("chatLog").appendChild(d);
   $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  if (role !== "sys" || html.indexOf("...") === -1) {
+    if (!(role === "sys" && (html === "..." || html.indexOf("Network:") === 0 || html.indexOf("Error:") === 0 || html.indexOf("Yuqori") === 0))) {
+      if (role === "user" || role === "ai") {
+        chatUIHist.push({ role: role, html: html, hasCards: hasCards });
+        saveChatUI();
+        updateClearBtn();
+      }
+    }
+  }
   return d;
 }
 
@@ -751,8 +822,7 @@ async function sendChat() {
       });
       html += "</div>";
     }
-    const el = appendBubble("ai", html);
-    if (parsed.plays.length) el.classList.add("has-cards");
+    const el = appendBubble("ai", html, parsed.plays.length > 0);
     el.querySelectorAll(".chip").forEach(c => {
       c.addEventListener("click", () => {
         const path = c.dataset.path;
@@ -778,7 +848,7 @@ function bind() {
     clearTimeout(t);
     t = setTimeout(() => renderStage(e.target.value), 150);
   });
-  $("pPause").addEventListener("click", togglePause);
+  $("pIco").addEventListener("click", togglePause);
   $("vol").addEventListener("input", e => { if (audio) audio.volume = parseFloat(e.target.value); });
   $("track").addEventListener("click", seek);
   $("track").addEventListener("mousedown", e => {
@@ -804,6 +874,18 @@ function bind() {
   $("chatClose").addEventListener("click", toggleChat);
   $("backdrop").addEventListener("click", toggleChat);
   $("btnKey").addEventListener("click", () => $("keyPop").classList.toggle("open"));
+  $("btnClear").addEventListener("click", clearChat);
+  $("chatLog").addEventListener("scroll", () => {
+    const log = $("chatLog");
+    if (log.scrollTop > 40 || chatLoaded <= 0) return;
+    const prevH = log.scrollHeight;
+    const more = Math.max(0, chatLoaded - 20);
+    if (more === chatLoaded) return;
+    const frag = renderChatSlice(more, chatLoaded);
+    log.insertBefore(frag, log.firstChild);
+    chatLoaded = more;
+    log.scrollTop = log.scrollHeight - prevH;
+  });
   $("groqKey").addEventListener("input", () => {
     const k = $("groqKey").value.trim();
     if (k) localStorage.setItem("groq_api_key", k);
