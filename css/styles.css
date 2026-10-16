@@ -1184,29 +1184,62 @@ body[data-theme="light"]{
   height: 14px;
 }
 
-/* Theme-aware icons (SVGs are black by default) */
+/* ===== Theme-aware icons =====
+   SVGs are black by default.
+   Rule: dark background → light icon; light/white background → dark icon.
+*/
+
+/* Dark mode: default light icons on dark UI */
 .icon-btn .icon,
 .btn-back .icon,
 .search-wrap .icon,
 .card-play .icon,
 .folder .icon,
 .chip-ico .icon,
-.send-btn .icon{
-  filter: brightness(0) invert(0.85);
+.send-btn .icon,
+.file-row .icon{
+  filter: brightness(0) invert(0.88);
 }
+
+/* Light mode: default dark icons on light UI */
 [data-theme="light"] .icon-btn .icon,
 [data-theme="light"] .btn-back .icon,
 [data-theme="light"] .search-wrap .icon,
 [data-theme="light"] .card-play .icon,
 [data-theme="light"] .folder .icon,
 [data-theme="light"] .chip-ico .icon,
-[data-theme="light"] .send-btn .icon{
-  filter: brightness(0) invert(0.15);
+[data-theme="light"] .send-btn .icon,
+[data-theme="light"] .file-row .icon{
+  filter: brightness(0) invert(0.12);
 }
-/* Hover/active on green buttons — force white */
+
+/* Green / accent backgrounds → always white icons */
 .icon-btn:hover .icon,
 .icon-btn.on .icon,
 .card:hover .card-play .icon,
-.card.playing .card-play .icon{
+.folder.active .icon,
+.folder:hover .icon,
+.player-ico .icon,
+#pIcoSvg{
   filter: brightness(0) invert(1) !important;
+}
+
+/* White / light button on green playing card → dark icon */
+.card.playing .card-play .icon{
+  filter: brightness(0) invert(0.12) !important;
+}
+
+/* Light mode: green hover still needs white icon */
+[data-theme="light"] .icon-btn:hover .icon,
+[data-theme="light"] .icon-btn.on .icon,
+[data-theme="light"] .card:hover .card-play .icon,
+[data-theme="light"] .folder.active .icon,
+[data-theme="light"] .player-ico .icon,
+[data-theme="light"] #pIcoSvg{
+  filter: brightness(0) invert(1) !important;
+}
+
+/* Light mode: playing card white button → dark icon */
+[data-theme="light"] .card.playing .card-play .icon{
+  filter: brightness(0) invert(0.12) !important;
 }
