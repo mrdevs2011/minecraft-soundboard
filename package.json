@@ -1,0 +1,74 @@
+{
+  "name": "mcsounds",
+  "productName": "MCSOUNDS",
+  "version": "1.0.0",
+  "description": "Find and play all Minecraft sounds — desktop app for Windows, macOS and Linux",
+  "author": "MCSOUNDS",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64",
+    "build:mac": "electron-builder --mac --x64 --arm64",
+    "build:linux": "electron-builder --linux --x64",
+    "build:desktop": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.mcsounds.app",
+    "productName": "MCSOUNDS",
+    "copyright": "MCSOUNDS",
+    "directories": {
+      "output": "dist"
+    },
+    "icon": "png/icon-512.png",
+    "files": [
+      "electron/**/*",
+      "index.html",
+      "css/**/*",
+      "js/**/*",
+      "png/**/*",
+      "svg/**/*",
+      "sounds/**/*",
+      "sounds.json",
+      "sw.js",
+      "site.webmanifest",
+      "favicon.ico",
+      "robots.txt",
+      "sitemap.xml",
+      "package.json",
+      "!**/.vercel/**",
+      "!**/.env*",
+      "!**/*.md"
+    ],
+    "asar": true,
+    "publish": null,
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "category": "public.app-category.entertainment"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "category": "Game",
+      "maintainer": "MCSOUNDS"
+    }
+  }
+}
