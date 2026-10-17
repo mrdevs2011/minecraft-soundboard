@@ -1718,6 +1718,8 @@ async function sendChat() {
     (matches.wantAll ? "The user wants ALL of them, so list as many as fit. " : "") +
     "Never pick a candidate that matches only by a coincidence of name. Never invent paths. " +
     "Only describe sound types that really appear in the candidate names or [kind] tags (never claim meow, purr, hiss etc. unless such files are listed); never invent sound descriptions. Paths in PLAY must be written without the [kind] tag. " +
+    "The library has ONLY official in-game sound effects: no songs, music, memes or movie audio. If the user asks for a song, meme, remix or anything that is not an in-game sound (for example a chicken or lava chicken song), say plainly that it is not in the library, never pretend you found it, and offer the closest in-game sounds instead. " +
+    "Write 1-2 short, natural, friendly sentences like a friend would; no file names, no technical tags in brackets, no words like ambient/variant in parentheses. " +
     (preset.length ? "These exact sounds will be played in this order, so describe exactly them: " + preset.map(x => x.path + " [" + x.kind + "]").join(", ") + ". " : "") +
     (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") +
     "Format: 1-2 short sentences saying what you found and what the sound types are, then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first). No markdown, no SEARCH. " +
