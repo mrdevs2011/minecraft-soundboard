@@ -614,52 +614,51 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function creeperFuseAndBoom(headEl, opts) {
   opts = opts || {};
-  const duration = opts.duration || 1400; // much faster
+  const duration = Math.max(opts.duration || 3000, 2800); // min ~3s fuse (Minecraft-like)
   if (!headEl) return;
 
   headEl.classList.add("fusing");
   headEl.classList.remove("boom");
-  headEl.style.setProperty("--flash-op", "0.2");
+  headEl.style.setProperty("--flash-op", "0.15");
   const t0 = performance.now();
 
-  // Many rapid flashes, opacity ramps 20% → 100%
+  // Fuse: flashes accelerate, opacity 15% → 100%
   let nextFlash = 0;
-  let interval = 90;
-  while (performance.now() - t0 < duration - 280) {
+  let interval = 110;
+  while (performance.now() - t0 < duration - 420) {
     const elapsed = performance.now() - t0;
     const progress = Math.min(1, elapsed / duration);
-    const op = 0.2 + progress * 0.8; // 0.2 → 1.0
+    const op = 0.15 + progress * 0.85;
     headEl.style.setProperty("--flash-op", op.toFixed(2));
 
     const fill = $("splashFill");
-    if (fill) fill.style.width = Math.min(98, progress * 100) + "%";
+    if (fill) fill.style.width = Math.min(96, 8 + progress * 88) + "%";
 
     if (elapsed >= nextFlash) {
       headEl.classList.add("flash-white");
-      const onMs = Math.max(18, 42 - progress * 20);
+      const onMs = Math.max(14, 48 - progress * 28);
       await sleep(onMs);
       headEl.classList.remove("flash-white");
       nextFlash = elapsed + interval;
-      interval = Math.max(22, interval * 0.82);
+      interval = Math.max(18, interval * 0.88);
     }
-    await sleep(12);
-  }
-
-  // Super rapid final flashes at full white
-  headEl.style.setProperty("--flash-op", "1");
-  for (let i = 0; i < 14; i++) {
-    headEl.classList.add("flash-white");
-    await sleep(16 + (i % 3) * 4);
-    headEl.classList.remove("flash-white");
     await sleep(10);
   }
 
-  // Solid white then boom
+  // Final panic flashes at full white
+  headEl.style.setProperty("--flash-op", "1");
+  for (let i = 0; i < 18; i++) {
+    headEl.classList.add("flash-white");
+    await sleep(12 + (i % 4) * 3);
+    headEl.classList.remove("flash-white");
+    await sleep(8);
+  }
+
   headEl.classList.add("flash-white");
   headEl.classList.remove("fusing");
   const fill = $("splashFill");
   if (fill) fill.style.width = "100%";
-  await sleep(instant ? 20 : 40);
+  await sleep(50);
 
   await shatterCreeperPixels(headEl);
 }
@@ -673,72 +672,149 @@ async function shatterCreeperPixels(headEl) {
     return;
   }
 
-  const N = 8; // 8x8 = 64 physical pixels
+  // Denser pixel grid = more physical debris
+  const N = 12; // 12x12 = 144 shards
   const cellW = rect.width / N;
   const cellH = rect.height / N;
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
 
-  // Sample colors from creeper.png into offscreen canvas
   const colors = await sampleCreeperGrid(N);
+
+  // Full-screen flash bang
+  const flash = document.createElement("div");
+  flash.className = "creeper-boom-flash";
+  document.body.appendChild(flash);
+  requestAnimationFrame(() => flash.classList.add("on"));
+
+  // Screen shake on splash root
+  const splash = document.getElementById("splash");
+  if (splash) {
+    splash.classList.add("boom-shake");
+    setTimeout(() => splash.classList.remove("boom-shake"), 520);
+  }
 
   const layer = document.createElement("div");
   layer.className = "creeper-shard-layer";
   document.body.appendChild(layer);
 
+  // Shockwave ring
+  const ring = document.createElement("div");
+  ring.className = "boom-ring go";
+  ring.style.left = cx + "px";
+  ring.style.top = cy + "px";
+  ring.style.marginLeft = "-10px";
+  ring.style.marginTop = "-10px";
+  ring.style.position = "fixed";
+  layer.appendChild(ring);
+
   const shards = [];
+  const smoke = [];
+
   for (let y = 0; y < N; y++) {
     for (let x = 0; x < N; x++) {
       const px = rect.left + x * cellW;
       const py = rect.top + y * cellH;
       const midX = px + cellW / 2;
       const midY = py + cellH / 2;
-      const dx = midX - cx;
-      const dy = midY - cy;
+      let dx = midX - cx;
+      let dy = midY - cy;
       const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      // outward blast + slight randomness
-      const power = 1.3 + Math.random() * 2.1;
-      const vx = (dx / dist) * power * (0.7 + Math.random() * 0.8) + (Math.random() - 0.5) * 1.2;
-      const vy = (dy / dist) * power * (0.7 + Math.random() * 0.8) - (0.6 + Math.random() * 1.4);
-      const rot = (Math.random() - 0.5) * 18;
-      const vr = (Math.random() - 0.5) * 0.6;
+      dx /= dist;
+      dy /= dist;
+
+      // Impulse stronger near center (inverse-ish), Minecraft TNT feel
+      const near = 1 - Math.min(1, dist / (rect.width * 0.75));
+      const power = (3.8 + near * 5.5 + Math.random() * 3.2);
+      const angleJitter = (Math.random() - 0.5) * 0.55;
+      const cos = Math.cos(angleJitter), sin = Math.sin(angleJitter);
+      const rx = dx * cos - dy * sin;
+      const ry = dx * sin + dy * cos;
+
+      const vx = rx * power + (Math.random() - 0.5) * 2.4;
+      // upward bias like real explosion loft
+      const vy = ry * power * 0.85 - (2.2 + Math.random() * 3.8 + near * 2);
+      const mass = 0.7 + Math.random() * 0.8;
+      const vr = (Math.random() - 0.5) * (1.2 + near * 2.5);
 
       const el = document.createElement("div");
       el.className = "creeper-shard";
       const c = colors[y][x];
-      el.style.width = Math.ceil(cellW) + "px";
-      el.style.height = Math.ceil(cellH) + "px";
+      const sz = Math.max(2, Math.ceil(Math.max(cellW, cellH) * (0.85 + Math.random() * 0.35)));
+      el.style.width = sz + "px";
+      el.style.height = sz + "px";
       el.style.left = "0px";
       el.style.top = "0px";
       el.style.background = c;
       el.style.transform = "translate(" + px + "px," + py + "px) rotate(0deg)";
       el.style.opacity = "1";
       layer.appendChild(el);
-      shards.push({ el: el, x: px, y: py, vx: vx, vy: vy, rot: 0, vr: vr });
+      shards.push({ el, x: px, y: py, vx, vy, rot: 0, vr, mass, bounce: 0.35 + Math.random() * 0.25 });
     }
   }
 
-  // Hide original face during shatter
+  // Smoke puffs (soft, no pixel art — subtle)
+  for (let i = 0; i < 18; i++) {
+    const ang = (Math.PI * 2 * i) / 18 + Math.random() * 0.4;
+    const sp = 1.5 + Math.random() * 4;
+    const el = document.createElement("div");
+    el.className = "creeper-smoke";
+    const s0 = 10 + Math.random() * 22;
+    el.style.width = s0 + "px";
+    el.style.height = s0 + "px";
+    el.style.transform = "translate(" + (cx - s0 / 2) + "px," + (cy - s0 / 2) + "px) scale(1)";
+    layer.appendChild(el);
+    smoke.push({
+      el, x: cx - s0 / 2, y: cy - s0 / 2,
+      vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 1.2,
+      life: 0.55 + Math.random() * 0.45, scale: 1
+    });
+  }
+
   headEl.style.visibility = "hidden";
   headEl.classList.remove("flash-white");
 
-  const g = 0.14; // gravity (Minecraft-like)
+  const G = 0.22;          // gravity px/frame²
+  const DRAG = 0.988;      // air resistance
+  const FLOOR = typeof window !== "undefined" ? window.innerHeight + 40 : 2000;
+  const life = 1200;
   const tStart = performance.now();
-  const life = 980;
 
   await new Promise(resolve => {
     function frame(now) {
       const t = now - tStart;
-      const damp = 1 - Math.min(1, t / life);
+      const p = Math.min(1, t / life);
       for (let i = 0; i < shards.length; i++) {
         const s = shards[i];
-        s.vy += g;
+        s.vy += G * s.mass;
+        s.vx *= DRAG;
+        s.vy *= DRAG;
         s.x += s.vx;
         s.y += s.vy;
         s.rot += s.vr;
-        s.vx *= 0.995;
+        s.vr *= 0.992;
+        // soft floor bounce once
+        if (s.y > FLOOR - 8 && s.vy > 0) {
+          s.y = FLOOR - 8;
+          s.vy *= -s.bounce;
+          s.vx *= 0.7;
+          s.bounce *= 0.5;
+        }
+        const fade = Math.max(0, 1 - Math.pow(p, 1.35));
         s.el.style.transform = "translate(" + s.x + "px," + s.y + "px) rotate(" + s.rot + "deg)";
-        s.el.style.opacity = String(Math.max(0, damp * 1.05));
+        s.el.style.opacity = String(fade);
+      }
+      for (let i = 0; i < smoke.length; i++) {
+        const s = smoke[i];
+        s.x += s.vx;
+        s.y += s.vy;
+        s.vx *= 0.97;
+        s.vy *= 0.97;
+        s.vy -= 0.02; // rise
+        s.scale += 0.035;
+        const fade = Math.max(0, (1 - p / s.life) * 0.55);
+        s.el.style.transform = "translate(" + s.x + "px," + s.y + "px) scale(" + s.scale + ")";
+        s.el.style.opacity = String(fade);
       }
       if (t < life) requestAnimationFrame(frame);
       else resolve();
@@ -746,13 +822,14 @@ async function shatterCreeperPixels(headEl) {
     requestAnimationFrame(frame);
   });
 
+  if (flash.parentNode) flash.parentNode.removeChild(flash);
   if (layer.parentNode) layer.parentNode.removeChild(layer);
-  // keep head hidden until splash removed (splash flow); restore for logo reuse
   if (headEl.classList.contains("brand-mark") || (headEl.closest && headEl.closest(".brand-mark"))) {
     headEl.style.visibility = "";
     headEl.style.opacity = "1";
   }
 }
+
 
 function sampleCreeperGrid(n) {
   return new Promise(resolve => {
@@ -788,7 +865,6 @@ function sampleCreeperGrid(n) {
 }
 
 function fallbackCreeperGrid(n) {
-  // Classic face mask scaled to n
   const face8 = [
     [0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],
     [0,1,1,0,0,1,1,0],[0,1,1,0,0,1,1,0],
@@ -813,7 +889,7 @@ async function hideSplash() {
   const s = $("splash");
   const head = s ? s.querySelector(".creeper-head") : null;
   const started = window.__splashStarted || performance.now();
-  const minMs = 1400;
+  const minMs = 3000;
   const left = Math.max(0, minMs - (performance.now() - started));
   // run fuse for remaining time (at least fuse sequence)
   const fuseMs = Math.max(700, left);
@@ -837,8 +913,8 @@ async function init() {
   window.__splashStarted = window.__splashStarted || performance.now();
   const splash = $("splash");
   const head = splash ? splash.querySelector(".creeper-head") : null;
-  // Fuse starts immediately (Minecraft creeper ~3s), data loads in parallel
-  const fuseP = creeperFuseAndBoom(head, { duration: 1400, flashEl: $("splash-flash") });
+  // Fuse ~3s minimum (Minecraft creeper), data loads in parallel
+  const fuseP = creeperFuseAndBoom(head, { duration: 3000, flashEl: $("splash-flash") });
   try {
     const sf = $("splashFill");
     if (sf) sf.style.width = "15%";
@@ -3000,15 +3076,38 @@ function bind() {
     if (open && $("shell").classList.contains("chat-on")) {
       $("shell").classList.remove("chat-on");
       if ($("btnChat")) $("btnChat").classList.remove("on");
+      try { lockBodyForChat(false); } catch (e) {}
     }
   };
   on("btnMenu", "click", toggleNav);
 
+  const lockBodyForChat = (on) => {
+    // Mobile/tablet only: AI panel = full page, background must not scroll
+    if (!window.matchMedia("(max-width: 1100px)").matches) {
+      document.body.classList.remove("chat-lock");
+      document.body.style.removeProperty("top");
+      return;
+    }
+    if (on) {
+      const y = window.scrollY || window.pageYOffset || 0;
+      document.body.dataset.chatScrollY = String(y);
+      document.body.classList.add("chat-lock");
+      document.body.style.top = "-" + y + "px";
+    } else {
+      const y = parseInt(document.body.dataset.chatScrollY || "0", 10) || 0;
+      document.body.classList.remove("chat-lock");
+      document.body.style.removeProperty("top");
+      delete document.body.dataset.chatScrollY;
+      window.scrollTo(0, y);
+    }
+  };
   const toggleChat = () => {
     if (!$("shell")) return;
     $("shell").classList.toggle("chat-on");
-    if ($("btnChat")) $("btnChat").classList.toggle("on", $("shell").classList.contains("chat-on"));
-    if ($("shell").classList.contains("chat-on")) scrollChatBottom();
+    const open = $("shell").classList.contains("chat-on");
+    if ($("btnChat")) $("btnChat").classList.toggle("on", open);
+    lockBodyForChat(open);
+    if (open) scrollChatBottom();
   };
   on("btnChat", "click", toggleChat);
 

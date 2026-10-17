@@ -1504,6 +1504,76 @@ body[data-theme="light"]{
   box-shadow:1px 1px 0 rgba(0,0,0,.25);
 }
 
+/* ===== Boom physics FX ===== */
+.creeper-boom-flash{
+  position:fixed;inset:0;z-index:10060;pointer-events:none;
+  background:#fff;opacity:0;
+  transition:opacity .08s linear;
+}
+.creeper-boom-flash.on{
+  opacity:.92;
+  animation:creeper-flash-out .55s ease-out forwards;
+}
+@keyframes creeper-flash-out{
+  0%{opacity:.95}
+  35%{opacity:.55}
+  100%{opacity:0}
+}
+#splash.boom-shake{
+  animation:splash-boom-shake .48s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes splash-boom-shake{
+  0%,100%{transform:translate(0,0)}
+  15%{transform:translate(-7px,3px)}
+  30%{transform:translate(8px,-4px)}
+  45%{transform:translate(-5px,5px)}
+  60%{transform:translate(6px,-2px)}
+  75%{transform:translate(-3px,2px)}
+}
+.creeper-smoke{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle, rgba(220,220,220,.55) 0%, rgba(80,80,80,.25) 45%, transparent 70%);
+  filter:blur(2px);
+  will-change:transform,opacity;
+}
+.creeper-shard{
+  box-shadow:1px 1px 0 rgba(0,0,0,.35), 0 0 2px rgba(255,255,255,.15);
+}
+
+/* AI chat = separate page on mobile/tablet: lock background scroll */
+body.chat-lock{
+  overflow:hidden !important;
+  position:fixed !important;
+  left:0;right:0;
+  width:100% !important;
+  height:100% !important;
+  touch-action:none;
+  overscroll-behavior:none;
+}
+@media (max-width: 1100px) {
+  .shell.chat-on .backdrop{
+    position:fixed;
+    inset:0;
+    z-index:220;
+    background:rgba(0,0,0,.72);
+    /* fully covers main content so it cannot scroll underneath */
+  }
+  .shell.chat-on .stage,
+  .shell.chat-on .nav:not(.open){
+    pointer-events:none;
+    visibility:hidden;
+  }
+  .shell.chat-on .chat{
+    z-index:230;
+    overscroll-behavior:contain;
+  }
+  .shell.chat-on .chat-log{
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+
+
 
 /* External icon images */
 .icon {
