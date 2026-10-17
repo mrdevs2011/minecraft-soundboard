@@ -579,7 +579,7 @@ function formatMd(src) {
   s = s.replace(/^[ \t]*###[ \t]+(.+)$/gm, '<div class="md-h3">$1</div>');
   s = s.replace(/^[ \t]*##[ \t]+(.+)$/gm, '<div class="md-h2">$1</div>');
   s = s.replace(/^[ \t]*#[ \t]+(.+)$/gm, '<div class="md-h1">$1</div>');
-  s = s.replace(/^[ 	]*>[ 	]?(.*)$/gm, '<div class="md-quote"></div>');
+  s = s.replace(/^[ \t]*>[ \t]?(.*)$/gm, '<div class="md-quote">$1</div>');
   s = s.replace(/^[ \t]*[-*][ \t]+(.+)$/gm, '<div class="md-li">• $1</div>');
   s = s.replace(/^[ \t]*(\d+)\.[ \t]+(.+)$/gm, '<div class="md-li md-ol">$1. $2</div>');
   s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="md-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
