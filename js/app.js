@@ -414,7 +414,7 @@ function applyStaticLang() {
   document.documentElement.lang = lang === "uz" ? "uz" : (lang === "ru" ? "ru" : "en");
 }
 
-const MODEL = "llama-3.1-8b-instant";
+const MODEL = "openai/gpt-oss-20b";
 let data = null, all = [], tree = {}, navPath = [];
 let audio = null, cardEl = null, seeking = false, raf = null, hist = [];
 let currentPlayPath = null;
