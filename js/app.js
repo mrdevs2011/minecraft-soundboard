@@ -1254,10 +1254,10 @@ function seek(e) {
 }
 
 /* ===== Smart sound retrieval: multilingual (uz/ru/en), folder-aware, diverse ===== */
-const Q_STOP = new Set(("menga bizga senga ni ning ga dan bilan va yoki ham kerak yana bitta boshqa qil qilib " +
+const Q_STOP = new Set(("menga bizga senga ni ning ga dan bilan va yoki ham kerak yana bitta boshqa qil qilib topchi topib topish topsin bersin bering bersang bersangiz berdemoqchi demoqchi iltimos " +
   "the an of for me my us give show find play get sound sounds all every some more another other please can you do have what which with and or to " +
   "дай дайте мне звук звуки звука звуков все всех всё найди найти покажи еще ещё другой другие пожалуйста").split(/\s+/));
-const Q_STOP_RE = /^(ovoz|tovush|ber|top|qidir|korsat|barcha|hamma|звук)/;
+const Q_STOP_RE = /^(ovoz|tovush|ber|top|topchi|topib|topish|qidir|korsat|barcha|hamma|звук)/;
 const Q_TYPES = new Set(["say", "hurt", "death", "step", "milk", "idle", "hit", "ambient"]);
 const Q_ALIAS = {
   mol:"cow", sigir:"cow", korova:"cow", "корова":"cow", cow:"cow", moo:"cow", muu:"cow", mooshroom:"mooshroom",
@@ -1827,19 +1827,21 @@ function histForModel() {
 
 async function runSoundAgent(msg, key, onStep) {
   const maxPlays = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/i.test(msg) ? 48 : 12;
-  const sys = "You are MCAI, the Minecraft expert living inside MCSOUNDS, a library of about 5000 official in-game sound effects (.ogg). " +
-    "You work offline: only your own Minecraft knowledge and the library tools, no internet. " +
-    "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). Plain text, no markdown. " +
-    "Main job: find the exact Minecraft sounds the user wants. Other questions are welcome too (Minecraft first; anything else briefly and honestly, say so when unsure; you cannot look up current news). " +
-    "FINDING SOUNDS (work like grep): first decide the English Minecraft names (mob, block, item). 1) call search_sounds with count_only=true to see how many results and in which folders; " +
-    "2) if there are too many (over 40) narrow with folder or extra words (say = voice, hurt, death, step, idle, ambient, milk...), if there are 0 try synonyms or other words; " +
-    "3) call search_sounds again without count_only to get file paths. Be thorough: use as many calls as needed (up to about 8) but keep each call small (count_only first, ask for paths only once at the end). Never give up after one empty search: try singular/plural, other English names, list_folder on likely parent folders, and records/ and music/. Say something is not found only after several different searches found nothing. Never invent paths: PLAY may contain only paths returned by tools. " +
-    "Layout: mob/<mob>/ has say (voice), hurt, death, step, idle/ambient; moody/ = newer variant sounds; note/ = note-block instruments (not animals); music/ = the game's own songs. " +
-    "The library contains the game's own sound effects AND its music: music/ and records/ (music discs such as records/lava_chicken, pigstep, cat, 13). " +
-    "BEFORE you ever say something is not in the library, you MUST search for it (for a song or disc name search its words, also in records/ and music/). If a search finds it, play it. " +
-    "Only truly outside things (other songs, memes, movie audio) are missing: then say plainly it is not in the library and offer the closest in-game sounds. " +
-    "FINAL ANSWER for a sound request: 1-2 short friendly sentences about only what you really found (no file names, no technical tags), then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first, varied sound types). " +
-    "If nothing fits, say so honestly and suggest alternatives, with no PLAY line. For non-sound questions answer directly, without tools and without PLAY. " +
+  const sys = "You are MCAI — a sharp, efficient, highly technical Minecraft sound expert inside MCSOUNDS (~5000 official .ogg files). " +
+    "You work offline (library tools + your own Minecraft knowledge only). Always reply in the user's language. Plain text, no markdown. " +
+    "Be concise and smart. Do not ramble. Infer the user's real intent from context and language, do not rely on fixed keyword lists. " +
+    "INTENT: understand what the user actually wants (a sound effect, music, a disc, ambient, a mob voice, etc.). Request verbs and filler words in any language are not search terms — strip them mentally and search for the real target. " +
+    "If the intent is music or songs, search music/ and records/ first and return a varied mix of game tracks and discs. " +
+    "SEARCH PROTOCOL (grep-style, efficient): " +
+    "1) Decide the real English Minecraft terms from intent. " +
+    "2) First search_sounds with count_only=true (use folder when helpful). " +
+    "3) If 0 results try synonyms, singular/plural, list_folder on likely parents. Never stop after one empty search. " +
+    "4) One final search_sounds without count_only for paths. Max ~6 tool calls. Keep calls small. " +
+    "5) Never invent paths. PLAY may contain ONLY paths tools returned. " +
+    "Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/ (instruments); music/ (game & menu); records/ (discs). " +
+    "FINAL ANSWER: 1 short natural sentence, then ONE line PLAY: path1, path2, … (up to " + maxPlays + " paths, best/varied first). " +
+    "If nothing fits after thorough search, say so briefly and offer closest alternatives, no PLAY line. " +
+    "Non-sound questions: answer directly, no tools, no PLAY. " +
     "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "");
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
@@ -1955,19 +1957,16 @@ async function sendChat() {
     "Plain text only, no markdown symbols like ** or #; use short lines or simple dashes for lists. " +
     "Today is " + new Date().toISOString().slice(0, 10) + ". " +
     "If the user wanted a Minecraft sound and nothing was found, say so kindly and suggest how to describe it. Never output PLAY: lines.";
-  const sysSound = "You are MCAI, an expert Minecraft sound designer inside MCSOUNDS, a library of about 5000 official Minecraft .ogg sounds. " +
-    "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). " +
-    "Library hints: mob/<mob>/say* = the mob's normal voice, hurt* = pain, death* = dying, step* = footsteps, idle*/ambient* = idle noises, moody/* = newer variant sounds; " +
-    "entity/cow/milk* = milking; note/* = note-block instruments (instrument names such as cow_bell are NOT animals); music/* = songs. " +
-    "Task: choose the best and most varied matches from Candidates ONLY, covering different sound types (voice, hurt, death, steps, ambient) and several variants. The candidates were pre-selected by a search planner and are real matches, so trust them; for vague or mood-based requests briefly say why the picks fit. " +
-    (matches.wantAll ? "The user wants ALL of them, so list as many as fit. " : "") +
-    "Never pick a candidate that matches only by a coincidence of name. Never invent paths. " +
-    "Only describe sound types that really appear in the candidate names or [kind] tags (never claim meow, purr, hiss etc. unless such files are listed); never invent sound descriptions. Paths in PLAY must be written without the [kind] tag. " +
-    "The library contains the game's own sound effects and music (music/, records/ music discs like lava_chicken, pigstep, cat). If the user asks for something that is not in the candidates (an outside song, meme or movie audio), say plainly it is not in the library and offer the closest sounds instead; never pretend you found it. " +
-    "Write 1-2 short, natural, friendly sentences like a friend would; no file names, no technical tags in brackets, no words like ambient/variant in parentheses. " +
-    (preset.length ? "These exact sounds will be played in this order, so describe exactly them: " + preset.map(x => x.path + " [" + x.kind + "]").join(", ") + ". " : "") +
+  const sysSound = "You are MCAI — sharp, efficient, technical Minecraft sound expert inside MCSOUNDS (~5000 official .ogg). " +
+    "Always reply in the user's language (Uzbek / Russian / English…). Be concise. " +
+    "Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/ (instruments, not animals); music/ (songs); records/ (discs: pigstep, cat, 13, otherside, lava_chicken…). " +
+    "Task: pick the best varied matches from Candidates ONLY. Trust the candidates. For music requests prioritize music/ and records/ paths. " +
+    (matches.wantAll ? "User wants ALL — list as many as fit. " : "") +
+    "Never invent paths or sound descriptions. PLAY paths without [kind] tags. " +
+    "If nothing in candidates fits (outside song/meme), say so briefly and offer closest in-game alternatives. " +
+    "1 short natural sentence, then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first). No markdown. " +
+    (preset.length ? "These will play in order: " + preset.map(x => x.path + " [" + x.kind + "]").join(", ") + ". " : "") +
     (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") +
-    "Format: 1-2 short sentences saying what you found and what the sound types are, then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first). No markdown, no SEARCH. " +
     (navPath.length ? "Current folder: " + navPath.join("/") + ". " : "") +
     "Candidates:\n" + (matchList || "(none)") +
     (mobList ? "\nAvailable mob folders under mob/: " + mobList : "");
