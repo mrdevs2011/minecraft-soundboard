@@ -1744,8 +1744,11 @@ function agentList(a, seen) {
 function renderTrace(trace, live) {
   if (!trace || !trace.length) {
     if (live) return '<details class="trace" open><summary>Working...</summary><div class="trace-body"><div class="trace-think">Thinking...</div></div></details>';
-    return '<details class="trace"><summary>MCAI used</summary><div class="trace-body"><div class="trace-think">No tool calls or thinking text this turn.</div></div></details>';
+    return "";   // no thinking or tools: hide the box
   }
+  const hasThink = trace.some(x => x.type === "think" && x.text && x.text.trim());
+  const hasTools = trace.some(x => x.type === "tool");
+  if (!live && !hasThink && !hasTools) return "";
   const tools = trace.filter(x => x.type === "tool");
   const totalTok = trace.reduce((s, x) => s + (x.tokens || 0), 0);
   const baseTitle = live
