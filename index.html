@@ -100,7 +100,6 @@
     <a class="brand" href="/" id="brandHome">
       <div class="brand-mark"><img src="/png/creeper.png" width="32" height="32" alt="" decoding="async"></div>
       <div class="brand-col">
-        <div class="brand-text">MC<span>SOUNDS</span></div>
         <div class="brand-files" id="stats">-</div>
       </div>
     </a>
@@ -128,9 +127,13 @@
         <img class="icon" src="/svg/chat.svg" alt="">
         <span>AI</span>
       </button>
+      <button class="icon-btn btn-more" id="btnMore" type="button" title="More" aria-label="More" aria-haspopup="menu" aria-expanded="false">
+        <svg class="more-ico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="10" y="3" width="4" height="4"/><rect x="10" y="10" width="4" height="4"/><rect x="10" y="17" width="4" height="4"/></svg>
+      </button>
     </div>
   </div>
 </header>
+<div class="more-menu" id="moreMenu" role="menu" aria-label="More"></div>
 
 <div class="backdrop" id="backdrop"></div>
 <div class="shell" id="shell">
@@ -160,7 +163,7 @@
       <h3 class="mc-ai-title"><span class="mc">MC</span><span class="ai">AI</span></h3>
       <div class="chat-hd-actions">
         <button class="icon-btn hidden" id="btnClear" type="button" title="Clear chat">
-          <img class="icon" src="/svg/clear.svg" alt="">
+          <img class="icon" src="/svg/trash.svg" alt="">
         </button>
         <button class="icon-btn" id="btnKey" type="button" title="API Key">
           <img class="icon key-icon" id="keyIcon" src="/svg/key-dark.svg" alt="">
@@ -206,6 +209,17 @@
     <div class="dl-actions">
       <button type="button" class="dl-btn" id="dlCancel">Cancel</button>
       <button type="button" class="dl-btn primary" id="dlConfirm">Yes, download</button>
+    </div>
+  </div>
+</div>
+
+<div class="dl-modal-bg" id="clearModal" role="dialog" aria-modal="true" aria-labelledby="clearModalTitle">
+  <div class="dl-modal">
+    <h2 id="clearModalTitle">CLEAR CHAT?</h2>
+    <p id="clearModalText">All AI messages will be deleted permanently. This cannot be undone.</p>
+    <div class="dl-actions">
+      <button type="button" class="dl-btn" id="clearNo">No</button>
+      <button type="button" class="dl-btn primary danger" id="clearYes">Yes</button>
     </div>
   </div>
 </div>

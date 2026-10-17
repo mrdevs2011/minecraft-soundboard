@@ -14,6 +14,7 @@ const LANG_NEXT_LABEL = { en: "UZ", uz: "RU", ru: "EN" };
 const I18N = {
   en: {
     search: "Search sounds...",
+    more: "More",
     sounds: "sounds",
     root: "ROOT",
     search_title: "SEARCH",
@@ -47,6 +48,10 @@ const I18N = {
     dl_text: "Download all sounds?<br>Only .ogg files ({n} files, ~370 MB). No code included.",
     yes_dl: "Yes, download",
     cancel: "Cancel",
+    clear_q_title: "CLEAR CHAT?",
+    clear_q_text: "All AI messages will be deleted permanently. This cannot be undone.",
+    yes: "Yes",
+    no: "No",
     close: "Close",
     stop: "Stop",
     downloading: "Downloading...",
@@ -67,6 +72,7 @@ const I18N = {
   },
   uz: {
     search: "Tovushlarni qidirish...",
+    more: "Yana",
     sounds: "tovush",
     root: "BOSH",
     search_title: "QIDIRUV",
@@ -100,6 +106,10 @@ const I18N = {
     dl_text: "Barcha tovushlar yuklab olinsinmi?<br>Faqat .ogg fayllar ({n} ta, ~370 MB). Kod kiritilmaydi.",
     yes_dl: "Ha, yuklab olish",
     cancel: "Bekor",
+    clear_q_title: "CHATNI TOZALASH?",
+    clear_q_text: "Barcha AI xabarlari butunlay o\u2018chiriladi. Buni qaytarib bo\u2018lmaydi.",
+    yes: "Ha",
+    no: "Yo\u2018q",
     close: "Yopish",
     stop: "To\u2018xtatish",
     downloading: "Yuklanmoqda...",
@@ -120,6 +130,7 @@ const I18N = {
   }  ,
   ru: {
     search: "Поиск звуков...",
+    more: "Ещё",
     sounds: "звуков",
     root: "КОРЕНЬ",
     search_title: "ПОИСК",
@@ -153,6 +164,10 @@ const I18N = {
     dl_text: "Скачать все звуки?<br>Только .ogg файлы ({n} шт., ~370 МБ). Код не включён.",
     yes_dl: "Да, скачать",
     cancel: "Отмена",
+    clear_q_title: "ОЧИСТИТЬ ЧАТ?",
+    clear_q_text: "Все сообщения ИИ будут удалены безвозвратно. Это нельзя отменить.",
+    yes: "Да",
+    no: "Нет",
     close: "Закрыть",
     stop: "Стоп",
     downloading: "Скачивание...",
@@ -385,6 +400,14 @@ function applyStaticLang() {
   }
   const btnChat = $("btnChat");
   if (btnChat) btnChat.title = t("ai");
+  const btnMore = $("btnMore");
+  if (btnMore) { btnMore.title = t("more"); btnMore.setAttribute("aria-label", t("more")); }
+  const btnClearEl = $("btnClear");
+  if (btnClearEl) { btnClearEl.title = t("clear_chat"); btnClearEl.setAttribute("aria-label", t("clear_chat")); }
+  if ($("clearModalTitle")) $("clearModalTitle").textContent = t("clear_q_title");
+  if ($("clearModalText")) $("clearModalText").textContent = t("clear_q_text");
+  if ($("clearYes")) $("clearYes").textContent = t("yes");
+  if ($("clearNo")) $("clearNo").textContent = t("no");
   const chatInput = $("chatInput");
   if (chatInput) chatInput.placeholder = t("what_sound");
   const groqKey = $("groqKey");
@@ -2298,8 +2321,59 @@ function on(id, evt, fn, opts) {
   if (el && el.addEventListener) el.addEventListener(evt, fn, opts);
 }
 
+/* Phones/tablets: while the AI panel is open the player is docked inside it (under the header, above the input) */
+function setupPlayerDock() {
+  const player = $("player"), chat = $("chat"), shell = $("shell"), log = $("chatLog");
+  if (!player || !chat || !shell || !log) return;
+  const home = { parent: player.parentNode, next: player.nextSibling };
+  const mq = window.matchMedia("(max-width: 1100px)");
+  const sync = () => {
+    const want = shell.classList.contains("chat-on") && mq.matches;
+    const docked = player.parentNode === chat;
+    if (want && !docked) chat.insertBefore(player, log);
+    else if (!want && docked) {
+      if (home.next && home.next.parentNode === home.parent) home.parent.insertBefore(player, home.next);
+      else home.parent.appendChild(player);
+    }
+  };
+  new MutationObserver(sync).observe(shell, { attributes: true, attributeFilter: ["class"] });
+  if (mq.addEventListener) mq.addEventListener("change", sync); else if (mq.addListener) mq.addListener(sync);
+  sync();
+}
+
+/* Touch has no hover: the player's X shows for a moment when the player appears or is touched */
+function setupPlayerCloseReveal() {
+  const player = $("player");
+  if (!player) return;
+  let timer = null, was = false;
+  const reveal = () => {
+    player.classList.add("x-on");
+    clearTimeout(timer);
+    timer = setTimeout(() => player.classList.remove("x-on"), 3500);
+  };
+  player.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse") reveal(); });
+  new MutationObserver(() => {
+    const now = player.classList.contains("show");
+    if (now && !was) reveal();
+    was = now;
+  }).observe(player, { attributes: true, attributeFilter: ["class"] });
+}
+
+/* Real header height -> --hdr-h (chat panel / backdrop start exactly below the header) */
+function syncHeaderHeight() {
+  const h = document.querySelector("header.top");
+  if (!h) return;
+  const set = () => document.documentElement.style.setProperty("--hdr-h", Math.round(h.getBoundingClientRect().height) + "px");
+  set();
+  if (window.ResizeObserver) new ResizeObserver(set).observe(h);
+  window.addEventListener("resize", set);
+}
+
 function bind() {
   let searchTimer = null;
+  syncHeaderHeight();
+  setupPlayerDock();
+  setupPlayerCloseReveal();
   on("btnBack", "click", () => {
     if (navPath.length) goNav(navPath.slice(0, -1));
   });
@@ -2408,6 +2482,51 @@ function bind() {
     if ($("shell").classList.contains("chat-on")) scrollChatBottom();
   };
   on("btnChat", "click", toggleChat);
+
+  /* Phones: rarely used header buttons live in the "⋮" menu; items proxy-click the real (hidden) buttons */
+  const moreBtn = $("btnMore"), moreMenu = $("moreMenu");
+  const closeMore = () => {
+    if (!moreMenu) return;
+    moreMenu.classList.remove("open");
+    if (moreBtn) { moreBtn.classList.remove("on"); moreBtn.setAttribute("aria-expanded", "false"); }
+  };
+  const buildMore = () => {
+    moreMenu.textContent = "";
+    ["btnDlAll", "btnLang", "btnTheme", "btnDesktop"].forEach((id) => {
+      const src = $(id);
+      if (!src || src.style.display === "none") return;
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "more-item";
+      item.setAttribute("role", "menuitem");
+      const ico = document.createElement("span");
+      ico.className = "mi";
+      const img = src.querySelector("img.icon");
+      if (img) ico.appendChild(img.cloneNode());
+      else ico.textContent = id === "btnLang" ? (($("langLabel") && $("langLabel").textContent) || "") : "APP";
+      const lab = document.createElement("span");
+      lab.textContent = src.title || id;
+      item.appendChild(ico);
+      item.appendChild(lab);
+      item.addEventListener("click", () => { closeMore(); src.click(); });
+      moreMenu.appendChild(item);
+    });
+  };
+  if (moreBtn && moreMenu) {
+    moreBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (moreMenu.classList.contains("open")) { closeMore(); return; }
+      buildMore();
+      moreMenu.classList.add("open");
+      moreBtn.classList.add("on");
+      moreBtn.setAttribute("aria-expanded", "true");
+    });
+    document.addEventListener("click", (e) => {
+      if (moreMenu.classList.contains("open") && !moreMenu.contains(e.target) && !moreBtn.contains(e.target)) closeMore();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMore(); });
+    window.addEventListener("resize", closeMore);
+  }
   on("backdrop", "click", () => {
     if ($("shell") && $("shell").classList.contains("nav-on")) {
       if ($("nav")) $("nav").classList.remove("open");
@@ -2418,7 +2537,24 @@ function bind() {
     }
   });
   on("btnKey", "click", () => { if ($("keyPop")) $("keyPop").classList.toggle("open"); });
-  on("btnClear", "click", clearChat);
+  /* Clear chat: bucket button -> confirm modal (Yes/No, 3 languages) -> wipe everything */
+  const clearModal = $("clearModal");
+  const closeClear = () => { if (clearModal) clearModal.classList.remove("open"); };
+  on("btnClear", "click", () => {
+    if (!clearModal) { clearChat(); return; }
+    clearModal.classList.add("open");
+    if ($("clearNo")) $("clearNo").focus();
+  });
+  on("clearNo", "click", closeClear);
+  on("clearYes", "click", () => {
+    closeClear();
+    try { localStorage.removeItem("mcsnd_hist"); localStorage.removeItem("mcsnd_chat_ui"); } catch (e) {}
+    clearChat();
+  });
+  on("clearModal", "click", (e) => { if (e.target === clearModal) closeClear(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && clearModal && clearModal.classList.contains("open")) { e.stopImmediatePropagation(); closeClear(); }
+  }, true);
   on("chatLog", "scroll", () => {
     const log = $("chatLog");
     if (!log || log.scrollTop > 40 || chatLoaded <= 0) return;

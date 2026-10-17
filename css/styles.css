@@ -1710,3 +1710,112 @@ body[data-theme="light"]{
     inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 #e0675a;
 }
 .player-close:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+
+/* ===== v18: header polish — no wordmark, "⋮" menu on phones, nicer search, AI panel flush under header ===== */
+:root { --hdr-h: calc(var(--top-h) + var(--safe-t)); } /* js/app.js overrides with the real header height */
+
+.btn-more { display: none; }
+.btn-more .more-ico { width: 18px; height: 18px; display: block; }
+.more-menu {
+  display: none; flex-direction: column; gap: 2px;
+  position: fixed; top: calc(var(--hdr-h) + 4px); right: max(8px, var(--safe-r)); z-index: 260;
+  min-width: 220px; max-width: calc(100vw - 16px); padding: 4px;
+  background: var(--bg2); border: var(--px) solid var(--border);
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--bevel-light),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--bevel-dark),
+    0 8px 0 rgba(0,0,0,.25);
+}
+.more-menu.open { display: flex; }
+.more-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; height: 46px; padding: 0 12px;
+  background: transparent; color: var(--text); border: none; cursor: pointer; text-align: left;
+  font-family: var(--font-mono); font-size: 18px; letter-spacing: .04em; text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+.more-item .mi { width: 22px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+.more-item .mi img { width: 17px; height: 17px; filter: brightness(0) invert(.92); }
+[data-theme="light"] .more-item .mi img { filter: brightness(0) invert(.12); }
+.more-item:hover, .more-item:active { background: var(--accent); color: #fff; }
+.more-item:hover .mi img, .more-item:active .mi img,
+[data-theme="light"] .more-item:hover .mi img, [data-theme="light"] .more-item:active .mi img { filter: brightness(0) invert(1); }
+
+/* Search field */
+.search-wrap input {
+  height: 42px; padding: 0 38px 0 40px; font-size: 19px; letter-spacing: .02em;
+  background: var(--bg); caret-color: var(--accent);
+  -webkit-appearance: none; appearance: none; border-radius: 0;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.search-wrap input::placeholder { color: var(--dim); opacity: 1; }
+.search-wrap input:focus {
+  outline: none; background: var(--bg2);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.25), 0 0 0 2px var(--accent), 0 0 14px var(--accent-glow);
+}
+.search-wrap .icon { left: 13px; width: 17px; height: 17px; opacity: .6; transition: opacity .15s ease; }
+.search-wrap:focus-within .icon { opacity: 1; }
+.search-wrap input::-webkit-search-decoration { -webkit-appearance: none; }
+.search-wrap input::-webkit-search-cancel-button {
+  -webkit-appearance: none; appearance: none; width: 16px; height: 16px; margin: 0 -22px 0 0; cursor: pointer;
+  background: var(--muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5L5 19' stroke='black' stroke-width='3' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 5l14 14M19 5L5 19' stroke='black' stroke-width='3' stroke-linecap='square'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.search-wrap input::-webkit-search-cancel-button:hover { background: var(--accent); }
+
+/* AI panel: sticky/fixed exactly below the real header, header never covered */
+.chat { top: var(--hdr-h); max-height: calc(100dvh - var(--hdr-h)); }
+@media (max-width: 1100px) {
+  .chat { top: var(--hdr-h); bottom: 0; max-height: none; }
+  .shell.chat-on .backdrop { top: var(--hdr-h); }
+}
+
+@media (max-width: 720px) {
+  /* rarely used buttons -> "⋮" */
+  #btnDlAll, #btnLang, #btnTheme, #btnDesktop { display: none !important; }
+  .btn-more { display: inline-flex; }
+  .search-wrap input { height: 42px; font-size: 16px; padding-left: 38px; }
+
+  /* AI = full-height sheet from header down to the bottom */
+  .chat {
+    top: var(--hdr-h); bottom: 0; height: auto; max-height: none;
+    border-radius: 0; box-shadow: none;
+    border-top: var(--px) solid var(--border);
+  }
+  .chat-hd { border-radius: 0; }
+  .shell.chat-on .backdrop { top: var(--hdr-h); }
+}
+
+
+/* ===== v18: player — X badge off the controls (hover/tap), docked inside the AI panel on phones/tablets ===== */
+.player-close {
+  top: -12px; right: -4px; width: 24px; height: 24px; z-index: 4;
+}
+.player-close svg { width: 10px; height: 10px; }
+.player-ctrls { gap: 10px; }
+@media (hover: none) {
+  .player-close { opacity: 0; pointer-events: none; }
+  .player.x-on .player-close { opacity: 1; pointer-events: auto; }
+}
+
+/* Docked inside .chat (js/app.js moves #player here while the AI panel is open on <=1100px) */
+.shell.chat-on .chat .player {
+  position: relative; left: auto; right: auto; top: auto; bottom: auto;
+  width: auto; max-width: none; transform: none; z-index: auto;
+  margin: 16px 10px 6px; flex-shrink: 0; animation: none;
+}
+.shell.chat-on .chat .player.show { display: block; }
+.chat .player .player-inner { padding: 10px 12px 12px; gap: 8px; }
+.chat-log { min-height: 80px; }
+
+
+/* ===== v18: tablets get the same header behaviour as phones (<=1100px) ===== */
+@media (max-width: 1100px) {
+  #btnDlAll, #btnLang, #btnTheme, #btnDesktop { display: none !important; }
+  .btn-more { display: inline-flex; }
+}
+.dl-modal .dl-btn.danger {
+  background: var(--danger); color: #fff;
+  box-shadow: inset var(--px) var(--px) 0 rgba(255,255,255,.28), inset calc(-1*var(--px)) calc(-1*var(--px)) 0 rgba(0,0,0,.45);
+}
