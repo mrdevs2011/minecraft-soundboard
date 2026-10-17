@@ -1694,11 +1694,20 @@ function agentSearch(a, seen) {
   const toks = String(a.words || "").toLowerCase().split(/[\s,]+/).filter(t => t.length > 1);
   const folder = String(a.folder || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
   if (!toks.length && !folder) return { error: "give words or folder" };
-  let rows = qIndex().filter(r => (!folder || r.p.startsWith(folder)) && toks.every(t => r.p.includes(t)));
+  const pick = ts => qIndex().filter(r => (!folder || r.p.startsWith(folder)) && ts.every(t => r.p.includes(t)));
+  let rows = pick(toks);
+  if (!rows.length && toks.length) {   // auto retry with singular forms (cows -> cow)
+    const alt = toks.map(t => (t.length > 3 && t.endsWith("s") ? t.slice(0, -1) : t));
+    if (alt.join(" ") !== toks.join(" ")) rows = pick(alt);
+  }
   const total = rows.length;
   const byF = {};
   rows.forEach(r => { const f = r.dirs.slice(0, 2).join("/") || "(root)"; byF[f] = (byF[f] || 0) + 1; });
   const out = { total: total, folders: Object.keys(byF).sort((x, y) => byF[y] - byF[x]).slice(0, 8).map(f => f + ": " + byF[f]) };
+  if (!total && toks.length > 1) {   // tell the model which word has hits, so it can retry smartly
+    out.per_word = toks.map(t => t + ": " + qIndex().filter(r => r.p.includes(t)).length);
+    out.hint = "no path has all words; try fewer or different words";
+  }
   if (!a.count_only && total) {
     const fresh = rows.filter(r => !_shown.has(r.s.path));
     if (fresh.length) rows = fresh;
@@ -1746,7 +1755,7 @@ async function runSoundAgent(msg, key) {
     "Main job: find the exact Minecraft sounds the user wants. Other questions are welcome too (Minecraft first; anything else briefly and honestly, say so when unsure; you cannot look up current news). " +
     "FINDING SOUNDS (work like grep): first decide the English Minecraft names (mob, block, item). 1) call search_sounds with count_only=true to see how many results and in which folders; " +
     "2) if there are too many (over 40) narrow with folder or extra words (say = voice, hurt, death, step, idle, ambient, milk...), if there are 0 try synonyms or other words; " +
-    "3) call search_sounds again without count_only to get file paths. Use at most about 4 tool calls. Never invent paths: PLAY may contain only paths returned by tools. " +
+    "3) call search_sounds again without count_only to get file paths. Be thorough: use as many calls as needed (up to about 8) but keep each call small (count_only first, ask for paths only once at the end). Never give up after one empty search: try singular/plural, other English names, list_folder on likely parent folders, and records/ and music/. Say something is not found only after several different searches found nothing. Never invent paths: PLAY may contain only paths returned by tools. " +
     "Layout: mob/<mob>/ has say (voice), hurt, death, step, idle/ambient; moody/ = newer variant sounds; note/ = note-block instruments (not animals); music/ = the game's own songs. " +
     "The library contains the game's own sound effects AND its music: music/ and records/ (music discs such as records/lava_chicken, pigstep, cat, 13). " +
     "BEFORE you ever say something is not in the library, you MUST search for it (for a song or disc name search its words, also in records/ and music/). If a search finds it, play it. " +
@@ -1756,7 +1765,7 @@ async function runSoundAgent(msg, key) {
     "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "");
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
-  for (let step = 0; step < 6; step++) {
+  for (let step = 0; step < 10; step++) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 30000);
     let json;
@@ -1765,7 +1774,7 @@ async function runSoundAgent(msg, key) {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
         body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: 1200, tools: AGENT_TOOLS,
-          tool_choice: step >= 5 ? "none" : "auto", messages: msgs }),
+          tool_choice: step >= 9 ? "none" : "auto", messages: msgs }),
         signal: ctl.signal
       });
       if (!res.ok) return null;   // old pipeline takes over (also shows auth errors)
@@ -1773,7 +1782,7 @@ async function runSoundAgent(msg, key) {
     } catch (e) { return null; } finally { clearTimeout(timer); }
     const m = json.choices && json.choices[0] && json.choices[0].message;
     if (!m) return null;
-    if (m.tool_calls && m.tool_calls.length && step < 5) {
+    if (m.tool_calls && m.tool_calls.length && step < 9) {
       msgs.push({ role: "assistant", content: m.content || "", tool_calls: m.tool_calls });
       m.tool_calls.forEach(tc => {
         let args = {};
