@@ -1744,29 +1744,40 @@ function agentList(a, seen) {
 function renderTrace(trace, live) {
   if (!trace || !trace.length) return "";
   const tools = trace.filter(x => x.type === "tool");
+  const totalTok = trace.reduce((s, x) => s + (x.tokens || 0), 0);
   const title = live
-    ? tt("trace_working", "Working...") + (tools.length ? " (" + tools.length + ")" : "")
-    : tt("trace_used", "Used library search") + " (" + tools.length + " " + (tools.length === 1 ? tt("trace_step", "step") : tt("trace_steps", "steps")) + ")";
-  const code = o => { let t = JSON.stringify(o, null, 2) || ""; if (t.length > 700) t = t.slice(0, 700) + "\n..."; return esc(t); };
+    ? (tt("trace_working", "Working...") + (tools.length ? " (" + tools.length + ")" : ""))
+    : (tt("trace_used", "Used sound library") + " (" + tools.length + " " + (tools.length === 1 ? tt("trace_step", "step") : tt("trace_steps", "steps")) + ")" + (totalTok ? " \u00b7 " + totalTok + " tok" : ""));
+  const code = o => {
+    let t = JSON.stringify(o, null, 2) || "";
+    if (t.length > 900) t = t.slice(0, 900) + "\n...";
+    return esc(t);
+  };
   let body = "";
   const dirs = [];
   trace.forEach(x => {
     if (x.type === "think") {
-      body += '<div class="trace-think">' + esc(x.text).replace(/\n/g, "<br>") + '</div>';
+      const tokBadge = x.tokens ? '<span class="trace-tok" title="' + x.tokens + ' tokens used">' + x.tokens + '</span>' : '';
+      body += '<div class="trace-think" title="' + (x.tokens || 0) + ' tokens">' + tokBadge + esc(x.text).replace(/\n/g, "<br>") + '</div>';
       return;
     }
     const a = x.args || {}, r = x.result || {};
-    let label = x.name + " \u00b7 " + (x.name === "list_folder" ? (a.path || "/") : '"' + (a.words || "") + '"' + (a.folder ? " in " + a.folder : "") + (a.count_only ? " (count)" : ""));
+    let label = x.name;
+    if (x.name === "list_folder") label += " \u00b7 " + (a.path || "/");
+    else if (x.name === "search_sounds") label += " \u00b7 \"" + (a.words || "") + "\"" + (a.folder ? " in " + a.folder : "") + (a.count_only ? " (count)" : "");
     if (r.error) label += " \u00b7 " + r.error;
     else if (typeof r.total === "number") label += " \u00b7 " + r.total;
-    (r.files || []).concat(r.samples || []).forEach(f => { const d = f.split("/").slice(0, -1).join("/") || "(root)"; if (!dirs.includes(d)) dirs.push(d); });
+    (r.files || []).concat(r.samples || []).forEach(f => {
+      const d = f.split("/").slice(0, -1).join("/") || "(root)";
+      if (!dirs.includes(d)) dirs.push(d);
+    });
     body += '<details class="trace-step"><summary>' + esc(label) + '</summary>' +
       '<div class="trace-lbl">Request</div><pre class="trace-code">' + code(a) + '</pre>' +
       '<div class="trace-lbl">Response</div><pre class="trace-code">' + code(r) + '</pre></details>';
   });
   if (!live && tools.length) {
     body += '<div class="trace-src"><b>' + tt("trace_sources", "Sources") + ':</b> sounds.json (' + (all ? all.length : 0) + ')' +
-      dirs.slice(0, 8).map(d => ' \u00b7 ' + esc(d)).join("") + '</div>';
+      dirs.slice(0, 8).map(d => ' \u00b7 ' + esc(d)).join("") + (totalTok ? ' \u00b7 ' + totalTok + ' tokens' : '') + '</div>';
   }
   return '<details class="trace"' + (live ? " open" : "") + '><summary>' + esc(title) + '</summary><div class="trace-body">' + body + '</div></details>';
 }
@@ -1813,6 +1824,8 @@ async function runSoundAgent(msg, key, onStep) {
       if (!res.ok) return null;   // old pipeline takes over (also shows auth errors)
       json = await res.json();
     } catch (e) { return null; } finally { clearTimeout(timer); }
+    const usage = (json && json.usage) || {};
+    const stepTokens = (usage.total_tokens || 0) || ((usage.prompt_tokens || 0) + (usage.completion_tokens || 0));
     const m = json.choices && json.choices[0] && json.choices[0].message;
     if (!m) return null;
     const rawC = String(m.content || "");
@@ -1822,7 +1835,7 @@ async function runSoundAgent(msg, key, onStep) {
     rawC.replace(/<think>([\s\S]*?)<\/think>/g, (_, t) => { thinkParts.push(t); return ""; });
     const visible = rawC.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     const th = thinkParts.join("\n").trim();
-    if (th) { trace.push({ type: "think", text: th.slice(0, 700) }); note(); }
+    if (th) { trace.push({ type: "think", text: th.slice(0, 900), tokens: stepTokens || 0 }); note(); }
     if (m.tool_calls && m.tool_calls.length && step < 9) {
       msgs.push({ role: "assistant", content: visible, tool_calls: m.tool_calls });
       m.tool_calls.forEach(tc => {
