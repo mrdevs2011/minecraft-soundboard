@@ -650,36 +650,35 @@ async function creeperFuseAndBoom(headEl, opts) {
   headEl.style.setProperty("--flash-op", "0.15");
   const t0 = performance.now();
 
-  // Fuse: flashes accelerate, opacity 15% → 100%
-  let nextFlash = 0;
-  let interval = 110;
-  while (performance.now() - t0 < duration - 420) {
+  // Fuse: clear ON/OFF blink that speeds up until boom
+  let interval = 220; // start slow: on → off
+  while (performance.now() - t0 < duration - 380) {
     const elapsed = performance.now() - t0;
     const progress = Math.min(1, elapsed / duration);
-    const op = 0.15 + progress * 0.85;
-    headEl.style.setProperty("--flash-op", op.toFixed(2));
+    headEl.style.setProperty("--flash-op", "1");
 
     const fill = $("splashFill");
     if (fill) fill.style.width = Math.min(96, 8 + progress * 88) + "%";
 
-    if (elapsed >= nextFlash) {
-      headEl.classList.add("flash-white");
-      const onMs = Math.max(14, 48 - progress * 28);
-      await sleep(onMs);
-      headEl.classList.remove("flash-white");
-      nextFlash = elapsed + interval;
-      interval = Math.max(18, interval * 0.88);
-    }
-    await sleep(10);
+    // ON (white)
+    headEl.classList.add("flash-white");
+    const onMs = Math.max(28, Math.round(interval * 0.48));
+    await sleep(onMs);
+    // OFF (normal face)
+    headEl.classList.remove("flash-white");
+    const offMs = Math.max(22, Math.round(interval * 0.52));
+    await sleep(offMs);
+
+    interval = Math.max(32, interval * 0.82); // accelerate
   }
 
-  // Final panic flashes at full white
+  // Final rapid ON/OFF panic
   headEl.style.setProperty("--flash-op", "1");
-  for (let i = 0; i < 18; i++) {
+  for (let i = 0; i < 14; i++) {
     headEl.classList.add("flash-white");
-    await sleep(12 + (i % 4) * 3);
+    await sleep(18);
     headEl.classList.remove("flash-white");
-    await sleep(8);
+    await sleep(14);
   }
 
   headEl.classList.add("flash-white");
@@ -762,11 +761,16 @@ async function shatterCreeperPixels(headEl) {
       el.style.fontWeight = opts.fontWeight || "700";
       el.style.color = color;
       el.style.lineHeight = "1";
-      el.style.display = "flex";
-      el.style.alignItems = "center";
-      el.style.justifyContent = "center";
+      el.style.display = "block";
       el.style.background = "transparent";
+      el.style.backgroundImage = "none";
+      el.style.boxShadow = "none";
+      el.style.border = "none";
+      el.style.padding = "0";
+      el.style.margin = "0";
       el.style.whiteSpace = "pre";
+      el.style.width = "auto";
+      el.style.height = "auto";
     } else {
       el.style.background = color;
     }
@@ -789,17 +793,18 @@ async function shatterCreeperPixels(headEl) {
     }
   }
 
-  // MCSOUNDS title → letter shards blown by blast
-  const title = splash && splash.querySelector(".splash-title");
-  if (title) {
-    const tRect = title.getBoundingClientRect();
-    const raw = (title.textContent || "MCSOUNDS").trim() || "MCSOUNDS";
-    const cs = getComputedStyle(title);
+  // MCSOUNDS title → SOFT pure letters only (no square blocks)
+  function blastTextLetters(el, powerBase) {
+    if (!el) return;
+    const tRect = el.getBoundingClientRect();
+    if (tRect.width < 2) { el.style.visibility = "hidden"; return; }
+    const raw = (el.textContent || "").trim();
+    if (!raw) { el.style.visibility = "hidden"; return; }
+    const cs = getComputedStyle(el);
     const fontSize = cs.fontSize;
     const fontFamily = cs.fontFamily;
     const fontWeight = cs.fontWeight;
     const color = cs.color || "#e0e0e0";
-    // measure each char
     const probe = document.createElement("span");
     probe.style.cssText = "position:absolute;left:-99999px;visibility:hidden;white-space:pre;";
     probe.style.font = cs.font;
@@ -808,64 +813,38 @@ async function shatterCreeperPixels(headEl) {
     probe.style.fontWeight = fontWeight;
     document.body.appendChild(probe);
     let cursorX = tRect.left;
-    const letterH = tRect.height;
     for (let i = 0; i < raw.length; i++) {
       const ch = raw[i];
-      probe.textContent = ch;
-      const cw = Math.max(6, probe.getBoundingClientRect().width);
-      // each letter → 2–4 micro pieces for more physical shatter
-      const parts = ch === " " ? 1 : (2 + (i % 2));
-      const pw = cw / parts;
-      for (let p = 0; p < parts; p++) {
-        const piece = parts === 1 ? ch : ch;
-        addDebris(
-          cursorX + p * pw,
-          tRect.top + (Math.random() * 2 - 1),
-          Math.max(4, pw),
-          letterH * (0.85 + Math.random() * 0.2),
-          color,
-          {
-            cls: "creeper-letter-shard",
-            text: piece,
-            fontSize: fontSize,
-            fontFamily: fontFamily,
-            fontWeight: fontWeight,
-            powerBase: 5.5,
-            mass: 0.4 + Math.random() * 0.5
-          }
-        );
+      if (ch === " ") {
+        probe.textContent = " ";
+        cursorX += Math.max(4, probe.getBoundingClientRect().width);
+        continue;
       }
+      probe.textContent = ch;
+      const cw = Math.max(5, probe.getBoundingClientRect().width);
+      // ONE whole letter — transparent bg, no block box
+      addDebris(cursorX, tRect.top, cw, tRect.height, color, {
+        cls: "creeper-letter-shard",
+        text: ch,
+        fontSize: fontSize,
+        fontFamily: fontFamily,
+        fontWeight: fontWeight,
+        powerBase: powerBase || 5.2,
+        mass: 0.45 + Math.random() * 0.4
+      });
       cursorX += cw;
     }
     probe.remove();
-    title.style.visibility = "hidden";
+    el.style.visibility = "hidden";
   }
 
-  // Sub / tag / bar also get blasted away (fade + scatter as small bits)
-  [".splash-sub", ".splash-tag", ".splash-bar"].forEach(sel => {
-    const el = splash && splash.querySelector(sel);
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    if (r.width < 2) { el.style.visibility = "hidden"; return; }
-    const cols = Math.min(10, Math.max(4, Math.floor(r.width / 14)));
-    const rows = Math.min(3, Math.max(1, Math.floor(r.height / 10)));
-    const cw = r.width / cols;
-    const ch = r.height / rows;
-    const bg = getComputedStyle(el).color || "#888";
-    for (let y = 0; y < rows; y++) {
-      for (let x = 0; x < cols; x++) {
-        addDebris(
-          r.left + x * cw,
-          r.top + y * ch,
-          Math.max(3, cw * 0.9),
-          Math.max(3, ch * 0.9),
-          bg,
-          { powerBase: 3.2, mass: 0.35, cls: "creeper-shard creeper-shard-dim" }
-        );
-      }
-    }
-    el.style.visibility = "hidden";
-  });
+  const title = splash && splash.querySelector(".splash-title");
+  blastTextLetters(title, 6.2);
+  blastTextLetters(splash && splash.querySelector(".splash-sub"), 4.0);
+  blastTextLetters(splash && splash.querySelector(".splash-tag"), 3.6);
+  // bar: just hide (no colored block debris)
+  const bar = splash && splash.querySelector(".splash-bar");
+  if (bar) bar.style.visibility = "hidden";
 
   // Soft smoke (grey only — no yellow)
   const smoke = [];
@@ -2538,7 +2517,7 @@ async function runSoundAgent(msg, key, onStep) {
   }
   const sys = [
     "You are MCAI — the smart, warm, adaptive assistant inside MCSOUNDS (Minecraft sound library).",
-    "Always reply in the user's language (Uzbek, Russian, or English). Be polite, clear, and genuinely helpful.",
+    "Always reply in the user's language (Uzbek, Russian, or English). Be polite, clear, and genuinely helpful. ALWAYS format with Markdown: **bold** for key terms, - lists, `code` for paths/commands.",
     "Tone: friendly expert, not robotic. Explain briefly when useful; never pad with fluff.",
     "You know Minecraft well. You have local search tools for this app's sound files (no live internet).",
     isSoundAsk(msg)
@@ -2696,10 +2675,10 @@ async function sendChat() {
   const chatMode = !!matches.chat;
   const preset = matches.strong ? pickDiverse(matches, maxPlays) : [];
   const sysGeneral = "You are MCAI in MCSOUNDS — a smart, warm Minecraft sound assistant. " +
-    "Reply in the user's language. Be polite, adaptive, and accurate. Plain text (light structure OK). " +
+    "Reply in the user's language. Be polite, adaptive, and accurate. ALWAYS use Markdown: **bold**, lists (- item), `code` when useful. " +
     "Use solid Minecraft knowledge; no live internet. Only use PLAY: lines when the user wants to hear a sound.";
   const sysSound = "You are MCAI, sound finder in MCSOUNDS. Reply in the user's language, friendly and clear. " +
-    "Write 1–3 natural sentences, then PLAY: only paths from Candidates (≤" + maxPlays + "). Never invent paths. " +
+    "Write 1–3 natural sentences with Markdown (**bold**, lists). Then PLAY: only paths from Candidates (≤" + maxPlays + "). Never invent paths. " +
     "If Candidates are empty or weak, say so and suggest the closest real ones.\nCandidates:\n" + (matchList || "(none)");
   const system = chatMode ? sysGeneral : sysSound;
 

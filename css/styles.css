@@ -1905,8 +1905,14 @@ body.chat-lock{
 .creeper-letter-shard{
   position:absolute;pointer-events:none;
   will-change:transform,opacity;
-  text-shadow:0 1px 0 rgba(0,0,0,.35);
-  overflow:hidden;
+  background:transparent !important;
+  background-image:none !important;
+  box-shadow:none !important;
+  border:none !important;
+  text-shadow:0 2px 4px rgba(0,0,0,.45);
+  overflow:visible;
+  width:auto !important;
+  height:auto !important;
 }
 .creeper-shard-dim{
   opacity:.85;
@@ -2046,4 +2052,18 @@ body.chat-lock{
   body.chat-lock .btn-chat-hdr {
     grid-column: 3;
   }
+}
+
+/* AI / bubbles: long words wrap to next line */
+.bubble.ai .ai-text,
+.bubble.user,
+.bubble {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+.bubble.ai .ai-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
