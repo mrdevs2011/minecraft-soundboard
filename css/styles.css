@@ -1939,3 +1939,86 @@ body.chat-lock{
     letter-spacing: .04em;
   }
 }
+
+
+/* ===== Header layout: AI chat btn always far-right on mobile/tablet ===== */
+.btn-chat-hdr { flex-shrink: 0; }
+
+@media (min-width: 1101px) {
+  .top-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand { order: 1; flex-shrink: 0; }
+  .search-wrap {
+    order: 2;
+    flex: 1 1 auto;
+    max-width: 420px;
+    margin: 0 auto;
+    justify-self: center;
+  }
+  .top-actions {
+    order: 3;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-chat-hdr {
+    order: 4;
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 1100px) {
+  .top-inner {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: 6px;
+  }
+  .brand { grid-column: 1; }
+  .search-wrap { grid-column: 2; min-width: 0; }
+  .top-actions { grid-column: 3; gap: 4px; }
+  .btn-chat-hdr {
+    grid-column: 4; /* eng o'ng taraf */
+    display: inline-flex !important;
+  }
+  .btn-chat-hdr span { display: none; }
+
+  /* AI chat ochiq: search yo'qoladi, ⋮ yo'qoladi, o'rniga more ichidagi tugmalar */
+  body.chat-lock .search-wrap {
+    display: none !important;
+  }
+  body.chat-lock .btn-more,
+  body.chat-lock .more-menu.open {
+    display: none !important;
+  }
+  body.chat-lock .top-inner {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  body.chat-lock .top-actions {
+    grid-column: 2;
+    justify-self: stretch;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  body.chat-lock #btnMenu {
+    display: none !important;
+  }
+  body.chat-lock #btnDlAll,
+  body.chat-lock #btnLang,
+  body.chat-lock #btnTheme,
+  body.chat-lock #btnDesktop {
+    display: inline-flex !important;
+  }
+  body.chat-lock #btnLang span,
+  body.chat-lock #btnDesktop span {
+    display: inline !important;
+    font-size: 12px;
+  }
+  body.chat-lock .btn-chat-hdr {
+    grid-column: 3;
+  }
+}

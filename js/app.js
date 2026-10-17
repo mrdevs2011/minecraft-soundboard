@@ -3206,7 +3206,10 @@ function bind() {
     const open = $("shell").classList.contains("chat-on");
     if ($("btnChat")) $("btnChat").classList.toggle("on", open);
     lockBodyForChat(open);
-    if (open) scrollChatBottom();
+    if (open) {
+      try { closeMore(); } catch (e) {}
+      scrollChatBottom();
+    }
   };
   on("btnChat", "click", toggleChat);
 
