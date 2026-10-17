@@ -1633,3 +1633,19 @@ body[data-theme="light"]{
 /* Download modal: status on the left, byte-based percent on the right */
 .dl-progress .txt{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .dl-progress .dl-pct{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* Agent trace panel (collapsible steps, request/response code boxes) */
+.bubble.sys.typing.has-trace{flex-direction:column;align-items:stretch;align-self:stretch;justify-content:flex-start;gap:6px}
+.trace-wrap{margin-bottom:8px}
+.trace{border:1px solid var(--border2,#3a3a3a);background:var(--bg2,#2c2c2c);font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.trace>summary,.trace-step>summary{cursor:pointer;padding:7px 10px;list-style:none;color:var(--muted);word-break:break-word}
+.trace>summary::-webkit-details-marker,.trace-step>summary::-webkit-details-marker{display:none}
+.trace>summary::after,.trace-step>summary::after{content:" \25BE";opacity:.7}
+.trace[open]>summary,.trace-step[open]>summary{color:var(--text)}
+.trace-body{border-top:1px solid var(--border2,#3a3a3a)}
+.trace-step{border-top:1px solid var(--border,#242424)}
+.trace-step:first-child{border-top:none}
+.trace-think{padding:7px 10px;color:var(--muted);font-style:italic;line-height:1.4;border-top:1px solid var(--border,#242424)}
+.trace-lbl{padding:6px 10px 2px;font-size:11px;color:var(--dim,#808080);text-transform:uppercase;letter-spacing:.04em}
+.trace-code{margin:0 10px 8px;padding:8px;background:var(--bg,#1b1b1b);color:var(--text);font-family:var(--font-mono);font-size:11px;line-height:1.4;max-height:180px;overflow:auto;white-space:pre-wrap;word-break:break-all;text-align:left}
+.trace-src{padding:7px 10px;border-top:1px solid var(--border,#242424);font-size:11px;line-height:1.5;color:var(--muted);word-break:break-all}

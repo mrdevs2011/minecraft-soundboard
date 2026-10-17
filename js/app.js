@@ -1740,6 +1740,37 @@ function agentList(a, seen) {
   return out;
 }
 
+/* ===== agent trace panel (like Claude: collapsible steps, request/response code boxes, sources) ===== */
+function renderTrace(trace, live) {
+  if (!trace || !trace.length) return "";
+  const tools = trace.filter(x => x.type === "tool");
+  const title = live
+    ? tt("trace_working", "Working...") + (tools.length ? " (" + tools.length + ")" : "")
+    : tt("trace_used", "Used library search") + " (" + tools.length + " " + (tools.length === 1 ? tt("trace_step", "step") : tt("trace_steps", "steps")) + ")";
+  const code = o => { let t = JSON.stringify(o, null, 2) || ""; if (t.length > 700) t = t.slice(0, 700) + "\n..."; return esc(t); };
+  let body = "";
+  const dirs = [];
+  trace.forEach(x => {
+    if (x.type === "think") {
+      body += '<div class="trace-think">' + esc(x.text).replace(/\n/g, "<br>") + '</div>';
+      return;
+    }
+    const a = x.args || {}, r = x.result || {};
+    let label = x.name + " \u00b7 " + (x.name === "list_folder" ? (a.path || "/") : '"' + (a.words || "") + '"' + (a.folder ? " in " + a.folder : "") + (a.count_only ? " (count)" : ""));
+    if (r.error) label += " \u00b7 " + r.error;
+    else if (typeof r.total === "number") label += " \u00b7 " + r.total;
+    (r.files || []).concat(r.samples || []).forEach(f => { const d = f.split("/").slice(0, -1).join("/") || "(root)"; if (!dirs.includes(d)) dirs.push(d); });
+    body += '<details class="trace-step"><summary>' + esc(label) + '</summary>' +
+      '<div class="trace-lbl">Request</div><pre class="trace-code">' + code(a) + '</pre>' +
+      '<div class="trace-lbl">Response</div><pre class="trace-code">' + code(r) + '</pre></details>';
+  });
+  if (!live && tools.length) {
+    body += '<div class="trace-src"><b>' + tt("trace_sources", "Sources") + ':</b> sounds.json (' + (all ? all.length : 0) + ')' +
+      dirs.slice(0, 8).map(d => ' \u00b7 ' + esc(d)).join("") + '</div>';
+  }
+  return '<details class="trace"' + (live ? " open" : "") + '><summary>' + esc(title) + '</summary><div class="trace-body">' + body + '</div></details>';
+}
+
 function histForModel() {
   return hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
     const lim = i === hist.length - 1 ? 1500 : 400;
@@ -1747,7 +1778,7 @@ function histForModel() {
   });
 }
 
-async function runSoundAgent(msg, key) {
+async function runSoundAgent(msg, key, onStep) {
   const maxPlays = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/i.test(msg) ? 48 : 12;
   const sys = "You are MCAI, the Minecraft expert living inside MCSOUNDS, a library of about 5000 official in-game sound effects (.ogg). " +
     "You work offline: only your own Minecraft knowledge and the library tools, no internet. " +
@@ -1765,6 +1796,8 @@ async function runSoundAgent(msg, key) {
     "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "");
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
+  const trace = [];
+  const note = () => { if (onStep) { try { onStep(trace); } catch (e) {} } };
   for (let step = 0; step < 10; step++) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 30000);
@@ -1782,23 +1815,33 @@ async function runSoundAgent(msg, key) {
     } catch (e) { return null; } finally { clearTimeout(timer); }
     const m = json.choices && json.choices[0] && json.choices[0].message;
     if (!m) return null;
+    const rawC = String(m.content || "");
+    const thinkParts = [];
+    if (m.reasoning) thinkParts.push(String(m.reasoning));
+    if (m.reasoning_content) thinkParts.push(String(m.reasoning_content));
+    rawC.replace(/<think>([\s\S]*?)<\/think>/g, (_, t) => { thinkParts.push(t); return ""; });
+    const visible = rawC.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    const th = thinkParts.join("\n").trim();
+    if (th) { trace.push({ type: "think", text: th.slice(0, 700) }); note(); }
     if (m.tool_calls && m.tool_calls.length && step < 9) {
-      msgs.push({ role: "assistant", content: m.content || "", tool_calls: m.tool_calls });
+      msgs.push({ role: "assistant", content: visible, tool_calls: m.tool_calls });
       m.tool_calls.forEach(tc => {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) {}
         const out = tc.function.name === "list_folder" ? agentList(args, seen)
           : tc.function.name === "search_sounds" ? agentSearch(args, seen) : { error: "unknown tool" };
         msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 1200) });
+        trace.push({ type: "tool", name: tc.function.name, args: args, result: out });
+        note();
       });
       continue;
     }
-    const raw = String(m.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    const raw = visible;
     if (!raw) return null;
     const parsed = parseAI(raw);
     const plays = parsed.plays.filter(p => seen.has(p)).slice(0, maxPlays);
     plays.forEach(p => _shown.add(p));
-    return { text: (parsed.text || raw).trim(), plays: plays };
+    return { text: (parsed.text || raw).trim(), plays: plays, trace: trace };
   }
   return null;
 }
@@ -1821,7 +1864,15 @@ async function sendChat() {
   $("chatSend").disabled = true;
 
   let ag = null;
-  try { ag = await runSoundAgent(msg, key); } catch (e) { ag = null; }
+  const dotsHtml = wait.innerHTML;
+  const onStep = tr => {   // live panel: steps appear while the agent works
+    const st = Array.from(wait.querySelectorAll("details")).map(d => d.open);
+    wait.classList.add("has-trace");
+    wait.innerHTML = dotsHtml + renderTrace(tr, true);
+    wait.querySelectorAll("details").forEach((d, i) => { if (i < st.length) d.open = st[i]; });
+    $("chatLog").scrollTop = $("chatLog").scrollHeight;
+  };
+  try { ag = await runSoundAgent(msg, key, onStep); } catch (e) { ag = null; }
   if (ag) {
     wait.remove();
     hist.push({ role: "user", content: msg });
@@ -1830,7 +1881,7 @@ async function sendChat() {
     if (hist.length > 10) hist = hist.slice(-10);
     if (hist.length && hist[0].role === "assistant") hist.shift();
     saveHist();
-    await typeAIResponse(ag.text, ag.plays);
+    await typeAIResponse(ag.text, ag.plays, renderTrace(ag.trace || [], false));
     $("chatSend").disabled = false;
     return;
   }
@@ -1942,7 +1993,7 @@ function scrollChatBottom() {
   setTimeout(go, 300);
 }
 
-async function typeAIResponse(textPlain, plays) {
+async function typeAIResponse(textPlain, plays, traceHtml) {
   plays = plays || [];
   const hero = $("askHero");
   if (hero) hero.remove();
@@ -1952,6 +2003,12 @@ async function typeAIResponse(textPlain, plays) {
   const textEl = document.createElement("div");
   textEl.className = "ai-text";
   d.appendChild(textEl);
+  if (traceHtml) {
+    const tr = document.createElement("div");
+    tr.className = "trace-wrap";
+    tr.innerHTML = traceHtml;
+    d.insertBefore(tr, textEl);
+  }
   $("chatLog").appendChild(d);
   $("chatLog").scrollTop = $("chatLog").scrollHeight;
 
@@ -1995,7 +2052,7 @@ async function typeAIResponse(textPlain, plays) {
   }
 
   // persist
-  let html = '<div class="ai-text">' + esc(shown).replace(/\n/g, "<br>") + '</div>';
+  let html = (traceHtml ? '<div class="trace-wrap">' + traceHtml + '</div>' : '') + '<div class="ai-text">' + esc(shown).replace(/\n/g, "<br>") + '</div>';
   if (plays.length) {
     html += '<div class="chips">';
     plays.forEach(p => {
