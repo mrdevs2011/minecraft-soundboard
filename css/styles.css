@@ -1405,10 +1405,8 @@ html, body {
 }
 #splash-flash{display:none!important;opacity:0!important;pointer-events:none}
 .boom-ring{
-  position:absolute;left:50%;top:50%;width:20px;height:20px;
-  margin:-10px 0 0 -10px;border:3px solid #fff;border-radius:0;
-  opacity:0;pointer-events:none;z-index:10002;
-  box-shadow:0 0 0 2px var(--gold), 0 0 20px #fff;
+  display:none !important; /* no gold/yellow square residue after boom */
+  opacity:0;pointer-events:none;
 }
 .boom-ring.go{
   animation:boom-ring 0.5s steps(5) forwards;
@@ -1507,8 +1505,8 @@ body[data-theme="light"]{
 /* ===== Boom physics FX ===== */
 .creeper-boom-flash{
   position:fixed;inset:0;z-index:10060;pointer-events:none;
-  background:#fff;opacity:0;
-  transition:opacity .08s linear;
+  background:#ffffff;opacity:0;
+  transition:opacity .06s linear;
 }
 .creeper-boom-flash.on{
   opacity:.92;
@@ -1901,4 +1899,22 @@ body.chat-lock{
 .dl-modal .dl-btn.danger {
   background: var(--danger); color: #fff;
   box-shadow: inset var(--px) var(--px) 0 rgba(255,255,255,.28), inset calc(-1*var(--px)) calc(-1*var(--px)) 0 rgba(0,0,0,.45);
+}
+
+
+.creeper-letter-shard{
+  position:absolute;pointer-events:none;
+  will-change:transform,opacity;
+  text-shadow:0 1px 0 rgba(0,0,0,.35);
+  overflow:hidden;
+}
+.creeper-shard-dim{
+  opacity:.85;
+  border-radius:1px;
+}
+/* After boom: never leave a colored head square */
+.creeper-head[style*="opacity: 0"],
+.creeper-head[style*="opacity:0"]{
+  background:transparent !important;
+  box-shadow:none !important;
 }

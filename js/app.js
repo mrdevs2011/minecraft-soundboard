@@ -672,8 +672,7 @@ async function shatterCreeperPixels(headEl) {
     return;
   }
 
-  // Denser pixel grid = more physical debris
-  const N = 12; // 12x12 = 144 shards
+  const N = 14; // denser debris
   const cellW = rect.width / N;
   const cellH = rect.height / N;
   const cx = rect.left + rect.width / 2;
@@ -681,103 +680,190 @@ async function shatterCreeperPixels(headEl) {
 
   const colors = await sampleCreeperGrid(N);
 
-  // Full-screen flash bang
+  // Pure white bang — no yellow/gold residue
   const flash = document.createElement("div");
   flash.className = "creeper-boom-flash";
   document.body.appendChild(flash);
   requestAnimationFrame(() => flash.classList.add("on"));
 
-  // Screen shake on splash root
   const splash = document.getElementById("splash");
   if (splash) {
     splash.classList.add("boom-shake");
-    setTimeout(() => splash.classList.remove("boom-shake"), 520);
+    setTimeout(() => splash.classList.remove("boom-shake"), 480);
   }
 
   const layer = document.createElement("div");
   layer.className = "creeper-shard-layer";
   document.body.appendChild(layer);
 
-  // Shockwave ring
-  const ring = document.createElement("div");
-  ring.className = "boom-ring go";
-  ring.style.left = cx + "px";
-  ring.style.top = cy + "px";
-  ring.style.marginLeft = "-10px";
-  ring.style.marginTop = "-10px";
-  ring.style.position = "fixed";
-  layer.appendChild(ring);
-
   const shards = [];
-  const smoke = [];
+  const G = 0.28;
+  const DRAG = 0.985;
+  const FLOOR = (typeof window !== "undefined" ? window.innerHeight : 900) + 60;
 
+  function addDebris(px, py, w, h, color, opts) {
+    opts = opts || {};
+    const midX = px + w / 2;
+    const midY = py + h / 2;
+    let dx = midX - cx;
+    let dy = midY - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+    dx /= dist;
+    dy /= dist;
+    const near = 1 - Math.min(1, dist / Math.max(rect.width * 1.2, 120));
+    const power = (opts.powerBase || 4.2) + near * 6.5 + Math.random() * 4;
+    const jitter = (Math.random() - 0.5) * 0.7;
+    const cos = Math.cos(jitter), sin = Math.sin(jitter);
+    const rx = dx * cos - dy * sin;
+    const ry = dx * sin + dy * cos;
+    const vx = rx * power + (Math.random() - 0.5) * 3;
+    const vy = ry * power * 0.9 - (2.8 + Math.random() * 4.5 + near * 2.5);
+    const mass = opts.mass || (0.55 + Math.random() * 0.9);
+    const vr = (Math.random() - 0.5) * (1.8 + near * 3);
+
+    const el = document.createElement("div");
+    el.className = opts.cls || "creeper-shard";
+    el.style.width = Math.max(2, Math.ceil(w)) + "px";
+    el.style.height = Math.max(2, Math.ceil(h)) + "px";
+    el.style.left = "0";
+    el.style.top = "0";
+    if (opts.text) {
+      el.textContent = opts.text;
+      el.style.fontFamily = opts.fontFamily || "inherit";
+      el.style.fontSize = opts.fontSize || "16px";
+      el.style.fontWeight = opts.fontWeight || "700";
+      el.style.color = color;
+      el.style.lineHeight = "1";
+      el.style.display = "flex";
+      el.style.alignItems = "center";
+      el.style.justifyContent = "center";
+      el.style.background = "transparent";
+      el.style.whiteSpace = "pre";
+    } else {
+      el.style.background = color;
+    }
+    el.style.transform = "translate(" + px + "px," + py + "px) rotate(0deg)";
+    el.style.opacity = "1";
+    layer.appendChild(el);
+    shards.push({
+      el, x: px, y: py, vx, vy, rot: 0, vr, mass,
+      bounce: 0.28 + Math.random() * 0.22
+    });
+  }
+
+  // Creeper face → pixel debris
   for (let y = 0; y < N; y++) {
     for (let x = 0; x < N; x++) {
       const px = rect.left + x * cellW;
       const py = rect.top + y * cellH;
-      const midX = px + cellW / 2;
-      const midY = py + cellH / 2;
-      let dx = midX - cx;
-      let dy = midY - cy;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-      dx /= dist;
-      dy /= dist;
-
-      // Impulse stronger near center (inverse-ish), Minecraft TNT feel
-      const near = 1 - Math.min(1, dist / (rect.width * 0.75));
-      const power = (3.8 + near * 5.5 + Math.random() * 3.2);
-      const angleJitter = (Math.random() - 0.5) * 0.55;
-      const cos = Math.cos(angleJitter), sin = Math.sin(angleJitter);
-      const rx = dx * cos - dy * sin;
-      const ry = dx * sin + dy * cos;
-
-      const vx = rx * power + (Math.random() - 0.5) * 2.4;
-      // upward bias like real explosion loft
-      const vy = ry * power * 0.85 - (2.2 + Math.random() * 3.8 + near * 2);
-      const mass = 0.7 + Math.random() * 0.8;
-      const vr = (Math.random() - 0.5) * (1.2 + near * 2.5);
-
-      const el = document.createElement("div");
-      el.className = "creeper-shard";
-      const c = colors[y][x];
-      const sz = Math.max(2, Math.ceil(Math.max(cellW, cellH) * (0.85 + Math.random() * 0.35)));
-      el.style.width = sz + "px";
-      el.style.height = sz + "px";
-      el.style.left = "0px";
-      el.style.top = "0px";
-      el.style.background = c;
-      el.style.transform = "translate(" + px + "px," + py + "px) rotate(0deg)";
-      el.style.opacity = "1";
-      layer.appendChild(el);
-      shards.push({ el, x: px, y: py, vx, vy, rot: 0, vr, mass, bounce: 0.35 + Math.random() * 0.25 });
+      const sz = Math.max(2, Math.ceil(Math.max(cellW, cellH) * (0.9 + Math.random() * 0.25)));
+      addDebris(px, py, sz, sz, colors[y][x], { powerBase: 4.5 });
     }
   }
 
-  // Smoke puffs (soft, no pixel art — subtle)
-  for (let i = 0; i < 18; i++) {
-    const ang = (Math.PI * 2 * i) / 18 + Math.random() * 0.4;
-    const sp = 1.5 + Math.random() * 4;
+  // MCSOUNDS title → letter shards blown by blast
+  const title = splash && splash.querySelector(".splash-title");
+  if (title) {
+    const tRect = title.getBoundingClientRect();
+    const raw = (title.textContent || "MCSOUNDS").trim() || "MCSOUNDS";
+    const cs = getComputedStyle(title);
+    const fontSize = cs.fontSize;
+    const fontFamily = cs.fontFamily;
+    const fontWeight = cs.fontWeight;
+    const color = cs.color || "#e0e0e0";
+    // measure each char
+    const probe = document.createElement("span");
+    probe.style.cssText = "position:absolute;left:-99999px;visibility:hidden;white-space:pre;";
+    probe.style.font = cs.font;
+    probe.style.fontSize = fontSize;
+    probe.style.fontFamily = fontFamily;
+    probe.style.fontWeight = fontWeight;
+    document.body.appendChild(probe);
+    let cursorX = tRect.left;
+    const letterH = tRect.height;
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      probe.textContent = ch;
+      const cw = Math.max(6, probe.getBoundingClientRect().width);
+      // each letter → 2–4 micro pieces for more physical shatter
+      const parts = ch === " " ? 1 : (2 + (i % 2));
+      const pw = cw / parts;
+      for (let p = 0; p < parts; p++) {
+        const piece = parts === 1 ? ch : ch;
+        addDebris(
+          cursorX + p * pw,
+          tRect.top + (Math.random() * 2 - 1),
+          Math.max(4, pw),
+          letterH * (0.85 + Math.random() * 0.2),
+          color,
+          {
+            cls: "creeper-letter-shard",
+            text: piece,
+            fontSize: fontSize,
+            fontFamily: fontFamily,
+            fontWeight: fontWeight,
+            powerBase: 5.5,
+            mass: 0.4 + Math.random() * 0.5
+          }
+        );
+      }
+      cursorX += cw;
+    }
+    probe.remove();
+    title.style.visibility = "hidden";
+  }
+
+  // Sub / tag / bar also get blasted away (fade + scatter as small bits)
+  [".splash-sub", ".splash-tag", ".splash-bar"].forEach(sel => {
+    const el = splash && splash.querySelector(sel);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 2) { el.style.visibility = "hidden"; return; }
+    const cols = Math.min(10, Math.max(4, Math.floor(r.width / 14)));
+    const rows = Math.min(3, Math.max(1, Math.floor(r.height / 10)));
+    const cw = r.width / cols;
+    const ch = r.height / rows;
+    const bg = getComputedStyle(el).color || "#888";
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        addDebris(
+          r.left + x * cw,
+          r.top + y * ch,
+          Math.max(3, cw * 0.9),
+          Math.max(3, ch * 0.9),
+          bg,
+          { powerBase: 3.2, mass: 0.35, cls: "creeper-shard creeper-shard-dim" }
+        );
+      }
+    }
+    el.style.visibility = "hidden";
+  });
+
+  // Soft smoke (grey only — no yellow)
+  const smoke = [];
+  for (let i = 0; i < 22; i++) {
+    const ang = (Math.PI * 2 * i) / 22 + Math.random() * 0.35;
+    const sp = 2 + Math.random() * 5;
     const el = document.createElement("div");
     el.className = "creeper-smoke";
-    const s0 = 10 + Math.random() * 22;
+    const s0 = 12 + Math.random() * 28;
     el.style.width = s0 + "px";
     el.style.height = s0 + "px";
     el.style.transform = "translate(" + (cx - s0 / 2) + "px," + (cy - s0 / 2) + "px) scale(1)";
     layer.appendChild(el);
     smoke.push({
       el, x: cx - s0 / 2, y: cy - s0 / 2,
-      vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 1.2,
-      life: 0.55 + Math.random() * 0.45, scale: 1
+      vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 1.5,
+      life: 0.5 + Math.random() * 0.5, scale: 1
     });
   }
 
   headEl.style.visibility = "hidden";
   headEl.classList.remove("flash-white");
+  // ensure no residual green/gold square from head
+  headEl.style.opacity = "0";
 
-  const G = 0.22;          // gravity px/frame²
-  const DRAG = 0.988;      // air resistance
-  const FLOOR = typeof window !== "undefined" ? window.innerHeight + 40 : 2000;
-  const life = 1200;
+  const life = 1350;
   const tStart = performance.now();
 
   await new Promise(resolve => {
@@ -792,15 +878,14 @@ async function shatterCreeperPixels(headEl) {
         s.x += s.vx;
         s.y += s.vy;
         s.rot += s.vr;
-        s.vr *= 0.992;
-        // soft floor bounce once
-        if (s.y > FLOOR - 8 && s.vy > 0) {
-          s.y = FLOOR - 8;
+        s.vr *= 0.99;
+        if (s.y > FLOOR - 6 && s.vy > 0) {
+          s.y = FLOOR - 6;
           s.vy *= -s.bounce;
-          s.vx *= 0.7;
-          s.bounce *= 0.5;
+          s.vx *= 0.65;
+          s.bounce *= 0.45;
         }
-        const fade = Math.max(0, 1 - Math.pow(p, 1.35));
+        const fade = Math.max(0, 1 - Math.pow(p, 1.25));
         s.el.style.transform = "translate(" + s.x + "px," + s.y + "px) rotate(" + s.rot + "deg)";
         s.el.style.opacity = String(fade);
       }
@@ -808,11 +893,11 @@ async function shatterCreeperPixels(headEl) {
         const s = smoke[i];
         s.x += s.vx;
         s.y += s.vy;
-        s.vx *= 0.97;
-        s.vy *= 0.97;
-        s.vy -= 0.02; // rise
-        s.scale += 0.035;
-        const fade = Math.max(0, (1 - p / s.life) * 0.55);
+        s.vx *= 0.96;
+        s.vy *= 0.96;
+        s.vy -= 0.025;
+        s.scale += 0.04;
+        const fade = Math.max(0, (1 - p / s.life) * 0.5);
         s.el.style.transform = "translate(" + s.x + "px," + s.y + "px) scale(" + s.scale + ")";
         s.el.style.opacity = String(fade);
       }
