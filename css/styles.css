@@ -986,9 +986,22 @@ html[data-theme-early="light"] .splash-bar,
 @media (max-width: 720px) {
   :root { --top-h: 52px; }
 
+  /* Header doim yuqorida — scroll da umuman qimirlamaydi */
   .top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
     padding-left: max(8px, var(--safe-l));
     padding-right: max(8px, var(--safe-r));
+  }
+  /* Header ostidagi kontent siqilmasin */
+  body {
+    padding-top: calc(var(--top-h) + var(--safe-t));
+  }
+  .shell {
+    min-height: calc(100dvh - var(--top-h) - var(--safe-t));
   }
   .top-inner {
     grid-template-columns: auto minmax(0, 1fr) auto;
