@@ -1346,19 +1346,51 @@ function qKindRank(k) {
 }
 function qIndex() {
   if (_qIdx && _qIdx.src === all) return _qIdx.rows;
-  const rows = all.map(s => {
+  const inv = new Map();          // word -> row indices (scale-safe: O(1) lookup)
+  const pathSet = new Set();
+  const entities = new Set();     // mob/block entity names under top folders
+  const rows = all.map((s, i) => {
     const p = s.path.toLowerCase();
+    pathSet.add(s.path);
+    pathSet.add(p);
     const parts = p.replace(/\.ogg$/, "").split("/");
     const file = parts.pop();
     const dirs = parts;
     const dirWords = [];
-    dirs.forEach(d => { d.split("_").forEach(w => dirWords.push(w)); });
+    dirs.forEach(d => { d.split("_").forEach(w => { if (w) dirWords.push(w); }); });
     const words = file.split(/[_\-.]+/).map(w => w.replace(/\d+$/, "")).filter(Boolean);
     const kind = (dirs.includes("moody") ? "moody-" : "") + (words[0] || file);
+    const add = w => {
+      if (!w || w.length < 2) return;
+      let a = inv.get(w);
+      if (!a) { a = []; inv.set(w, a); }
+      a.push(i);
+    };
+    dirs.forEach(add);
+    dirWords.forEach(add);
+    words.forEach(add);
+    if (dirs.length >= 2 && (dirs[0] === "mob" || dirs[0] === "block" || dirs[0] === "entity" || dirs[0] === "item")) {
+      entities.add(dirs[1]);
+    }
     return { s: s, p: p, dirs: dirs, dirWords: dirWords, words: words, kind: kind };
   });
-  _qIdx = { src: all, rows: rows };
+  _qIdx = { src: all, rows: rows, inv: inv, pathSet: pathSet, entities: entities };
   return rows;
+}
+function qPathOk(p) {
+  qIndex();
+  return _qIdx.pathSet.has(p) || _qIdx.pathSet.has(String(p || "").toLowerCase());
+}
+/** Union of inverted postings for a list of alternate words — O(postings), not O(library). */
+function qPostings(words) {
+  qIndex();
+  const inv = _qIdx.inv;
+  const set = new Set();
+  (words || []).forEach(w => {
+    const a = inv.get(String(w).toLowerCase());
+    if (a) for (let i = 0; i < a.length; i++) set.add(a[i]);
+  });
+  return set;
 }
 function qAliasOf(tok) {
   if (Q_ALIAS[tok]) return Q_ALIAS[tok];
@@ -1553,6 +1585,19 @@ function appendBubble(role, html, hasCards) {
   return d;
 }
 
+function onlyRealPaths(plays) {
+  const out = [];
+  (plays || []).forEach(p => {
+    let pp = String(p || "").replace(/^sounds\//, "").replace(/^\//, "").trim();
+    if (!pp) return;
+    if (!pp.endsWith(".ogg")) {
+      const hit = all.find(x => x.path === pp + ".ogg" || x.path.endsWith("/" + pp + ".ogg") || x.path.includes(pp));
+      if (hit) pp = hit.path;
+    }
+    if (qPathOk(pp) && !out.includes(pp)) out.push(pp);
+  });
+  return out;
+}
 function parseAI(text) {
   let plays = [];
   const clean = [];
@@ -1784,11 +1829,9 @@ function _msgTokens(msg) {
 
 let _vocabC = null;
 function _agVocab() {
-  const rows = qIndex();
-  if (_vocabC && _vocabC.rows === rows) return _vocabC.list;
-  const set = new Set();
-  rows.forEach(r => r.p.replace(/\.ogg$/, "").split(/[\/_\-.]+/).forEach(w => { w = w.replace(/\d+$/, ""); if (w.length > 2) set.add(w); }));
-  _vocabC = { rows: rows, list: Array.from(set) };
+  qIndex();
+  if (_vocabC && _vocabC.src === all) return _vocabC.list;
+  _vocabC = { src: all, list: Array.from(_qIdx.inv.keys()).filter(w => w.length > 2) };
   return _vocabC.list;
 }
 function _lev(a, b, max) {
@@ -1854,29 +1897,90 @@ function _rankRows(rows, lists) {
 }
 /* the cascade: exact -> synonyms/translation -> fuzzy -> partial (rarest word wins). It always returns the best it can. */
 function agentFind(toks, folder) {
-  const base = qIndex().filter(r => !folder || r.p.startsWith(folder));
-  const run = (lists, strict) => base.filter(r => lists.every(al => al.some(x => strict ? _has(r, x) : r.p.includes(x))));
-  let rows = run(toks.map(t => [t]), false);
-  if (rows.length) return { rows: rows, mode: "exact" };
-  let al = toks.map(t => _alts(t, false));
-  rows = run(al, true);
-  if (rows.length) return { rows: _rankRows(rows, al), mode: "synonyms/plural/translation" };
-  al = toks.map(t => _alts(t, true));
-  rows = run(al, true);
-  if (rows.length) return { rows: _rankRows(rows, al), mode: "fuzzy (typos / partial words)" };
-  if (toks.length > 1) {
-    const w = al.map(a => { const d = base.filter(r => a.some(x => _has(r, x))).length; return d ? 1 / d : 0; });
-    const scored = base.map(r => { let sc = 0; al.forEach((a, i) => { if (w[i] && a.some(x => _has(r, x))) sc += w[i]; }); return { r: r, sc: sc }; }).filter(x => x.sc > 0);
-    if (scored.length) {
-      let best = 0;
-      scored.forEach(x => { if (x.sc > best) best = x.sc; });
-      const hitW = toks.filter((t, i) => w[i] && scored.some(x => x.sc === best && al[i].some(y => _has(x.r, y))));
-      return { rows: scored.filter(x => x.sc >= best - 1e-12).map(x => x.r), mode: "partial: closest by the rarest word(s): " + (hitW.join(", ") || toks.join(", ")) };
+  const rows = qIndex();
+  const fold = String(folder || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
+  const inFolder = r => !fold || r.p.startsWith(fold + "/") || r.p === fold || r.p.startsWith(fold);
+  // 1) exact words via inverted index
+  if (toks.length) {
+    let acc = null;
+    for (let t = 0; t < toks.length; t++) {
+      const set = qPostings([toks[t]]);
+      if (!acc) acc = set;
+      else {
+        const next = new Set();
+        acc.forEach(i => { if (set.has(i)) next.add(i); });
+        acc = next;
+      }
+      if (!acc.size) break;
+    }
+    if (acc && acc.size) {
+      const hit = [];
+      acc.forEach(i => { const r = rows[i]; if (inFolder(r)) hit.push(r); });
+      if (hit.length) return { rows: hit, mode: "exact" };
     }
   }
-  if (folder) {
+  // 2) synonyms / translations / plurals
+  if (toks.length) {
+    let al = toks.map(t => _alts(t, false));
+    let acc = null;
+    for (let t = 0; t < al.length; t++) {
+      const set = qPostings(al[t]);
+      if (!acc) acc = set;
+      else {
+        const next = new Set();
+        acc.forEach(i => { if (set.has(i)) next.add(i); });
+        acc = next;
+      }
+      if (!acc.size) break;
+    }
+    if (acc && acc.size) {
+      let hit = [];
+      acc.forEach(i => { const r = rows[i]; if (inFolder(r)) hit.push(r); });
+      if (hit.length) return { rows: _rankRows(hit, al), mode: "synonyms/plural/translation" };
+    }
+    // 3) fuzzy alts
+    al = toks.map(t => _alts(t, true));
+    acc = null;
+    for (let t = 0; t < al.length; t++) {
+      const set = qPostings(al[t]);
+      if (!acc) acc = set;
+      else {
+        const next = new Set();
+        acc.forEach(i => { if (set.has(i)) next.add(i); });
+        acc = next;
+      }
+      if (!acc.size) break;
+    }
+    if (acc && acc.size) {
+      let hit = [];
+      acc.forEach(i => { const r = rows[i]; if (inFolder(r)) hit.push(r); });
+      if (hit.length) return { rows: _rankRows(hit, al), mode: "fuzzy (typos / partial words)" };
+    }
+    // 4) partial: rarest word
+    if (toks.length > 1) {
+      const sets = al.map(a => qPostings(a));
+      const w = sets.map(s => s.size ? 1 / s.size : 0);
+      const score = new Map();
+      sets.forEach((s, ti) => {
+        if (!w[ti]) return;
+        s.forEach(i => {
+          const r = rows[i];
+          if (!inFolder(r)) return;
+          score.set(i, (score.get(i) || 0) + w[ti]);
+        });
+      });
+      let best = 0;
+      score.forEach(v => { if (v > best) best = v; });
+      if (best > 0) {
+        const hit = [];
+        score.forEach((v, i) => { if (v >= best - 1e-12) hit.push(rows[i]); });
+        if (hit.length) return { rows: hit, mode: "partial" };
+      }
+    }
+  }
+  if (fold) {
     const r2 = agentFind(toks, "");
-    if (r2.rows.length) { r2.mode += " (folder filter dropped: nothing there)"; return r2; }
+    if (r2.rows.length) { r2.mode += " (folder filter dropped)"; return r2; }
   }
   return { rows: [], mode: "none" };
 }
@@ -1930,7 +2034,7 @@ function agentAutoPick(msg, seen, maxPlays, trace) {
   if (!f.rows.length) return [];
   const fresh = f.rows.filter(r => !_shown.has(r.s.path));
   const base = fresh.length ? fresh : f.rows;
-  const picks = pickDiverse(base.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), Math.min(6, maxPlays)).map(x => x.path);
+  const picks = onlyRealPaths(pickDiverse(base.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), Math.min(6, maxPlays)).map(x => x.path));
   picks.forEach(x => seen.add(x));
   return picks;
 }
@@ -2125,6 +2229,23 @@ function localSmartSearch(msg, maxPlays) {
   const toks = _msgTokens(m);
   if (!toks.length) return null;
   const lim = Math.min(8, maxPlays || 8);
+  qIndex();
+  // Prefer known entity names from the live library (all ~5k, zero extra weight)
+  for (let ti = 0; ti < toks.length; ti++) {
+    const t = toks[ti];
+    const al = _alts(t, false);
+    for (let ai = 0; ai < al.length; ai++) {
+      if (_qIdx.entities.has(al[ai])) {
+        const folder = ("mob/" + al[ai]);
+        let foundE = agentFind([al[ai]], "mob");
+        if (!foundE.rows.length) foundE = agentFind([al[ai]], "");
+        if (foundE.rows.length) {
+          const picks = pickDiverse(foundE.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
+          if (picks.length) return _replyFound(m, onlyRealPaths(picks), foundE.rows, { words: al[ai], local: true, mode: "entity:" + al[ai] });
+        }
+      }
+    }
+  }
   // try full token set
   let found = agentFind(toks, "");
   if (!found.rows.length && toks.length > 1) {
@@ -2233,7 +2354,7 @@ async function runSoundAgent(msg, key, onStep) {
     const raw = visible;
     if (!raw) return null;
     const parsed = parseAI(raw);
-    let plays = parsed.plays.filter(p => seen.has(p)).slice(0, maxPlays);
+    let plays = onlyRealPaths(parsed.plays.filter(p => seen.has(p))).slice(0, maxPlays);
     let text = stripPlayedTag(parsed.text || raw);
     const soundy = trace.some(x => x.type === "tool") || AGENT_WANT.test(msg);
     if (!plays.length && soundy && AGENT_GIVEUP.test(text)) {
@@ -2377,7 +2498,7 @@ async function sendChat() {
       const eng = pickDiverse(matches, maxPlays).map(x => x.path);
       plays = eng.concat(plays.filter(p => !eng.includes(p)));
     }
-    parsed.plays = chatMode ? [] : plays.slice(0, maxPlays);
+    parsed.plays = chatMode ? [] : onlyRealPaths(plays).slice(0, maxPlays);
     parsed.plays.forEach(p => _shown.add(p));
 
     const textPlain = stripPlayedTag(parsed.text || raw || "");
