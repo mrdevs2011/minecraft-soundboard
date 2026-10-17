@@ -393,8 +393,6 @@ function applyStaticLang() {
   if (keySave) keySave.textContent = t("save");
   const keyLabel = document.querySelector('label[for="groqKey"]');
   if (keyLabel) keyLabel.textContent = t("groq_key");
-  const keyChange = $("keyChange");
-  if (keyChange) keyChange.textContent = t("change");
   const keyRemove = $("keyRemove");
   if (keyRemove) keyRemove.textContent = t("remove");
   const keyConn = document.querySelector("#keyConnected .key-connected-row span:last-child");
@@ -2445,18 +2443,20 @@ function bind() {
   on("groqKey", "keydown", e => {
     if (e.key === "Enter") { e.preventDefault(); saveApiKeyFromInput(); }
   });
-  on("keyChange", "click", () => {
-    const conn = $("keyConnected");
-    if (conn) conn.hidden = true;
+  // No separate "Change" button: clicking the masked key field unlocks it so a new key can be pasted.
+  on("groqKey", "focus", () => {
     const inp = $("groqKey");
-    if (inp) {
-      inp.type = "text";
-      inp.readOnly = false;
-      inp.value = "";
-      inp.focus();
-    }
+    if (!inp || !inp.readOnly) return;
+    inp.type = "text";
+    inp.readOnly = false;
+    inp.value = "";
     const st = $("keyStatus");
     if (st) { st.textContent = ""; st.className = "key-status"; }
+  });
+  on("groqKey", "blur", () => {
+    const inp = $("groqKey");
+    // left empty while a key is saved: show the masked key again
+    if (inp && !inp.readOnly && !inp.value.trim() && getApiKey()) syncKeyUI();
   });
   on("keyRemove", "click", () => {
     try { localStorage.removeItem("groq_api_key"); } catch (e) {}
