@@ -1467,13 +1467,13 @@ function stripPlayedTag(t) { return String(t || "").replace(/\s*\[played:[^\]]*\
 function playedNames(plays) { return (plays || []).slice(0, 3).map(x => String(x).replace(/\.ogg$/, "")); }
 
 function saveHist() {
-  try { localStorage.setItem("mcsnd_hist", JSON.stringify(hist.slice(-6))); } catch (e) {}
+  try { localStorage.setItem("mcsnd_hist", JSON.stringify(hist.slice(-4))); } catch (e) {}
 }
 function loadHist() {
   try {
     const h = JSON.parse(localStorage.getItem("mcsnd_hist") || "[]");
     hist = Array.isArray(h) ? h.filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string")
-      .map(x => ({ role: x.role, content: stripPlayedTag(x.content), played: Array.isArray(x.played) ? x.played.slice(0, 3) : undefined })).slice(-6) : [];
+      .map(x => ({ role: x.role, content: stripPlayedTag(x.content), played: Array.isArray(x.played) ? x.played.slice(0, 3) : undefined })).slice(-4) : [];
   } catch (e) { hist = []; }
 }
 function saveChatUI() {
@@ -1774,7 +1774,7 @@ const AGENT_TR = {
   musiqa:["music"], muzika:["music"], "музыка":["music"], plastinka:["records"], "пластинка":["records"], disk:["records"], "диск":["records"],
   eshik:["door"], "дверь":["door"], sandiq:["chest"], "сундук":["chest"],
   zarba:["hit","hurt","damage"], "удар":["hit","hurt","damage"], "o'lim":["death"], "смерть":["death"], "og'riq":["hurt"], "боль":["hurt"],
-  kamon:["bow"], "лук":["bow"], "o'q":["arrow"], "стрела":["arrow"], qilich:["sword","sweep"], "меч":["sword","sweep"],
+  kamon:["bow"], "лук":["bow"], "o'q":["arrow"], "стрела":["arrow"], qilich:["sweep","crit","knockback"], "меч":["sweep","crit"], sword:["sweep","crit"],
   "qo'ng'iroq":["bell"], "колокол":["bell"], tugma:["button","click"], "кнопка":["button","click"], bosish:["click"],
   suzish:["swim","splash"], "плавать":["swim","splash"], ovqat:["eat"], "еда":["eat"], sakrash:["jump"], "прыжок":["jump"],
   "портал":["portal"], kema:["boat"], "лодка":["boat"], poyezd:["minecart"], "вагонетка":["minecart"], "алмаз":["diamond"],
@@ -2022,8 +2022,9 @@ function renderTrace(trace, live) {
 }
 
 function histForModel() {
-  return hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
-    const lim = i === hist.length - 1 ? 700 : 220;
+  const slice = hist.slice(-3);
+  return slice.map((h, i) => {
+    const lim = i === slice.length - 1 ? 220 : 100;
     const c = stripPlayedTag(h.content);
     return { role: h.role, content: c.length > lim ? c.slice(0, lim) + "..." : c };
   });
@@ -2034,26 +2035,66 @@ function recentPlayedNote() {
   return last ? "Last played in this chat: " + last.played.join(", ") + ". " : "";
 }
 
+
+/* Zero-API path for clear intents — saves TPM and never invents missing files */
+const LOCAL_INTENT = [
+  { re: /(qilich|sword|меч|sweep)/i, folder: "entity/player/attack", words: ["sweep"] },
+  { re: /(tnt|dinamit|bomb|portla|portlash|взрыв|бомб|explode)/i, folder: "random", words: ["explode"] },
+  { re: /(mushuk|cat|кошка|кот)/i, folder: "mob/cat", words: ["cat"] },
+  { re: /(tovuq|chicken|курица)/i, folder: "mob/chicken", words: ["chicken"] },
+  { re: /(kreeper|creeper|krepper|крипер)/i, folder: "mob/creeper", words: ["creeper"] },
+  { re: /(zombi|zombie|зомби)/i, folder: "mob/zombie", words: ["zombie"] },
+  { re: /(kamon|bow|лук)/i, folder: "random", words: ["bow"] },
+  { re: /(trident)/i, folder: "item/trident", words: ["trident"] },
+  { re: /(shield|qalqon)/i, folder: "item/shield", words: ["shield"] },
+  { re: /(level\s*up|levelup)/i, folder: "random", words: ["levelup"] },
+  { re: /anvil/i, folder: "random", words: ["anvil"] },
+];
+
+function localFastIntent(msg, maxPlays) {
+  const m = String(msg || "");
+  for (let i = 0; i < LOCAL_INTENT.length; i++) {
+    const it = LOCAL_INTENT[i];
+    if (!it.re.test(m)) continue;
+    let found = agentFind(it.words, it.folder);
+    let rows = found.rows;
+    if (!rows.length) rows = agentFind(it.words, "").rows;
+    if (!rows.length) continue;
+    const lim = Math.min(8, maxPlays || 8);
+    const picks = pickDiverse(rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
+    if (!picks.length) continue;
+    const name = picks[0].split("/").pop();
+    const text = /[а-яё]/i.test(m) ? ("Нашёл: " + name) : (/[a-züʻ'ʻ]/i.test(m) && !/the|play|find|sound/i.test(m) ? ("Topildi: " + name) : ("Found: " + name));
+    return {
+      text: text,
+      plays: picks,
+      trace: [{ type: "tool", name: "search_sounds", args: { words: it.words.join(" "), folder: it.folder, local: true }, result: { total: rows.length, files: picks } }]
+    };
+  }
+  return null;
+}
+
 async function runSoundAgent(msg, key, onStep) {
   const maxPlays = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/i.test(msg) ? 48 : 12;
-  const sys = "You are MCAI — sharp general AI inside MCSOUNDS (~5000 official Minecraft .ogg). " +
-    "Reply in the user's language. Plain text, no markdown. Be concise. " +
-    "Answer ANY question from knowledge (facts, study, code, chat, Minecraft). No live internet — say so when needed. " +
-    "SOUND TOOLS only when user wants to hear/find a Minecraft sound or music. Otherwise answer directly: no tools, no PLAY, no library excuses. " +
-    "Request verbs are NOT search words: UZ top/qo'y/chal/ber/eshit; RU найди/включи/дай; EN play/find/give/hear. " +
-    "When searching: 1) English game terms from intent 2) search_sounds count_only=true first 3) synonyms or list_folder if 0 4) final search for paths. Up to ~6 tool calls. Never invent paths. " +
-    "Music → music/ and records/ first, varied mix. Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/; music/; records/. " +
-    "Sound reply: 1 short sentence, then PLAY: path1, path2, … (up to " + maxPlays + " paths from tool results only). Non-sound: normal reply, no PLAY. " +
-    "NEVER write [played: ...] tags. PLAY: only with real tool paths. If user asks to hear a sound you MUST search and end with PLAY:. " +
-    "Synonyms: bomb/explosion/TNT/detonation → explode|blast|tnt (random/explode*, entity/.../explode, sonic_boom for Warden); boom→explode; firecracker→firework. " +
-    "Work like a terminal: search_sounds fixes typos/plurals/UZ-RU; grep_sounds for regex alts; list_folder = ls. Never say 'not found' until you tried synonyms + grep alts + list_folder on likely tops (mob,entity,block,item,ambient,random,records,music,ui). If nothing exact, PLAY closest and say so. " +
-    "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") + recentPlayedNote();
+  /* Common intents: no API — zero TPM */
+  const local = localFastIntent(msg, maxPlays);
+  if (local && local.plays && local.plays.length) {
+    if (onStep) try { onStep(local.trace || []); } catch (e) {}
+    return local;
+  }
+  const sys = "MCAI in MCSOUNDS (~5k .ogg). User language. Plain text. Concise. " +
+    "Tools ONLY for Minecraft sound/music requests; else answer without tools/PLAY. " +
+    "Ignore verbs (top/chal/play/find/найди). Search EN game names. Never invent paths. " +
+    "Sword/qilich/меч = entity/player/attack/sweep* (no sword.ogg). Bomb/TNT = random/explode*. " +
+    "Flow: search_sounds (count_only) → paths; max 4 tools. Reply: 1 line + PLAY: real paths (≤" + maxPlays + "). " +
+    "If 0 hits: grep_sounds alts or list_folder then closest PLAY. No [played:] tags. " +
+    (currentPlayPath ? "Playing: " + currentPlayPath + ". " : "") + recentPlayedNote();
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
   const trace = [];
   const note = () => { if (onStep) { try { onStep(trace); } catch (e) {} } };
   let nudges = 0;
-  for (let step = 0; step < 8; step++) {
+  for (let step = 0; step < 5; step++) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 30000);
     let json;
@@ -2061,11 +2102,23 @@ async function runSoundAgent(msg, key, onStep) {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
-        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: step >= 6 ? 650 : 400, tools: AGENT_TOOLS,
-          tool_choice: step >= 6 ? "none" : "auto", messages: msgs }),
+        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: step >= 3 ? 280 : 220, tools: AGENT_TOOLS,
+          tool_choice: step >= 3 ? "none" : "auto", messages: msgs }),
         signal: ctl.signal
       });
-      if (!res.ok) return null;   // old pipeline takes over (also shows auth errors)
+      if (!res.ok) {
+        if (res.status === 429 && step === 0) {
+          await new Promise(r => setTimeout(r, 1100));
+          continue;
+        }
+        // Rate limit / error → local library search, no invented paths
+        const picks = agentAutoPick(msg, seen, maxPlays, trace);
+        if (picks.length) {
+          note();
+          return { text: agentClosestText(msg), plays: picks, trace: trace };
+        }
+        return null;
+      }
       json = await res.json();
     } catch (e) { return null; } finally { clearTimeout(timer); }
     const usage = (json && json.usage) || {};
@@ -2088,7 +2141,7 @@ async function runSoundAgent(msg, key, onStep) {
         const out = tc.function.name === "list_folder" ? agentList(args, seen)
           : tc.function.name === "search_sounds" ? agentSearch(args, seen)
           : tc.function.name === "grep_sounds" ? agentGrep(args, seen) : { error: "unknown tool" };
-        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 1100) });
+        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 700) });
         trace.push({ type: "tool", name: tc.function.name, args: args, result: out });
         note();
       });
@@ -2202,15 +2255,15 @@ async function sendChat() {
         model: model,
         temperature: temp,
         max_tokens: maxTok,
-        messages: [{ role: "system", content: system }].concat(hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
-          const lim = i === hist.length - 1 ? 700 : 220;
+        messages: [{ role: "system", content: system }].concat(hist.slice(-3).map((h, i, arr) => {
+          const lim = i === arr.length - 1 ? 220 : 100;
           return { role: h.role, content: h.content.length > lim ? h.content.slice(0, lim) + "..." : h.content };
         }))
       })
     });
     let res = null, json = null;
     if (!res) {
-      res = await callGroq(MODEL, chatMode ? 0.55 : 0.25, chatMode ? 900 : 550);
+      res = await callGroq(MODEL, chatMode ? 0.55 : 0.25, chatMode ? 350 : 220);
       json = await res.json();
     }
     wait.remove();
@@ -2219,6 +2272,19 @@ async function sendChat() {
       if (/invalid|revoked|expired|auth/i.test(em)) {
         localStorage.removeItem("groq_api_key");
         syncKeyUI();
+      }
+      // TPM / rate limit: still try local library instead of raw API error
+      if (/rate limit|tpm|tokens per minute/i.test(em) || res.status === 429) {
+        const seen = new Set();
+        const tr = [];
+        const picks = agentAutoPick(msg, seen, maxPlays, tr);
+        if (picks.length) {
+          hist.push({ role: "assistant", content: agentClosestText(msg).slice(0, 200), played: playedNames(picks) });
+          saveHist();
+          await typeAIResponse(agentClosestText(msg), picks, renderTrace(tr, false));
+          $("chatSend").disabled = false;
+          return;
+        }
       }
       appendBubble("sys", "Error: " + em);
       $("chatSend").disabled = false;
