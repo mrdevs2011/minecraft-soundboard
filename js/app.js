@@ -2131,6 +2131,14 @@ function recentPlayedNote() {
 
 /* Zero-API: intent map + token expand — instant, accurate, no TPM */
 const LOCAL_INTENT = [
+  /* MUSIC / DISCS first — never lose to mob names (lava_chicken ≠ chicken mob) */
+  { re: /lava[_\s-]*chicken|chicken[_\s-]*lava/i, folder: "records", words: ["lava", "chicken"] },
+  { re: /pigstep/i, folder: "records", words: ["pigstep"] },
+  { re: /otherside/i, folder: "records", words: ["otherside"] },
+  { re: /mellohi/i, folder: "records", words: ["mellohi"] },
+  { re: /cat\.ogg|(records?\/)?cat.*(music|disk|disc|record)/i, folder: "records", words: ["cat"] },
+  { re: /(13|eleven|11).*(music|disk|disc|record)|music.*(13|11)/i, folder: "records", words: ["13"] },
+  { re: /(musiqa|music|музыка|plastinka|пластинка|disk|disc|records?)/i, folder: "records", words: [""] },
   { re: /(qilich|sword|меч|sweep)/i, folder: "entity/player/attack", words: ["sweep"] },
   { re: /(krit|crit|critical)/i, folder: "entity/player/attack", words: ["crit"] },
   { re: /(knockback|ortga\s*ite)/i, folder: "entity/player/attack", words: ["knockback"] },
@@ -2158,9 +2166,7 @@ const LOCAL_INTENT = [
   { re: /(splash|sepish)/i, folder: "random", words: ["splash"] },
   { re: /(portal|портал)/i, folder: "portal", words: ["portal"] },
   { re: /(note\s*block|nota)/i, folder: "note", words: ["note"] },
-  { re: /(pigstep|otherside|records?|plastinka|диск)/i, folder: "records", words: [""] },
-  { re: /(musiqa|music|музыка)/i, folder: "music", words: [""] },
-  { re: /(ghast|gast)/i, folder: "mob/ghast", words: ["ghast"] },
+      { re: /(ghast|gast)/i, folder: "mob/ghast", words: ["ghast"] },
   { re: /(spider|o'?rgimchak|паук)/i, folder: "mob/spider", words: ["spider"] },
   { re: /(wolf|sobaka|собака|bo'?ri|it\s+ovozi|it(?=\s|$))/i, folder: "mob/wolf", words: ["wolf"] },
   { re: /(horse|лошадь|ot\s+ovozi)/i, folder: "mob/horse", words: ["horse"] },
@@ -2230,12 +2236,37 @@ function localSmartSearch(msg, maxPlays) {
   if (!toks.length) return null;
   const lim = Math.min(8, maxPlays || 8);
   qIndex();
+  /* Music/disc words win over mob names ("lava chicken music" → records/lava_chicken) */
+  const wantMusic = /(music|musiqa|музыка|disk|disc|record|plastinka|пластинка)/i.test(m);
+  if (wantMusic || /lava[_\s-]*chicken|chicken[_\s-]*lava|pigstep|otherside/i.test(m)) {
+    const musicToks = toks.filter(t => !/^(music|musiqa|disk|disc|record|plastinka)$/i.test(t));
+    const tryWords = musicToks.length ? musicToks : toks;
+    let foundM = agentFind(tryWords, "records");
+    if (!foundM.rows.length) foundM = agentFind(tryWords, "music");
+    if (!foundM.rows.length && tryWords.length > 1) {
+      // join compound: lava+chicken → search lava_chicken via postings
+      const joined = tryWords.join("_");
+      foundM = agentFind([joined], "records");
+      if (!foundM.rows.length) foundM = agentFind([joined], "");
+    }
+    if (!foundM.rows.length) {
+      // each token in records
+      for (let ti = 0; ti < tryWords.length && !foundM.rows.length; ti++) {
+        foundM = agentFind([tryWords[ti]], "records");
+      }
+    }
+    if (foundM.rows.length) {
+      const picks = pickDiverse(foundM.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
+      if (picks.length) return _replyFound(m, onlyRealPaths(picks), foundM.rows, { words: tryWords.join(" "), folder: "records|music", local: true, mode: "music" });
+    }
+  }
   // Prefer known entity names from the live library (all ~5k, zero extra weight)
   for (let ti = 0; ti < toks.length; ti++) {
     const t = toks[ti];
     const al = _alts(t, false);
     for (let ai = 0; ai < al.length; ai++) {
       if (_qIdx.entities.has(al[ai])) {
+        if (wantMusic && (al[ai] === "chicken" || al[ai] === "cat" || al[ai] === "pig")) continue; // disc names, not mobs
         const folder = ("mob/" + al[ai]);
         let foundE = agentFind([al[ai]], "mob");
         if (!foundE.rows.length) foundE = agentFind([al[ai]], "");
