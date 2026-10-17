@@ -1870,6 +1870,7 @@ async function sendChat() {
     const kb = appendBubble("sys", "Enter your API key using the key icon above");
     if (kb && kb.classList) kb.classList.add("key-hint");
     $("keyPop").classList.add("open");
+    setTimeout(() => { const inp = $("groqKey"); if (inp) { inp.focus(); inp.select(); } }, 50);
     return;
   }
   localStorage.setItem("groq_api_key", key);
