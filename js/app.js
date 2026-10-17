@@ -1451,8 +1451,8 @@ function appendBubble(role, html, hasCards) {
   d.innerHTML = html;
   $("chatLog").appendChild(d);
   $("chatLog").scrollTop = $("chatLog").scrollHeight;
-  if (role !== "sys" || html.indexOf("...") === -1) {
-    if (!(role === "sys" && (html === "..." || html.indexOf("Network:") === 0 || html.indexOf("Error:") === 0 || html.indexOf("Enter your API") === 0))) {
+  if (role !== "sys" || (html.indexOf("...") === -1 && html.indexOf("mc-dots") === -1)) {
+    if (!(role === "sys" && (html === "..." || html.indexOf("mc-dots") !== -1 || html.indexOf("Network:") === 0 || html.indexOf("Error:") === 0 || html.indexOf("Enter your API") === 0))) {
       if (role === "user" || role === "ai") {
         chatUIHist.push({ role: role, html: html, hasCards: hasCards });
         saveChatUI();
@@ -1648,7 +1648,7 @@ async function sendChat() {
   localStorage.setItem("groq_api_key", key);
   $("chatInput").value = "";
   appendBubble("user", esc(msg));
-  const wait = appendBubble("sys", "...");
+  const wait = appendBubble("sys", '<span class="mc-dots" aria-label="thinking"><span></span><span></span><span></span></span>');
   wait.classList.add("typing");
   $("chatSend").disabled = true;
 
