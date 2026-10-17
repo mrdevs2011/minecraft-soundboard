@@ -1748,7 +1748,9 @@ async function runSoundAgent(msg, key) {
     "2) if there are too many (over 40) narrow with folder or extra words (say = voice, hurt, death, step, idle, ambient, milk...), if there are 0 try synonyms or other words; " +
     "3) call search_sounds again without count_only to get file paths. Use at most about 4 tool calls. Never invent paths: PLAY may contain only paths returned by tools. " +
     "Layout: mob/<mob>/ has say (voice), hurt, death, step, idle/ambient; moody/ = newer variant sounds; note/ = note-block instruments (not animals); music/ = the game's own songs. " +
-    "The library has ONLY in-game sound effects: no outside songs, memes or movie audio (for example no lava chicken song). If asked for such a thing, say plainly it is not in the library and offer the closest in-game sounds. " +
+    "The library contains the game's own sound effects AND its music: music/ and records/ (music discs such as records/lava_chicken, pigstep, cat, 13). " +
+    "BEFORE you ever say something is not in the library, you MUST search for it (for a song or disc name search its words, also in records/ and music/). If a search finds it, play it. " +
+    "Only truly outside things (other songs, memes, movie audio) are missing: then say plainly it is not in the library and offer the closest in-game sounds. " +
     "FINAL ANSWER for a sound request: 1-2 short friendly sentences about only what you really found (no file names, no technical tags), then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first, varied sound types). " +
     "If nothing fits, say so honestly and suggest alternatives, with no PLAY line. For non-sound questions answer directly, without tools and without PLAY. " +
     "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "");
@@ -1849,7 +1851,7 @@ async function sendChat() {
     (matches.wantAll ? "The user wants ALL of them, so list as many as fit. " : "") +
     "Never pick a candidate that matches only by a coincidence of name. Never invent paths. " +
     "Only describe sound types that really appear in the candidate names or [kind] tags (never claim meow, purr, hiss etc. unless such files are listed); never invent sound descriptions. Paths in PLAY must be written without the [kind] tag. " +
-    "The library has ONLY official in-game sound effects: no songs, music, memes or movie audio. If the user asks for a song, meme, remix or anything that is not an in-game sound (for example a chicken or lava chicken song), say plainly that it is not in the library, never pretend you found it, and offer the closest in-game sounds instead. " +
+    "The library contains the game's own sound effects and music (music/, records/ music discs like lava_chicken, pigstep, cat). If the user asks for something that is not in the candidates (an outside song, meme or movie audio), say plainly it is not in the library and offer the closest sounds instead; never pretend you found it. " +
     "Write 1-2 short, natural, friendly sentences like a friend would; no file names, no technical tags in brackets, no words like ambient/variant in parentheses. " +
     (preset.length ? "These exact sounds will be played in this order, so describe exactly them: " + preset.map(x => x.path + " [" + x.kind + "]").join(", ") + ". " : "") +
     (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") +
