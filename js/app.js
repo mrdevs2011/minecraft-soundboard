@@ -1411,6 +1411,15 @@ function pickDiverse(list, n) {
 }
 
 
+function saveHist() {
+  try { localStorage.setItem("mcsnd_hist", JSON.stringify(hist.slice(-10))); } catch (e) {}
+}
+function loadHist() {
+  try {
+    const h = JSON.parse(localStorage.getItem("mcsnd_hist") || "[]");
+    hist = Array.isArray(h) ? h.filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string").slice(-10) : [];
+  } catch (e) { hist = []; }
+}
 function saveChatUI() {
   try { localStorage.setItem("mcsnd_chat_ui", JSON.stringify(chatUIHist)); } catch (e) {}
 }
@@ -1442,6 +1451,7 @@ function renderChatSlice(from, to) {
   return frag;
 }
 function loadChatFromStorage() {
+  loadHist();
   try {
     chatUIHist = JSON.parse(localStorage.getItem("mcsnd_chat_ui") || "[]");
     if (!Array.isArray(chatUIHist)) chatUIHist = [];
@@ -1462,7 +1472,7 @@ function loadChatFromStorage() {
 }
 function clearChat() {
   chatUIHist = [];
-  hist = [];
+  hist = []; saveHist();
   chatLoaded = 0;
   saveChatUI();
   showAskHero($("chatLog"));
@@ -1682,7 +1692,7 @@ async function sendChat() {
 
   const matches = await smartSearch(msg, key, 90);
   const maxPlays = matches.wantAll ? 48 : 12;
-  const matchList = matches.map(m => m.path + (m.kind ? "  [" + m.kind + "]" : "")).join("\n");
+  const matchList = matches.slice(0, 40).map(m => m.path + (m.kind ? "  [" + m.kind + "]" : "")).join("\n");
   const mobList = matches.length ? "" : Array.from(new Set(all.filter(x => x.path.startsWith("mob/")).map(x => x.path.split("/")[1]))).join(", ");
 
   const chatMode = !!matches.chat;
@@ -1715,6 +1725,7 @@ async function sendChat() {
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 10) hist = hist.slice(-10);
+  saveHist();
 
   try {
     const callGroq = (model, temp, maxTok) => fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -1724,7 +1735,10 @@ async function sendChat() {
         model: model,
         temperature: temp,
         max_tokens: maxTok,
-        messages: [{ role: "system", content: system }].concat(hist)
+        messages: [{ role: "system", content: system }].concat(hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
+          const lim = i === hist.length - 1 ? 1500 : 400;
+          return { role: h.role, content: h.content.length > lim ? h.content.slice(0, lim) + "..." : h.content };
+        }))
       })
     });
     let res = null, json = null;
@@ -1752,7 +1766,6 @@ async function sendChat() {
     }
     let raw = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || "";
     raw = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
-    hist.push({ role: "assistant", content: raw });
     const parsed = parseAI(raw);
 
     const cand = new Set(matches.map(m => m.path));
@@ -1766,6 +1779,11 @@ async function sendChat() {
     parsed.plays.forEach(p => _shown.add(p));
 
     const textPlain = (parsed.text || raw || "").trim();
+    hist.push({ role: "assistant", content: textPlain.slice(0, 400) +
+      (parsed.plays.length ? " [played: " + parsed.plays.slice(0, 3).map(x => x.replace(/\.ogg$/, "")).join(", ") + "]" : "") });
+    if (hist.length > 10) hist = hist.slice(-10);
+    if (hist.length && hist[0].role === "assistant") hist.shift();
+    saveHist();
     await typeAIResponse(textPlain, parsed.plays);
   } catch (e) {
     wait.remove();
