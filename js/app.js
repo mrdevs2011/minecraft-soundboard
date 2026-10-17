@@ -1735,22 +1735,11 @@ async function smartSearch(msg, key, limit) {
 /* ===== MCAI agent: works like grep. Local only (no internet): library tools + the model's own Minecraft knowledge ===== */
 const AGENT_TOOLS = [
   { type: "function", function: { name: "search_sounds",
-    description: "Grep Minecraft .ogg library. ALL words must match path. count_only=true first (counts only); then without it for paths.",
+    description: "Find .ogg paths. words=EN game terms. folder optional. Prefer limit 6.",
     parameters: { type: "object", properties: {
-      words: { type: "string", description: "space-separated English words" },
-      folder: { type: "string", description: "path prefix e.g. mob/chicken" },
-      count_only: { type: "boolean", description: "true=counts only" },
-      limit: { type: "integer", description: "max paths 1-12, default 8" } }, required: ["words"] } } },
-  { type: "function", function: { name: "list_folder",
-    description: "List subfolders+counts and sample files for a path (e.g. mob, mob/chicken).",
-    parameters: { type: "object", properties: { path: { type: "string", description: "folder path, empty=root" } }, required: ["path"] } } },
-  { type: "function", function: { name: "grep_sounds",
-    description: "Regex grep on full paths (case-insensitive). Use alts: explode|blast|tnt|boom.",
-    parameters: { type: "object", properties: {
-      pattern: { type: "string", description: "JS regex vs path" },
-      folder: { type: "string", description: "optional prefix" },
-      count_only: { type: "boolean", description: "true=counts only" },
-      limit: { type: "integer", description: "max paths 1-12" } }, required: ["pattern"] } } }
+      words: { type: "string", description: "EN words e.g. creeper hurt" },
+      folder: { type: "string", description: "prefix e.g. mob/creeper" },
+      limit: { type: "integer", description: "1-8" } }, required: ["words"] } } }
 ];
 
 const AGENT_ALIAS = {
@@ -2036,65 +2025,138 @@ function recentPlayedNote() {
 }
 
 
-/* Zero-API path for clear intents — saves TPM and never invents missing files */
+/* Zero-API: intent map + token expand — instant, accurate, no TPM */
 const LOCAL_INTENT = [
   { re: /(qilich|sword|меч|sweep)/i, folder: "entity/player/attack", words: ["sweep"] },
+  { re: /(krit|crit|critical)/i, folder: "entity/player/attack", words: ["crit"] },
+  { re: /(knockback|ortga\s*ite)/i, folder: "entity/player/attack", words: ["knockback"] },
   { re: /(tnt|dinamit|bomb|portla|portlash|взрыв|бомб|explode)/i, folder: "random", words: ["explode"] },
+  { re: /(fuse|fitil)/i, folder: "random", words: ["fuse"] },
   { re: /(mushuk|cat|кошка|кот)/i, folder: "mob/cat", words: ["cat"] },
   { re: /(tovuq|chicken|курица)/i, folder: "mob/chicken", words: ["chicken"] },
+  { re: /(sigir|cow|корова)/i, folder: "mob/cow", words: ["cow"] },
+  { re: /(cho'?chqa|pig|свинья)/i, folder: "mob/pig", words: ["pig"] },
   { re: /(kreeper|creeper|krepper|крипер)/i, folder: "mob/creeper", words: ["creeper"] },
   { re: /(zombi|zombie|зомби)/i, folder: "mob/zombie", words: ["zombie"] },
+  { re: /(skelet|skeleton|скелет)/i, folder: "mob/skeleton", words: ["skeleton"] },
+  { re: /(enderman|ender\s*man)/i, folder: "mob/endermen", words: ["endermen"] },
+  { re: /(warden|qo'?riqchi)/i, folder: "mob/warden", words: ["warden"] },
+  { re: /(villager|qishloqi|житель)/i, folder: "mob/villager", words: ["villager"] },
   { re: /(kamon|bow|лук)/i, folder: "random", words: ["bow"] },
   { re: /(trident)/i, folder: "item/trident", words: ["trident"] },
   { re: /(shield|qalqon)/i, folder: "item/shield", words: ["shield"] },
+  { re: /(crossbow|arbalet)/i, folder: "item/crossbow", words: ["crossbow"] },
   { re: /(level\s*up|levelup)/i, folder: "random", words: ["levelup"] },
-  { re: /anvil/i, folder: "random", words: ["anvil"] },
+  { re: /\banvil\b|anvil/i, folder: "random", words: ["anvil"] },
+  { re: /(chest|sandiq|сундук)/i, folder: "random", words: ["chest"] },
+  { re: /(door|eshik|дверь)/i, folder: "random", words: ["door"] },
+  { re: /(burp|kesirish)/i, folder: "random", words: ["burp"] },
+  { re: /(splash|sepish)/i, folder: "random", words: ["splash"] },
+  { re: /(portal|портал)/i, folder: "portal", words: ["portal"] },
+  { re: /(note\s*block|nota)/i, folder: "note", words: ["note"] },
+  { re: /(pigstep|otherside|records?|plastinka|диск)/i, folder: "records", words: [""] },
+  { re: /(musiqa|music|музыка)/i, folder: "music", words: [""] },
+  { re: /(ghast|gast)/i, folder: "mob/ghast", words: ["ghast"] },
+  { re: /(spider|o'?rgimchak|паук)/i, folder: "mob/spider", words: ["spider"] },
+  { re: /(wolf|it|sobaka|собака|bo'?ri)/i, folder: "mob/wolf", words: ["wolf"] },
+  { re: /(horse|ot|лошадь)/i, folder: "mob/horse", words: ["horse"] },
+  { re: /(bee|asalari|пчела)/i, folder: "mob/bee", words: ["bee"] },
+  { re: /(axolotl)/i, folder: "mob/axolotl", words: ["axolotl"] },
+  { re: /(dolphin|delfin)/i, folder: "mob/dolphin", words: ["dolphin"] },
+  { re: /(phantom)/i, folder: "mob/phantom", words: ["phantom"] },
+  { re: /(ravager)/i, folder: "mob/ravager", words: ["ravager"] },
+  { re: /(pillager)/i, folder: "mob/pillager", words: ["pillager"] },
+  { re: /(witch|jodugar)/i, folder: "mob/witch", words: ["witch"] },
+  { re: /(slime|shilimshi)/i, folder: "mob/slime", words: ["slime"] },
+  { re: /(blaze)/i, folder: "mob/blaze", words: ["blaze"] },
+  { re: /(wither)/i, folder: "mob/wither", words: ["wither"] },
+  { re: /(dragon|ajdar|дракон)/i, folder: "mob/enderdragon", words: ["enderdragon"] },
+  { re: /(lava|лава)/i, folder: "liquid", words: ["lava"] },
+  { re: /(water|suv|вода)/i, folder: "liquid", words: ["water"] },
+  { re: /(thunder|momaqaldiroq|гром)/i, folder: "ambient/weather", words: ["thunder"] },
+  { re: /(rain|yomg'?ir|дождь)/i, folder: "ambient/weather", words: ["rain"] },
 ];
+
+function _replyFound(msg, picks, rows, meta) {
+  const name = picks[0].split("/").pop();
+  const text = /[а-яё]/i.test(msg) ? ("Нашёл: " + name)
+    : (/[a-züʻ'‘]/i.test(msg) && !/\b(the|play|find|sound|what|how)\b/i.test(msg)
+      ? ("Topildi: " + name) : ("Found: " + name));
+  return {
+    text: text,
+    plays: picks,
+    trace: [{ type: "tool", name: "search_sounds", args: meta, result: { total: rows.length, files: picks, mode: meta.mode || "local" } }]
+  };
+}
 
 function localFastIntent(msg, maxPlays) {
   const m = String(msg || "");
+  const lim = Math.min(8, maxPlays || 8);
   for (let i = 0; i < LOCAL_INTENT.length; i++) {
     const it = LOCAL_INTENT[i];
     if (!it.re.test(m)) continue;
-    let found = agentFind(it.words, it.folder);
-    let rows = found.rows;
-    if (!rows.length) rows = agentFind(it.words, "").rows;
+    let rows;
+    if (it.words.length === 1 && it.words[0] === "") {
+      rows = qIndex().filter(r => r.p.startsWith(it.folder));
+    } else {
+      let found = agentFind(it.words, it.folder);
+      rows = found.rows;
+      if (!rows.length) rows = agentFind(it.words, "").rows;
+    }
     if (!rows.length) continue;
-    const lim = Math.min(8, maxPlays || 8);
     const picks = pickDiverse(rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
     if (!picks.length) continue;
-    const name = picks[0].split("/").pop();
-    const text = /[а-яё]/i.test(m) ? ("Нашёл: " + name) : (/[a-züʻ'ʻ]/i.test(m) && !/the|play|find|sound/i.test(m) ? ("Topildi: " + name) : ("Found: " + name));
-    return {
-      text: text,
-      plays: picks,
-      trace: [{ type: "tool", name: "search_sounds", args: { words: it.words.join(" "), folder: it.folder, local: true }, result: { total: rows.length, files: picks } }]
-    };
+    return _replyFound(m, picks, rows, { words: (it.words || []).join(" "), folder: it.folder, local: true, mode: "intent" });
   }
   return null;
 }
 
+/** Expand user tokens → library search without API (fast + accurate) */
+function localSmartSearch(msg, maxPlays) {
+  const m = String(msg || "");
+  const toks = _msgTokens(m);
+  if (!toks.length) return null;
+  const lim = Math.min(8, maxPlays || 8);
+  // try full token set
+  let found = agentFind(toks, "");
+  if (!found.rows.length && toks.length > 1) {
+    // rarest single-token wins
+    let best = { rows: [], n: 0 };
+    toks.forEach(t => {
+      const f = agentFind([t], "");
+      if (f.rows.length && (!best.n || f.rows.length < best.n)) best = { rows: f.rows, n: f.rows.length, mode: f.mode, t: t };
+    });
+    if (best.rows.length) found = { rows: best.rows, mode: "token:" + (best.t || "") };
+  }
+  if (!found.rows.length) return null;
+  // only skip API when match is strong enough or message looks like a sound ask
+  const soundy = AGENT_WANT.test(m) || m.length < 48 || LOCAL_INTENT.some(x => x.re.test(m));
+  const strong = /exact|synonym|translation|intent|token:/i.test(found.mode || "") || found.rows.length <= 40;
+  if (!soundy && !strong) return null;
+  if (!soundy && found.rows.length > 80) return null;
+  const picks = pickDiverse(found.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
+  if (!picks.length) return null;
+  return _replyFound(m, picks, found.rows, { words: toks.join(" "), local: true, mode: found.mode || "smart" });
+}
+
 async function runSoundAgent(msg, key, onStep) {
   const maxPlays = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/i.test(msg) ? 48 : 12;
-  /* Common intents: no API — zero TPM */
-  const local = localFastIntent(msg, maxPlays);
+  const local = localFastIntent(msg, maxPlays) || localSmartSearch(msg, maxPlays);
   if (local && local.plays && local.plays.length) {
     if (onStep) try { onStep(local.trace || []); } catch (e) {}
     return local;
   }
-  const sys = "MCAI in MCSOUNDS (~5k .ogg). User language. Plain text. Concise. " +
-    "Tools ONLY for Minecraft sound/music requests; else answer without tools/PLAY. " +
-    "Ignore verbs (top/chal/play/find/найди). Search EN game names. Never invent paths. " +
-    "Sword/qilich/меч = entity/player/attack/sweep* (no sword.ogg). Bomb/TNT = random/explode*. " +
-    "Flow: search_sounds (count_only) → paths; max 4 tools. Reply: 1 line + PLAY: real paths (≤" + maxPlays + "). " +
-    "If 0 hits: grep_sounds alts or list_folder then closest PLAY. No [played:] tags. " +
+  const sys = "MCAI/MCSOUNDS. User language. Plain text. Short. " +
+    "Sound ask → search_sounds EN terms; reply 1 line + PLAY: real paths only (≤" + maxPlays + "). " +
+    "No invent paths. qilich/sword=sweep (entity/player/attack). TNT=random/explode. " +
+    "Chat (not sound) → answer, no tools/PLAY. No [played:] tags. " +
     (currentPlayPath ? "Playing: " + currentPlayPath + ". " : "") + recentPlayedNote();
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
   const trace = [];
   const note = () => { if (onStep) { try { onStep(trace); } catch (e) {} } };
   let nudges = 0;
-  for (let step = 0; step < 5; step++) {
+  for (let step = 0; step < 4; step++) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 30000);
     let json;
@@ -2102,8 +2164,8 @@ async function runSoundAgent(msg, key, onStep) {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
-        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: step >= 3 ? 280 : 220, tools: AGENT_TOOLS,
-          tool_choice: step >= 3 ? "none" : "auto", messages: msgs }),
+        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: step >= 2 ? 200 : 160, tools: AGENT_TOOLS,
+          tool_choice: step >= 2 ? "none" : "auto", messages: msgs }),
         signal: ctl.signal
       });
       if (!res.ok) {
@@ -2133,13 +2195,13 @@ async function runSoundAgent(msg, key, onStep) {
     const visible = rawC.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     const th = thinkParts.join("\n").trim();
     if (th) { trace.push({ type: "think", text: th.slice(0, 900), tokens: stepTokens || 0 }); note(); }
-    if (m.tool_calls && m.tool_calls.length && step < 6) {
+    if (m.tool_calls && m.tool_calls.length && step < 2) {
       msgs.push({ role: "assistant", content: visible, tool_calls: m.tool_calls });
       m.tool_calls.forEach(tc => {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) {}
-        const out = tc.function.name === "list_folder" ? agentList(args, seen)
-          : tc.function.name === "search_sounds" ? agentSearch(args, seen)
+        const out = tc.function.name === "search_sounds" ? agentSearch(args, seen)
+          : tc.function.name === "list_folder" ? agentList(args, seen)
           : tc.function.name === "grep_sounds" ? agentGrep(args, seen) : { error: "unknown tool" };
         msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 700) });
         trace.push({ type: "tool", name: tc.function.name, args: args, result: out });
@@ -2157,7 +2219,7 @@ async function runSoundAgent(msg, key, onStep) {
       if (nudges < 1 && step < 5) {   // one retry only — save tokens
         nudges++;
         msgs.push({ role: "assistant", content: raw });
-        msgs.push({ role: "user", content: "STOP. Do not say it is missing yet. Work like a terminal and try again right now: 1) grep_sounds with a regex of alternatives (synonyms used in Minecraft file names, e.g. explode|blast|tnt|boom), 2) list_folder on the most likely top folders (mob, entity, block, item, ambient, random, records, music) and read the real subfolder names, 3) search_sounds with ONE short root word. When you find the closest files, end with PLAY: paths and say honestly they are the closest. Only after all of that may you say nothing exists." });
+        msgs.push({ role: "user", content: "Try search_sounds with ONE English root (synonym). Then PLAY: closest real paths." });
         continue;
       }
       const auto = agentAutoPick(msg, seen, maxPlays, trace);
