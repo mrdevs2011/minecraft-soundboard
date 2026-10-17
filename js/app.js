@@ -393,8 +393,6 @@ function applyStaticLang() {
   if (keySave) keySave.textContent = t("save");
   const keyLabel = document.querySelector('label[for="groqKey"]');
   if (keyLabel) keyLabel.textContent = t("groq_key");
-  const keyRemove = $("keyRemove");
-  if (keyRemove) keyRemove.textContent = t("remove");
   const keyConn = document.querySelector("#keyConnected .key-connected-row span:last-child");
   if (keyConn) keyConn.textContent = t("api_connected");
   const btnClear = $("btnClear");
@@ -2456,19 +2454,6 @@ function bind() {
     const inp = $("groqKey");
     // left empty while a key is saved: show the masked key again
     if (inp && !inp.readOnly && !inp.value.trim() && getApiKey()) syncKeyUI();
-  });
-  on("keyRemove", "click", () => {
-    try { localStorage.removeItem("groq_api_key"); } catch (e) {}
-    const inp = $("groqKey");
-    if (inp) { inp.type = "text"; inp.readOnly = false; inp.value = ""; }
-    const st = $("keyStatus");
-    if (st) { st.textContent = ""; st.className = "key-status"; }
-    syncKeyUI();
-    const hero = $("askHero");
-    if (hero) {
-      const sub = hero.querySelector(".ask-sub");
-      if (sub) sub.textContent = t("enter_key");
-    }
   });
   try { syncKeyUI(); } catch (e) {}
 
