@@ -1653,3 +1653,15 @@ body[data-theme="light"]{
 .trace-src{padding:7px 10px;border-top:1px solid var(--border,#242424);font-size:11px;line-height:1.5;color:var(--muted);word-break:break-all}
 .trace>summary:hover,.trace-step>summary:hover{color:var(--text)}
 .trace-step>summary::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;opacity:.6}
+
+/* Force visible MCAI trace panel */
+.trace>summary{
+  background:rgba(80,140,50,.15);
+  border-left:3px solid var(--accent);
+  font-weight:500;
+  color:var(--text)!important;
+}
+.trace-step>summary{
+  background:rgba(255,255,255,.03);
+}
+.trace{border-color:var(--accent);}
