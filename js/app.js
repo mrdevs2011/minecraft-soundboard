@@ -564,6 +564,34 @@ function esc(s) {
   d.textContent = s;
   return d.innerHTML.replace(/"/g, "&" + "quot;");
 }
+/** Lightweight markdown → safe HTML for MCAI bubbles */
+function formatMd(src) {
+  let s = esc(String(src == null ? "" : src));
+  s = s.replace(/```([\s\S]*?)```/g, function (_, code) {
+    return '<pre class="md-pre"><code>' + code.replace(/^\n+/, "").replace(/\n+$/, "") + '</code></pre>';
+  });
+  s = s.replace(/`([^`\n]+)`/g, '<code class="md-code">$1</code>');
+  s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__([^_\n]+)__/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*(?![*])/g, '$1<em>$2</em>');
+  s = s.replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
+  s = s.replace(/~~([^~\n]+)~~/g, '<del>$1</del>');
+  s = s.replace(/^[ \t]*###[ \t]+(.+)$/gm, '<div class="md-h3">$1</div>');
+  s = s.replace(/^[ \t]*##[ \t]+(.+)$/gm, '<div class="md-h2">$1</div>');
+  s = s.replace(/^[ \t]*#[ \t]+(.+)$/gm, '<div class="md-h1">$1</div>');
+  s = s.replace(/^[ \t]*>[ \t]?(.*)$/gm, '<div class="md-quote"></div>');
+  s = s.replace(/^[ \t]*[-*][ \t]+(.+)$/gm, '<div class="md-li">• $1</div>');
+  s = s.replace(/^[ \t]*(\d+)\.[ \t]+(.+)$/gm, '<div class="md-li md-ol">$1. $2</div>');
+  s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a class="md-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  s = s.replace(/(^|[\s>])(https?:\/\/[^\s<]+)/g, '$1<a class="md-link" href="$2" target="_blank" rel="noopener noreferrer">$2</a>');
+  s = s.replace(/\n/g, '<br>');
+  s = s.replace(/(<\/div>)<br>/g, '$1');
+  s = s.replace(/<br>(<div class="md-)/g, '$1');
+  s = s.replace(/(<\/pre>)<br>/g, '$1');
+  s = s.replace(/<br>(<pre )/g, '$1');
+  return s;
+}
+
 function getMeta(path) {
   return (data && data.meta && data.meta[path]) || { size: null, dur: null };
 }
@@ -2783,7 +2811,7 @@ async function typeAIResponse(textPlain, plays, traceHtml, instant) {
   let shown = "";
   if (instant || chars.length < 40) {
     shown = chars.join("");
-    textEl.innerHTML = esc(shown).replace(/\n/g, "<br>");
+    textEl.innerHTML = formatMd(shown);
   } else {
     const step = Math.max(1, Math.ceil(chars.length / 120));
     for (let i = 0; i < chars.length; i += step) {
@@ -2792,7 +2820,7 @@ async function typeAIResponse(textPlain, plays, traceHtml, instant) {
       $("chatLog").scrollTop = $("chatLog").scrollHeight;
       await sleep(8);
     }
-    textEl.innerHTML = esc(shown).replace(/\n/g, "<br>");
+    textEl.innerHTML = formatMd(shown);
   }
   if (plays.length) {
     const chips = document.createElement("div");
@@ -2823,7 +2851,7 @@ async function typeAIResponse(textPlain, plays, traceHtml, instant) {
   }
 
   // persist
-  let html = (traceHtml ? '<div class="trace-wrap">' + traceHtml + '</div>' : '') + '<div class="ai-text">' + esc(shown).replace(/\n/g, "<br>") + '</div>';
+  let html = (traceHtml ? '<div class="trace-wrap">' + traceHtml + '</div>' : '') + '<div class="ai-text">' + formatMd(shown) + '</div>';
   if (plays.length) {
     html += '<div class="chips">';
     plays.forEach(p => {

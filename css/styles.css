@@ -1920,25 +1920,50 @@ body.chat-lock{
 }
 
 
-/* brand-text visible on tablet + phone (wordmark always on) */
-@media (max-width: 1100px) {
+/* brand-text: tablet + desktop only — mobile da yashirin */
+.brand-text { display: none; }
+@media (min-width: 721px) {
   .brand-text {
-    display: block !important;
-    visibility: visible !important;
+    display: block;
+    visibility: visible;
     font-size: 15px;
     letter-spacing: .06em;
     white-space: nowrap;
   }
-  .brand-col {
-    display: flex !important;
-  }
+  .brand-col { display: flex; }
 }
-@media (max-width: 400px) {
-  .brand-text {
-    font-size: 13px;
-    letter-spacing: .04em;
-  }
+@media (min-width: 1101px) {
+  .brand-text { font-size: 16px; letter-spacing: .08em; }
 }
+@media (max-width: 720px) {
+  .brand-text { display: none !important; }
+}
+
+/* MCAI markdown */
+.bubble.ai .ai-text strong { font-weight: 700; color: var(--accent, #5dba3a); }
+.bubble.ai .ai-text em { font-style: italic; opacity: .95; }
+.bubble.ai .ai-text del { opacity: .65; text-decoration: line-through; }
+.bubble.ai .ai-text .md-code {
+  font-family: var(--font-mono); font-size: .9em; padding: 0.1em 0.35em;
+  background: rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.08); border-radius: 3px;
+}
+.bubble.ai .ai-text .md-pre {
+  margin: 8px 0; padding: 10px 12px; background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.1); border-radius: 4px; overflow-x: auto;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.45; white-space: pre-wrap;
+}
+.bubble.ai .ai-text .md-h1, .bubble.ai .ai-text .md-h2, .bubble.ai .ai-text .md-h3 {
+  font-weight: 700; margin: 0.45em 0 0.2em; color: var(--text);
+}
+.bubble.ai .ai-text .md-h1 { font-size: 1.15em; }
+.bubble.ai .ai-text .md-h2 { font-size: 1.08em; }
+.bubble.ai .ai-text .md-h3 { font-size: 1.02em; }
+.bubble.ai .ai-text .md-li { padding-left: 0.15em; margin: 0.2em 0; }
+.bubble.ai .ai-text .md-quote {
+  border-left: 3px solid var(--accent, #5dba3a); padding: 0.15em 0.6em; margin: 0.35em 0; color: var(--muted);
+}
+.bubble.ai .ai-text .md-link { color: var(--accent, #5dba3a); text-decoration: underline; text-underline-offset: 2px; }
+
 
 
 /* ===== Header layout: AI chat btn always far-right on mobile/tablet ===== */
