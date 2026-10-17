@@ -1,4 +1,4 @@
-const CACHE = "mcsnd-shell-v13";
+const CACHE = "mcsnd-shell-v14";
 const SHELL = ["/", "/index.html", "/css/styles.css", "/js/app.js", "/site.webmanifest", "/png/icon-192.png", "/png/icon-512.png", "/png/creeper.png", "/png/favicon-32.png"];
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

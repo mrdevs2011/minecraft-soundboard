@@ -1198,6 +1198,35 @@ function stop(hide) {
   if (hide) $("player").classList.remove("show");
 }
 
+/* Close player: instant stop (0 ms) + hide. Used by the X button, Esc, and page reload/unload. */
+function closePlayer() {
+  try { if (audio) { audio.muted = true; audio.volume = 0; } } catch (e) {}
+  stop(true);
+  try { currentPlayPath = null; } catch (e) {}
+}
+function killAudioNow() {
+  try { if (audio) { audio.muted = true; audio.pause(); } } catch (e) {}
+  stop(false);
+  try { if (_ac && _ac.state !== "closed") _ac.suspend(); } catch (e) {}
+}
+document.addEventListener("click", e => {
+  if (e.target && e.target.closest && e.target.closest("#pClose")) closePlayer();
+});
+document.addEventListener("keydown", e => {
+  // Esc closes the player (unless a popup/modal is handling it)
+  if (e.key === "Escape") {
+    const pl = $("player");
+    const kp = $("keyPop");
+    if (pl && pl.classList.contains("show") && !(kp && kp.classList.contains("open"))) closePlayer();
+    return;
+  }
+  // Ctrl+R / Ctrl+Shift+R / Cmd+R / F5: silence immediately, before the reload starts
+  const k = (e.key || "").toLowerCase();
+  if (((e.ctrlKey || e.metaKey) && k === "r") || e.key === "F5") killAudioNow();
+}, true);
+window.addEventListener("pagehide", killAudioNow);
+window.addEventListener("beforeunload", killAudioNow);
+
 function togglePause() {
   if (!audio) return;
   if (audio.paused) {
@@ -1503,9 +1532,11 @@ function parseAI(text) {
   let plays = [];
   const clean = [];
   text.split("\n").forEach(line => {
-    const p = line.match(/^PLAY:\s*(.+)$/i);
+    const p = line.match(/(?:^|\s)PLAY:\s*(.+)$/i);
     if (p) {
-      p[1].split(",").map(x => x.trim()).filter(Boolean).forEach(path => {
+      const before = line.slice(0, p.index).trim();
+      if (before) clean.push(before);
+      p[1].split(",").map(x => x.trim().replace(/[.\s]+$/, "")).filter(Boolean).forEach(path => {
         let pp = path.replace(/^sounds\//, "").replace(/^\//, "");
         if (!pp.endsWith(".ogg")) {
           const hit = all.find(x => x.path.includes(pp) || x.path.endsWith(pp + ".ogg"));
@@ -1869,7 +1900,7 @@ async function runSoundAgent(msg, key, onStep) {
 async function sendChat() {
   const key = getApiKey() || ($("groqKey") && $("groqKey").value.trim()) || "";
   const msg = $("chatInput").value.trim();
-  if (!msg) return;
+  if (!msg) { $("chatInput").value = ""; return; }
   if (!key) {
     const kb = appendBubble("sys", "Enter your API key using the key icon above");
     if (kb && kb.classList) kb.classList.add("key-hint");

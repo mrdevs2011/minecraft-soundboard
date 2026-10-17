@@ -899,6 +899,8 @@ html[data-theme-early="light"] .splash-bar,
   border:var(--px) solid;border-color:var(--bevel-dark) var(--bevel-light) var(--bevel-light) var(--bevel-dark);
 }
 .chat-in input:focus{outline:2px solid var(--accent)}
+.chat-in input::placeholder{color:var(--muted);opacity:1}
+.chat-in input:focus::placeholder{opacity:.6}
 .send-btn,.chat-in button#chatSend{
   width:44px;height:44px;min-width:44px;padding:0;
   display:inline-flex;align-items:center;justify-content:center;
@@ -1677,3 +1679,34 @@ body[data-theme="light"]{
 .trace>summary:hover .trace-hdr-tok{
   opacity:1;
 }
+
+
+/* ---------- Player close (X): shows on hover, Minecraft block style ---------- */
+.player-close{
+  position:absolute;top:4px;right:4px;width:22px;height:22px;padding:0;
+  display:grid;place-items:center;z-index:3;cursor:pointer;
+  background:var(--surface);color:var(--text);
+  border:var(--px) solid var(--border);
+  box-shadow:
+    inset var(--px) var(--px) 0 var(--bevel-light),
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 var(--bevel-dark);
+  image-rendering:pixelated;
+  opacity:0;pointer-events:none;transition:none;
+}
+.player-close svg{width:10px;height:10px;display:block;shape-rendering:crispEdges}
+.player:hover .player-close,
+.player:focus-within .player-close,
+.player-close:focus-visible{opacity:1;pointer-events:auto}
+@media (hover:none){.player-close{opacity:1;pointer-events:auto}}
+.player-close:hover{
+  background:#b3392d;color:#fff;
+  box-shadow:
+    inset var(--px) var(--px) 0 #e0675a,
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 #7a1f17;
+}
+.player-close:active{
+  box-shadow:
+    inset var(--px) var(--px) 0 #7a1f17,
+    inset calc(-1 * var(--px)) calc(-1 * var(--px)) 0 #e0675a;
+}
+.player-close:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
