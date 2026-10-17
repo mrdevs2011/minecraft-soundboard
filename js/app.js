@@ -1743,7 +1743,14 @@ const AGENT_TOOLS = [
       limit: { type: "integer", description: "max paths to return (1-12, default 8)" } }, required: ["words"] } } },
   { type: "function", function: { name: "list_folder",
     description: "List the subfolders (with counts) and some sample files of a library folder, e.g. mob or mob/chicken. Use it to discover real names.",
-    parameters: { type: "object", properties: { path: { type: "string", description: "folder path, empty for the root" } }, required: ["path"] } } }
+    parameters: { type: "object", properties: { path: { type: "string", description: "folder path, empty for the root" } }, required: ["path"] } } },
+  { type: "function", function: { name: "grep_sounds",
+    description: "Regex grep over the full file paths of the library (case-insensitive), like grep -iE. Use alternatives to catch every naming: e.g. explode|blast|tnt|boom or (anvil|smith).*(use|land). Same output as search_sounds (counts, folders, paths).",
+    parameters: { type: "object", properties: {
+      pattern: { type: "string", description: "JavaScript regex, matched against the path like mob/chicken/hurt1.ogg" },
+      folder: { type: "string", description: "optional path prefix" },
+      count_only: { type: "boolean", description: "true = only counts, no paths" },
+      limit: { type: "integer", description: "max paths (1-12, default 8)" } }, required: ["pattern"] } } }
 ];
 
 const AGENT_ALIAS = {
@@ -1752,29 +1759,149 @@ const AGENT_ALIAS = {
   boom: ["boom", "explode"], blast: ["blast", "explode"], firecracker: ["firework"], fireworks: ["firework"]
 };
 
-function agentSearch(a, seen) {
-  const toks = String(a.words || "").toLowerCase().split(/[\s,]+/).filter(t => t.length > 1);
-  const folder = String(a.folder || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
-  if (!toks.length && !folder) return { error: "give words or folder" };
-  const pick = ts => qIndex().filter(r => (!folder || r.p.startsWith(folder)) && ts.every(t => r.p.includes(t)));
-  let rows = pick(toks);
-  if (!rows.length && toks.length) {   // auto retry with singular forms (cows -> cow)
-    const alt = toks.map(t => (t.length > 3 && t.endsWith("s") ? t.slice(0, -1) : t));
-    if (alt.join(" ") !== toks.join(" ")) rows = pick(alt);
+/* uz / ru everyday words -> words used in Minecraft file names (MCAI never gives up on a language barrier) */
+const AGENT_TR = {
+  portlash:["explode"], portlat:["explode"], portlovchi:["explode","tnt"], bomba:["explode","tnt"], bombalar:["explode","tnt"], "взрыв":["explode"], "бомба":["explode","tnt"], "динамит":["tnt","explode"], "тнт":["tnt"],
+  qadam:["step"], qadamlar:["step"], "шаг":["step"], "шаги":["step"],
+  olov:["fire"], "огонь":["fire"], "пожар":["fire"], "yong'in":["fire"],
+  tovuq:["chicken"], "курица":["chicken"], "цыпленок":["chicken"], sigir:["cow"], "корова":["cow"], "cho'chqa":["pig"], "свинья":["pig"],
+  echki:["goat"], "коза":["goat"], "овца":["sheep"], ot:["horse"], "лошадь":["horse"], "конь":["horse"], eshak:["donkey"],
+  it:["wolf"], "собака":["wolf"], "bo'ri":["wolf"], "волк":["wolf"], mushuk:["cat"], "кошка":["cat"], "кот":["cat"],
+  zombi:["zombie"], "зомби":["zombie"], skelet:["skeleton"], "скелет":["skeleton"], kreeper:["creeper"], krepper:["creeper"], creper:["creeper"], "крипер":["creeper"],
+  ajdar:["enderdragon","dragon"], "дракон":["enderdragon","dragon"], ender:["ender"], "эндер":["ender"], "qo'riqchi":["warden"],
+  "yomg'ir":["rain"], "дождь":["rain"], momaqaldiroq:["thunder"], "гром":["thunder"], chaqmoq:["lightning","thunder"], "молния":["lightning","thunder"],
+  shamol:["wind"], "ветер":["wind"], suv:["water"], "вода":["water"], "лава":["lava"],
+  musiqa:["music"], muzika:["music"], "музыка":["music"], plastinka:["records"], "пластинка":["records"], disk:["records"], "диск":["records"],
+  eshik:["door"], "дверь":["door"], sandiq:["chest"], "сундук":["chest"],
+  zarba:["hit","hurt","damage"], "удар":["hit","hurt","damage"], "o'lim":["death"], "смерть":["death"], "og'riq":["hurt"], "боль":["hurt"],
+  kamon:["bow"], "лук":["bow"], "o'q":["arrow"], "стрела":["arrow"], qilich:["sword","sweep"], "меч":["sword","sweep"],
+  "qo'ng'iroq":["bell"], "колокол":["bell"], tugma:["button","click"], "кнопка":["button","click"], bosish:["click"],
+  suzish:["swim","splash"], "плавать":["swim","splash"], ovqat:["eat"], "еда":["eat"], sakrash:["jump"], "прыжок":["jump"],
+  "портал":["portal"], kema:["boat"], "лодка":["boat"], poyezd:["minecart"], "вагонетка":["minecart"], "алмаз":["diamond"],
+  tosh:["stone"], "камень":["stone"], "yog'och":["wood"], "дерево":["wood"], shisha:["glass"], "стекло":["glass"], qum:["sand"], "песок":["sand"], qor:["snow"], "снег":["snow"],
+  asalari:["bee"], "пчела":["bee"], "ko'rshapalak":["bat"], "o'rgimchak":["spider"], "паук":["spider"], baliq:["fish","cod","salmon"], "рыба":["fish","cod","salmon"],
+  delfin:["dolphin"], "дельфин":["dolphin"], qishloqi:["villager"], "житель":["villager"], qichqiriq:["scream"], "крик":["scream"]
+};
+const AGENT_STOP = new Set(("top topib ber berchi qoy qo'y chal chalib eshit eshitay eshitaman ovoz ovozi ovozini ovozlar ovozlarini tovush tovushi sound sounds play find give me the an of for to please " +
+  "minecraft mc mcai uchun va bilan menga manga iltimos bor bormi find hear need want " +
+  "найди включи дай звук звуки звука майнкрафт майнкрафта пожалуйста мне про").split(" "));
+const AGENT_WANT = /(^|[^a-z])(top|topib|ber|qo'?y|qoy|chal|eshit\w*|play|find|give|hear)([^a-z]|$)|(включи|найди|дай|поставь|послуш|сыграй)/i;
+const AGENT_GIVEUP = /(nothing (found|matched)|no results|topa olmad|topilmad|topib bo'?lmad|yo'?q\b|mavjud emas|not found|couldn'?t find|could not find|can'?t find|cannot find|no (such|matching|exact)|does ?n'?t (exist|have)|not in (the )?library|не наш|не могу найти|нет (такого|в библиотеке|файл|звук)|отсутств|не существ)/i;
+
+function _msgTokens(msg) {
+  return String(msg || "").toLowerCase().replace(/[\u2018\u2019\u02bb\u02bc`]/g, "'").split(/[^a-z0-9'а-яё]+/i)
+    .map(t => t.replace(/^'+|'+$/g, "")).filter(t => t.length > 1 && !AGENT_STOP.has(t)).slice(0, 6);
+}
+
+let _vocabC = null;
+function _agVocab() {
+  const rows = qIndex();
+  if (_vocabC && _vocabC.rows === rows) return _vocabC.list;
+  const set = new Set();
+  rows.forEach(r => r.p.replace(/\.ogg$/, "").split(/[\/_\-.]+/).forEach(w => { w = w.replace(/\d+$/, ""); if (w.length > 2) set.add(w); }));
+  _vocabC = { rows: rows, list: Array.from(set) };
+  return _vocabC.list;
+}
+function _lev(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = [];
+  for (let j = 0; j <= b.length; j++) prev[j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (cur[j] < rowMin) rowMin = cur[j];
+    }
+    if (rowMin > max) return max + 1;
+    prev = cur;
   }
-  let expanded = false;
-  if (!rows.length && toks.some(t => AGENT_ALIAS[t])) {   // bomb/explosion/TNT -> explode, blast ...
-    rows = qIndex().filter(r => (!folder || r.p.startsWith(folder)) && toks.every(t => (AGENT_ALIAS[t] || [t]).some(x => r.p.includes(x))));
-    expanded = rows.length > 0;
+  return prev[b.length];
+}
+/* every way a word can be written in the library: plural, synonyms, uz/ru translation, (fuzzy) typos and prefixes */
+function _alts(t0, fuzzy) {
+  const t = String(t0).replace(/[\u2018\u2019\u02bb\u02bc`]/g, "'");
+  const out = new Set([t]);
+  if (t.length > 3 && t.endsWith("s")) out.add(t.slice(0, -1));
+  const add = k => { (AGENT_ALIAS[k] || []).forEach(x => out.add(x)); (AGENT_TR[k] || []).forEach(x => out.add(x)); };
+  add(t);
+  if (t.length > 3 && t.endsWith("s")) add(t.slice(0, -1));
+  ["larni", "lari", "lar", "ning", "ni", "ga", "dan", "da", "si", "ler", "и", "ы", "а", "у", "ов", "ы", "i"].forEach(suf => {
+    if (t.length > suf.length + 2 && t.endsWith(suf)) add(t.slice(0, -suf.length));
+  });
+  if (fuzzy) {
+    const max = t.length >= 8 ? 2 : 1;
+    _agVocab().forEach(w => {
+      if (w === t) return;
+      if ((t.length >= 3 && w.startsWith(t)) || (t.length >= 5 && w.length >= 4 && t.startsWith(w))) { out.add(w); return; }
+      if (t.length >= 4 && _lev(t, w, max) <= max) out.add(w);
+    });
   }
+  return Array.from(out).slice(0, 80);
+}
+/* short words (cat, ox, tnt) must match whole words, not "catalyst" */
+function _has(r, x) {
+  if (x.length > 4) return r.p.includes(x);
+  let i = r.p.indexOf(x);
+  while (i >= 0) {
+    const b = i === 0 ? "" : r.p[i - 1], a = r.p[i + x.length] || "";
+    if (!/[a-z]/.test(b) && !/[a-z]/.test(a)) return true;
+    i = r.p.indexOf(x, i + 1);
+  }
+  return false;
+}
+/* keep the best-ranked synonyms first: explode before blast before tnt */
+function _rankRows(rows, lists) {
+  const sc = r => lists.reduce((sum, al) => { const k = al.findIndex(x => _has(r, x)); return sum + (k < 0 ? 99 : k); }, 0);
+  const tagged = rows.map(r => ({ r: r, p: sc(r) })).sort((a, b) => a.p - b.p);
+  const out = [];
+  let lastP = -1;
+  for (const x of tagged) {
+    if (out.length >= 3 && x.p !== lastP) break;
+    out.push(x.r);
+    lastP = x.p;
+  }
+  return out;
+}
+/* the cascade: exact -> synonyms/translation -> fuzzy -> partial (rarest word wins). It always returns the best it can. */
+function agentFind(toks, folder) {
+  const base = qIndex().filter(r => !folder || r.p.startsWith(folder));
+  const run = (lists, strict) => base.filter(r => lists.every(al => al.some(x => strict ? _has(r, x) : r.p.includes(x))));
+  let rows = run(toks.map(t => [t]), false);
+  if (rows.length) return { rows: rows, mode: "exact" };
+  let al = toks.map(t => _alts(t, false));
+  rows = run(al, true);
+  if (rows.length) return { rows: _rankRows(rows, al), mode: "synonyms/plural/translation" };
+  al = toks.map(t => _alts(t, true));
+  rows = run(al, true);
+  if (rows.length) return { rows: _rankRows(rows, al), mode: "fuzzy (typos / partial words)" };
+  if (toks.length > 1) {
+    const w = al.map(a => { const d = base.filter(r => a.some(x => _has(r, x))).length; return d ? 1 / d : 0; });
+    const scored = base.map(r => { let sc = 0; al.forEach((a, i) => { if (w[i] && a.some(x => _has(r, x))) sc += w[i]; }); return { r: r, sc: sc }; }).filter(x => x.sc > 0);
+    if (scored.length) {
+      let best = 0;
+      scored.forEach(x => { if (x.sc > best) best = x.sc; });
+      const hitW = toks.filter((t, i) => w[i] && scored.some(x => x.sc === best && al[i].some(y => _has(x.r, y))));
+      return { rows: scored.filter(x => x.sc >= best - 1e-12).map(x => x.r), mode: "partial: closest by the rarest word(s): " + (hitW.join(", ") || toks.join(", ")) };
+    }
+  }
+  if (folder) {
+    const r2 = agentFind(toks, "");
+    if (r2.rows.length) { r2.mode += " (folder filter dropped: nothing there)"; return r2; }
+  }
+  return { rows: [], mode: "none" };
+}
+
+function agentReport(found, toks, a, seen) {
+  let rows = found.rows;
   const total = rows.length;
   const byF = {};
   rows.forEach(r => { const f = r.dirs.slice(0, 2).join("/") || "(root)"; byF[f] = (byF[f] || 0) + 1; });
-  const out = { total: total, folders: Object.keys(byF).sort((x, y) => byF[y] - byF[x]).slice(0, 8).map(f => f + ": " + byF[f]) };
-  if (expanded) out.note = "matched via synonyms (explode/blast/tnt)";
-  if (!total && toks.length > 1) {   // tell the model which word has hits, so it can retry smartly
+  const out = { total: total, mode: found.mode, folders: Object.keys(byF).sort((x, y) => byF[y] - byF[x]).slice(0, 8).map(f => f + ": " + byF[f]) };
+  if (!total && toks.length) {
     out.per_word = toks.map(t => t + ": " + qIndex().filter(r => r.p.includes(t)).length);
-    out.hint = "no path has all words; try fewer or different words";
+    out.did_you_mean = toks.map(t => ({ word: t, close: _agVocab().filter(w => _lev(t, w, 2) <= 2 || (t.length >= 3 && w.startsWith(t))).slice(0, 6) })).filter(x => x.close.length);
+    out.hint = "nothing matched even after typo/synonym/partial matching: use grep_sounds with a regex of alternatives, or list_folder on a likely folder (mob, entity, block, item, ambient, random, records, music, ui)";
   }
   if (!a.count_only && total) {
     const fresh = rows.filter(r => !_shown.has(r.s.path));
@@ -1785,6 +1912,43 @@ function agentSearch(a, seen) {
     out.files.forEach(f => seen.add(f));
   }
   return out;
+}
+
+function agentSearch(a, seen) {
+  const toks = String(a.words || "").toLowerCase().split(/[\s,]+/).filter(t => t.length > 1);
+  const folder = String(a.folder || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
+  if (!toks.length && !folder) return { error: "give words or folder" };
+  const found = toks.length ? agentFind(toks, folder) : { rows: qIndex().filter(r => r.p.startsWith(folder)), mode: "folder" };
+  return agentReport(found, toks, a, seen);
+}
+
+function agentGrep(a, seen) {
+  const pat = String(a.pattern || "").trim();
+  if (!pat) return { error: "give a pattern" };
+  let re;
+  try { re = new RegExp(pat, "i"); } catch (e) { return { error: "bad regex: " + e.message }; }
+  const folder = String(a.folder || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
+  const rows = qIndex().filter(r => (!folder || r.p.startsWith(folder)) && re.test(r.p));
+  return agentReport({ rows: rows, mode: "regex" }, [], a, seen);
+}
+
+/* last line of defence: the model gave up, the code itself searches the user's words and plays the closest files */
+function agentAutoPick(msg, seen, maxPlays, trace) {
+  const toks = _msgTokens(msg);
+  if (!toks.length) return [];
+  const f = agentFind(toks, "");
+  trace.push({ type: "tool", name: "search_sounds", args: { words: toks.join(" "), auto: true }, result: { total: f.rows.length, mode: f.mode } });
+  if (!f.rows.length) return [];
+  const fresh = f.rows.filter(r => !_shown.has(r.s.path));
+  const base = fresh.length ? fresh : f.rows;
+  const picks = pickDiverse(base.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), Math.min(6, maxPlays)).map(x => x.path);
+  picks.forEach(x => seen.add(x));
+  return picks;
+}
+function agentClosestText(msg) {
+  if (/[а-яё]/i.test(msg)) return "Точного совпадения нет — вот самые близкие звуки:";
+  if (/(^|[^a-z])(the|play|find|give|sound|sounds|me)([^a-z]|$)/i.test(msg)) return "No exact match — here are the closest sounds:";
+  return "Aniq mos ovoz topilmadi — eng yaqinlari:";
 }
 
 function agentList(a, seen) {
@@ -1879,18 +2043,20 @@ async function runSoundAgent(msg, key, onStep) {
     "If the message is clearly NOT about playing/finding a Minecraft sound or music (e.g. dua, prayer, history, math, general talk) — answer directly from knowledge. Do NOT call tools. Do NOT say the library has no file. Do NOT use PLAY. " +
     "Only when the user wants a Minecraft sound/music/disc/SFX: infer intent, strip request verbs, search with tools. " +
     "Request verbs are NOT search words: Uzbek top = find, qo'y / chal / ber = play / give, eshit = hear; Russian найди / включи / дай. Never turn them into sound names (top is not stop). " +
-    "SEARCH (when needed): 1) English Minecraft terms from intent. 2) search_sounds count_only=true first. 3) If 0 try synonyms / list_folder. 4) Final search without count_only for paths. Max ~6 calls. Never invent paths. " +
+    "SEARCH (when needed): 1) English Minecraft terms from intent. 2) search_sounds count_only=true first. 3) If 0 try synonyms / list_folder. 4) Final search without count_only for paths. Use as many calls as needed (up to ~14). Never invent paths. " +
     "Music intent → search music/ and records/ first, return a varied mix. " +
     "Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/; music/; records/. " +
     "Sound answer format: 1 short sentence, then PLAY: path1, path2, … (up to " + maxPlays + " paths). Non-sound answers: normal helpful reply, no PLAY, no library excuses. " +
     "NEVER write bracket tags like [played: ...] or invent that you played something: sounds play ONLY through a PLAY: line whose paths came from your tool results. If the user asks to hear/play/give a sound you MUST search and end with PLAY:. " +
     "Synonyms (the library uses game file names): bomb / explosion / TNT / detonation = explode, blast, tnt (random/explode1-4, entity/.../explode, sonic_boom for the Warden); boom = explode; firecracker = firework. Try these words before saying a sound does not exist. " +
+    "You work like a terminal: search_sounds = grep over file paths (it already fixes typos, plurals, Uzbek/Russian words and synonyms - read its mode field), grep_sounds = regex grep (use alternatives like explode|blast|tnt|boom), list_folder = ls. You have up to ~14 tool calls - USE them. NEVER tell the user a sound was not found or does not exist until you really searched: (1) several English synonyms, (2) grep_sounds with a regex of alternatives, (3) list_folder on the likely top folders (mob, entity, block, item, ambient, random, records, music, ui) and read the real names. If nothing exact exists, play the CLOSEST matches and say honestly that they are the closest. Giving up without PLAY after a sound request is forbidden. " +
     "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") + recentPlayedNote();
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
   const trace = [];
   const note = () => { if (onStep) { try { onStep(trace); } catch (e) {} } };
-  for (let step = 0; step < 10; step++) {
+  let nudges = 0;
+  for (let step = 0; step < 16; step++) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 30000);
     let json;
@@ -1899,7 +2065,7 @@ async function runSoundAgent(msg, key, onStep) {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
         body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: 1200, tools: AGENT_TOOLS,
-          tool_choice: step >= 9 ? "none" : "auto", messages: msgs }),
+          tool_choice: step >= 14 ? "none" : "auto", messages: msgs }),
         signal: ctl.signal
       });
       if (!res.ok) return null;   // old pipeline takes over (also shows auth errors)
@@ -1917,14 +2083,15 @@ async function runSoundAgent(msg, key, onStep) {
     const visible = rawC.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     const th = thinkParts.join("\n").trim();
     if (th) { trace.push({ type: "think", text: th.slice(0, 900), tokens: stepTokens || 0 }); note(); }
-    if (m.tool_calls && m.tool_calls.length && step < 9) {
+    if (m.tool_calls && m.tool_calls.length && step < 14) {
       msgs.push({ role: "assistant", content: visible, tool_calls: m.tool_calls });
       m.tool_calls.forEach(tc => {
         let args = {};
         try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) {}
         const out = tc.function.name === "list_folder" ? agentList(args, seen)
-          : tc.function.name === "search_sounds" ? agentSearch(args, seen) : { error: "unknown tool" };
-        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 1200) });
+          : tc.function.name === "search_sounds" ? agentSearch(args, seen)
+          : tc.function.name === "grep_sounds" ? agentGrep(args, seen) : { error: "unknown tool" };
+        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 2400) });
         trace.push({ type: "tool", name: tc.function.name, args: args, result: out });
         note();
       });
@@ -1933,9 +2100,21 @@ async function runSoundAgent(msg, key, onStep) {
     const raw = visible;
     if (!raw) return null;
     const parsed = parseAI(raw);
-    const plays = parsed.plays.filter(p => seen.has(p)).slice(0, maxPlays);
+    let plays = parsed.plays.filter(p => seen.has(p)).slice(0, maxPlays);
+    let text = stripPlayedTag(parsed.text || raw);
+    const soundy = trace.some(x => x.type === "tool") || AGENT_WANT.test(msg);
+    if (!plays.length && soundy && AGENT_GIVEUP.test(text)) {
+      if (nudges < 2 && step < 13) {   // the model wants to give up: back to the terminal first
+        nudges++;
+        msgs.push({ role: "assistant", content: raw });
+        msgs.push({ role: "user", content: "STOP. Do not say it is missing yet. Work like a terminal and try again right now: 1) grep_sounds with a regex of alternatives (synonyms used in Minecraft file names, e.g. explode|blast|tnt|boom), 2) list_folder on the most likely top folders (mob, entity, block, item, ambient, random, records, music) and read the real subfolder names, 3) search_sounds with ONE short root word. When you find the closest files, end with PLAY: paths and say honestly they are the closest. Only after all of that may you say nothing exists." });
+        continue;
+      }
+      const auto = agentAutoPick(msg, seen, maxPlays, trace);
+      if (auto.length) { plays = auto; text = agentClosestText(msg); note(); }
+    }
     plays.forEach(p => _shown.add(p));
-    return { text: stripPlayedTag(parsed.text || raw), plays: plays, trace: trace };
+    return { text: text, plays: plays, trace: trace };
   }
   return null;
 }
