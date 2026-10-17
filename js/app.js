@@ -838,6 +838,11 @@ async function init() {
     applyStaticLang();
     try { bind(); } catch (be) { console.error(be); }
     loadChatFromStorage();
+    if (window.matchMedia("(min-width:1101px)").matches && $("shell")) {   // desktop: AI chat open by default
+      $("shell").classList.add("chat-on");
+      if ($("btnChat")) $("btnChat").classList.add("on");
+      scrollChatBottom();
+    }
     goNav(urlToPath(), false);
   } catch (e) {
     $("grid").innerHTML = '<div class="empty"><h2>' + t("load_failed") + '</h2><p>' + esc(e.message) + '</p></div>';
@@ -1541,14 +1546,14 @@ function parsePlan(raw) {
     subjects: subjects.slice(0, 6),
     kinds: arr(j.kinds).map(k => Q_KIND_SYN[k] || k).slice(0, 6),
     words: arr(j.words).map(w => w.replace(/\d+$/, "")).filter(w => w.length > 1).slice(0, 6),
-    all: !!j.all, more: !!j.more
+    all: !!j.all, more: !!j.more, chat: !!j.chat
   };
 }
 
 async function aiPlan(msg, key) {
   const V = qVocab();
   const sys = "You turn a user's request about Minecraft sounds into a search plan. The user may write in ANY language (Uzbek, Russian, English, ...). " +
-    "Reply with ONLY one JSON object, no prose, no markdown: {\"subjects\":[],\"kinds\":[],\"words\":[],\"all\":false,\"more\":false}. " +
+    "Reply with ONLY one JSON object, no prose, no markdown: {\"subjects\":[],\"kinds\":[],\"words\":[],\"all\":false,\"more\":false,\"chat\":false}. " +
     "subjects = up to 6 EXACT folder names from the folder list below that the user means. Translate the meaning, not the letters " +
     "(a creature, block or item named in Uzbek or Russian -> its English folder name). " +
     "For vague, mood or comparison requests (scary, calm, funny, epic, loud...) pick several fitting folders. " +
@@ -1557,6 +1562,7 @@ async function aiPlan(msg, key) {
     "words = extra English filename words for loose sounds, preferably from: " + V.words.join(" ") + ". " +
     "all = true if the user wants every/all sounds. " +
     "more = true if the user asks for another/more/different ones, or continues the previous topic without naming a new subject; then repeat the previous subjects. " +
+    "chat = true if the message is NOT about finding, playing or listing Minecraft sounds (greetings, small talk, general questions, facts, news, advice, code, translation, anything else); then leave the other fields empty. " +
     "If nothing in the library fits, return empty arrays.\nFolders:\n" + V.text;
   const prev = hist.filter(h => h.role === "user").slice(-3).map(h => h.content);
   const user = (prev.length ? "Earlier requests: " + prev.join(" | ") + "\n" : "") +
@@ -1623,6 +1629,7 @@ function searchByPlan(plan, limit) {
 async function smartSearch(msg, key, limit) {
   let plan = null;
   try { plan = await aiPlan(msg, key); } catch (e) { plan = null; }
+  if (plan && plan.chat) { const c = []; c.chat = true; return c; }
   if (plan) {
     const k = plan.subjects.join(",") + "|" + plan.kinds.join(",");
     if (!plan.more && k !== _lastPlanKey) _shown.clear();
@@ -1633,7 +1640,9 @@ async function smartSearch(msg, key, limit) {
       return res;
     }
   }
-  return searchLib(msg, limit);   // offline / planner-failed fallback
+  const fb = searchLib(msg, limit);   // offline / planner-failed fallback
+  if (!fb.length) fb.chat = true;
+  return fb;
 }
 
 async function sendChat() {
@@ -1657,7 +1666,16 @@ async function sendChat() {
   const matchList = matches.map(m => m.path).join("\n");
   const mobList = matches.length ? "" : Array.from(new Set(all.filter(x => x.path.startsWith("mob/")).map(x => x.path.split("/")[1]))).join(", ");
 
-  const system = "You are MCAI, an expert Minecraft sound designer inside MCSOUNDS, a library of about 5000 official Minecraft .ogg sounds. " +
+  const chatMode = !!matches.chat;
+  const sysGeneral = "You are MCAI, a very smart, warm and friendly AI assistant inside MCSOUNDS (a library of about 5000 official Minecraft sounds). " +
+    "You are a general-purpose assistant: chat like a close friend, and answer any question well (facts, news, advice, study, code, translation, ideas, math, anything). " +
+    "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). " +
+    "Be natural, helpful and accurate. Keep answers short when the question is simple and complete when it is deep. " +
+    "Use web search when you need current or unknown facts, and never make things up; say honestly when you are not sure. " +
+    "Plain text only, no markdown symbols like ** or #; use short lines or simple dashes for lists. " +
+    "Today is " + new Date().toISOString().slice(0, 10) + ". " +
+    "If the user wanted a Minecraft sound and nothing was found, say so kindly and suggest how to describe it. Never output PLAY: lines.";
+  const sysSound = "You are MCAI, an expert Minecraft sound designer inside MCSOUNDS, a library of about 5000 official Minecraft .ogg sounds. " +
     "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). " +
     "Library hints: mob/<mob>/say* = the mob's normal voice, hurt* = pain, death* = dying, step* = footsteps, idle*/ambient* = idle noises, moody/* = newer variant sounds; " +
     "entity/cow/milk* = milking; note/* = note-block instruments (instrument names such as cow_bell are NOT animals); music/* = songs. " +
@@ -1668,22 +1686,34 @@ async function sendChat() {
     (navPath.length ? "Current folder: " + navPath.join("/") + ". " : "") +
     "Candidates:\n" + (matchList || "(none)") +
     (mobList ? "\nAvailable mob folders under mob/: " + mobList : "");
+  const system = chatMode ? sysGeneral : sysSound;
 
   hist.push({ role: "user", content: msg });
   if (hist.length > 10) hist = hist.slice(-10);
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const callGroq = (model, temp, maxTok) => fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
       body: JSON.stringify({
-        model: MODEL,
-        temperature: 0.3,
-        max_tokens: 900,
+        model: model,
+        temperature: temp,
+        max_tokens: maxTok,
         messages: [{ role: "system", content: system }].concat(hist)
       })
     });
-    const json = await res.json();
+    let res = null, json = null;
+    if (chatMode) {   // general questions: Groq compound model has built-in web search
+      try {
+        res = await callGroq("groq/compound-mini", 0.6, 1500);
+        json = await res.json();
+        if (!res.ok) res = null;
+      } catch (e) { res = null; }
+    }
+    if (!res) {
+      res = await callGroq(MODEL, chatMode ? 0.6 : 0.3, chatMode ? 1500 : 900);
+      json = await res.json();
+    }
     wait.remove();
     if (!res.ok) {
       const em = (json.error && json.error.message) || String(res.status);
@@ -1695,7 +1725,8 @@ async function sendChat() {
       $("chatSend").disabled = false;
       return;
     }
-    const raw = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || "";
+    let raw = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || "";
+    raw = raw.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     hist.push({ role: "assistant", content: raw });
     const parsed = parseAI(raw);
 
@@ -1705,7 +1736,7 @@ async function sendChat() {
       const eng = pickDiverse(matches, maxPlays).map(x => x.path);
       plays = eng.concat(plays.filter(p => !eng.includes(p)));
     }
-    parsed.plays = plays.slice(0, maxPlays);
+    parsed.plays = chatMode ? [] : plays.slice(0, maxPlays);
     parsed.plays.forEach(p => _shown.add(p));
 
     const textPlain = (parsed.text || raw || "").trim();
@@ -1718,6 +1749,14 @@ async function sendChat() {
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function scrollChatBottom() {
+  const go = () => { const l = document.getElementById("chatLog"); if (l) l.scrollTop = l.scrollHeight; };
+  go();
+  requestAnimationFrame(go);
+  setTimeout(go, 60);
+  setTimeout(go, 300);
+}
 
 async function typeAIResponse(textPlain, plays) {
   plays = plays || [];
@@ -1734,11 +1773,12 @@ async function typeAIResponse(textPlain, plays) {
 
   const chars = Array.from(textPlain);
   let shown = "";
-  for (let i = 0; i < chars.length; i++) {
-    shown += chars[i];
+  const step = Math.max(1, Math.ceil(chars.length / 220));
+  for (let i = 0; i < chars.length; i += step) {
+    shown = chars.slice(0, i + step).join("");
     textEl.innerHTML = esc(shown).replace(/\n/g, "<br>") + '<span class="cursor"></span>';
     $("chatLog").scrollTop = $("chatLog").scrollHeight;
-    await sleep(chars[i] === " " ? 12 : 18);
+    await sleep(16);
   }
   textEl.innerHTML = esc(shown).replace(/\n/g, "<br>");
 
@@ -2080,6 +2120,7 @@ function bind() {
     if (!$("shell")) return;
     $("shell").classList.toggle("chat-on");
     if ($("btnChat")) $("btnChat").classList.toggle("on", $("shell").classList.contains("chat-on"));
+    if ($("shell").classList.contains("chat-on")) scrollChatBottom();
   };
   on("btnChat", "click", toggleChat);
   on("backdrop", "click", () => {
