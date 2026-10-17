@@ -2206,9 +2206,10 @@ function agentAutoPick(msg, seen, maxPlays, trace) {
   return picks;
 }
 function agentClosestText(msg) {
-  if (/[а-яё]/i.test(msg)) return "Точного совпадения нет — вот самые близкие звуки:";
-  if (/(^|[^a-z])(the|play|find|give|sound|sounds|me)([^a-z]|$)/i.test(msg)) return "No exact match — here are the closest sounds:";
-  return "Aniq mos ovoz topilmadi — eng yaqinlari:";
+  if (/[а-яё]/i.test(msg)) return "Точного файла с таким именем нет, но вот самые близкие звуки из библиотеки — послушайте:";
+  if (/(^|[^a-z])(the|play|find|give|sound|sounds|me|what|how)([^a-z]|$)/i.test(msg))
+    return "I couldn't find an exact match, but here are the closest sounds from the library:";
+  return "Aniq nom topilmadi, lekin kutubxonadagi eng yaqin ovozlar shular — tinglab ko‘ring:";
 }
 
 function agentList(a, seen) {
@@ -2282,9 +2283,9 @@ function renderTrace(trace, live) {
 }
 
 function histForModel() {
-  const slice = hist.slice(-2);
+  const slice = hist.slice(-6);
   return slice.map((h, i) => {
-    const lim = i === slice.length - 1 ? 160 : 80;
+    const lim = i === slice.length - 1 ? 400 : 220;
     const c = stripPlayedTag(h.content);
     return { role: h.role, content: c.length > lim ? c.slice(0, lim) + "..." : c };
   });
@@ -2360,9 +2361,9 @@ function _replyFound(msg, picks, rows, meta) {
   picks = onlyRealPaths(picks || []);
   if (!picks.length) return null;
   const name = picks[0].split("/").pop();
-  const text = /[а-яё]/i.test(msg) ? ("Нашёл: " + name)
+  const text = /[а-яё]/i.test(msg) ? ("Нашёл «" + name + "». Могу ещё поискать, если нужно.")
     : (/[a-züʻ'‘]/i.test(msg) && !/\b(the|play|find|sound|what|how)\b/i.test(msg)
-      ? ("Topildi: " + name) : ("Found: " + name));
+      ? ("«" + name + "» topildi. Boshqa variant kerak bo‘lsa, ayting.") : ("Found “" + name + "”. Say if you want a closer match."));
   return {
     text: text,
     plays: picks,
@@ -2507,11 +2508,19 @@ async function runSoundAgent(msg, key, onStep) {
       return { text: agentClosestText(msg), plays: auto0, trace: tr0, local: true };
     }
   }
-  const sys = "MCAI. User language. Short plain text. " +
-    (isSoundAsk(msg)
-      ? ("Sound: search_sounds EN terms → 1 line + PLAY: real paths only (≤" + maxPlays + "). Never invent paths.")
-      : "Chat only — no tools, no PLAY.") +
-    (currentPlayPath ? " Playing: " + currentPlayPath + "." : "");
+  const sys = [
+    "You are MCAI — the smart, warm, adaptive assistant inside MCSOUNDS (Minecraft sound library).",
+    "Always reply in the user's language (Uzbek, Russian, or English). Be polite, clear, and genuinely helpful.",
+    "Tone: friendly expert, not robotic. Explain briefly when useful; never pad with fluff.",
+    "You know Minecraft well. You have local search tools for this app's sound files (no live internet).",
+    isSoundAsk(msg)
+      ? ("SOUND REQUEST: use search_sounds with good English game terms (synonyms OK). " +
+         "Then answer in 1–3 natural sentences and end with PLAY: lines using ONLY real paths from tool results (≤" + maxPlays + "). " +
+         "Never invent or guess file paths. If nothing fits, say so honestly and suggest the closest real sounds.")
+      : "GENERAL CHAT: answer helpfully. No tools. No PLAY: lines unless the user clearly asks to hear a sound.",
+    currentPlayPath ? ("Currently playing: " + currentPlayPath + ".") : "",
+    recentPlayedNote()
+  ].filter(Boolean).join(" ");
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
   const trace = [];
@@ -2525,8 +2534,8 @@ async function runSoundAgent(msg, key, onStep) {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
-        body: JSON.stringify({ model: MODEL, temperature: isSoundAsk(msg) ? 0.2 : 0.5,
-          max_tokens: isSoundAsk(msg) ? (step >= 2 ? 180 : 140) : 280,
+        body: JSON.stringify({ model: MODEL, temperature: isSoundAsk(msg) ? 0.35 : 0.65,
+          max_tokens: isSoundAsk(msg) ? (step >= 2 ? 420 : 360) : 550,
           tools: isSoundAsk(msg) ? AGENT_TOOLS : undefined,
           tool_choice: isSoundAsk(msg) ? (step >= 2 ? "none" : "auto") : undefined,
           messages: msgs }),
@@ -2567,7 +2576,7 @@ async function runSoundAgent(msg, key, onStep) {
         const out = tc.function.name === "search_sounds" ? agentSearch(args, seen)
           : tc.function.name === "list_folder" ? agentList(args, seen)
           : tc.function.name === "grep_sounds" ? agentGrep(args, seen) : { error: "unknown tool" };
-        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 700) });
+        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 1800) });
         trace.push({ type: "tool", name: tc.function.name, args: args, result: out });
         note();
       });
@@ -2583,7 +2592,7 @@ async function runSoundAgent(msg, key, onStep) {
       if (nudges < 1 && step < 5) {   // one retry only — save tokens
         nudges++;
         msgs.push({ role: "assistant", content: raw });
-        msgs.push({ role: "user", content: "Try search_sounds with ONE English root (synonym). Then PLAY: closest real paths." });
+        msgs.push({ role: "user", content: "Please try search_sounds again with a stronger English synonym or broader term, then reply briefly in the user language and PLAY: only real paths from results." });
         continue;
       }
       const auto = agentAutoPick(msg, seen, maxPlays, trace);
@@ -2607,8 +2616,8 @@ async function sendChat() {
     const hero0 = $("askHero"); if (hero0) hero0.remove();
     appendBubble("user", esc(msg));
     hist.push({ role: "user", content: msg });
-    hist.push({ role: "assistant", content: stripPlayedTag(local0.text).slice(0, 200), played: playedNames(local0.plays) });
-    if (hist.length > 4) hist = hist.slice(-4);
+    hist.push({ role: "assistant", content: stripPlayedTag(local0.text).slice(0, 500), played: playedNames(local0.plays) });
+    if (hist.length > 10) hist = hist.slice(-10);
     saveHist();
     await typeAIResponse(local0.text, local0.plays, renderTrace(local0.trace || [], false), true);
     return;
@@ -2642,8 +2651,8 @@ async function sendChat() {
   if (ag) {
     wait.remove();
     hist.push({ role: "user", content: msg });
-    hist.push({ role: "assistant", content: stripPlayedTag(ag.text).slice(0, 280), played: playedNames(ag.plays) });
-    if (hist.length > 6) hist = hist.slice(-6);
+    hist.push({ role: "assistant", content: stripPlayedTag(ag.text).slice(0, 600), played: playedNames(ag.plays) });
+    if (hist.length > 10) hist = hist.slice(-10);
     if (hist.length && hist[0].role === "assistant") hist.shift();
     saveHist();
     await typeAIResponse(ag.text, ag.plays, renderTrace(ag.trace || [], false), !!ag.local || (ag.trace || []).some(t => t.args && t.args.local));
@@ -2658,12 +2667,16 @@ async function sendChat() {
 
   const chatMode = !!matches.chat;
   const preset = matches.strong ? pickDiverse(matches, maxPlays) : [];
-  const sysGeneral = "MCAI in MCSOUNDS. User language. Helpful, accurate, concise. Plain text, no markdown. Minecraft knowledge OK; no live internet. No PLAY: lines.";
-  const sysSound = "MCAI sound picker. User language. 1 short line then PLAY: paths from Candidates only (≤" + maxPlays + "). Never invent paths.\nCandidates:\n" + (matchList || "(none)");
+  const sysGeneral = "You are MCAI in MCSOUNDS — a smart, warm Minecraft sound assistant. " +
+    "Reply in the user's language. Be polite, adaptive, and accurate. Plain text (light structure OK). " +
+    "Use solid Minecraft knowledge; no live internet. Only use PLAY: lines when the user wants to hear a sound.";
+  const sysSound = "You are MCAI, sound finder in MCSOUNDS. Reply in the user's language, friendly and clear. " +
+    "Write 1–3 natural sentences, then PLAY: only paths from Candidates (≤" + maxPlays + "). Never invent paths. " +
+    "If Candidates are empty or weak, say so and suggest the closest real ones.\nCandidates:\n" + (matchList || "(none)");
   const system = chatMode ? sysGeneral : sysSound;
 
   hist.push({ role: "user", content: msg });
-  if (hist.length > 6) hist = hist.slice(-6);
+  if (hist.length > 10) hist = hist.slice(-10);
   saveHist();
 
   try {
@@ -2674,15 +2687,16 @@ async function sendChat() {
         model: model,
         temperature: temp,
         max_tokens: maxTok,
-        messages: [{ role: "system", content: system }].concat(hist.slice(-3).map((h, i, arr) => {
-          const lim = i === arr.length - 1 ? 220 : 100;
-          return { role: h.role, content: h.content.length > lim ? h.content.slice(0, lim) + "..." : h.content };
+        messages: [{ role: "system", content: system }].concat(hist.slice(-6).map((h, i, arr) => {
+          const lim = i === arr.length - 1 ? 450 : 240;
+          const c = stripPlayedTag(h.content || "");
+          return { role: h.role, content: c.length > lim ? c.slice(0, lim) + "..." : c };
         }))
       })
     });
     let res = null, json = null;
     if (!res) {
-      res = await callGroq(MODEL, chatMode ? 0.55 : 0.25, chatMode ? 350 : 220);
+      res = await callGroq(MODEL, chatMode ? 0.7 : 0.35, chatMode ? 650 : 400);
       json = await res.json();
     }
     wait.remove();
