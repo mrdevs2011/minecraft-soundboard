@@ -1748,9 +1748,11 @@ function renderTrace(trace, live) {
   }
   const tools = trace.filter(x => x.type === "tool");
   const totalTok = trace.reduce((s, x) => s + (x.tokens || 0), 0);
-  const title = live
+  const baseTitle = live
     ? (tt("trace_working", "Working...") + (tools.length ? " (" + tools.length + ")" : ""))
-    : (tt("trace_used", "Used sound library") + " (" + tools.length + " " + (tools.length === 1 ? tt("trace_step", "step") : tt("trace_steps", "steps")) + ")" + (totalTok ? " \u00b7 " + totalTok + " tok" : ""));
+    : (tt("trace_used", "Used sound library") + " (" + tools.length + " " + (tools.length === 1 ? tt("trace_step", "step") : tt("trace_steps", "steps")) + ")");
+  const tokSpan = totalTok ? '<span class="trace-hdr-tok"> · ' + totalTok + ' tok</span>' : '';
+  const title = baseTitle + tokSpan;
   const code = o => {
     let t = JSON.stringify(o, null, 2) || "";
     if (t.length > 900) t = t.slice(0, 900) + "\n...";
@@ -1760,8 +1762,7 @@ function renderTrace(trace, live) {
   const dirs = [];
   trace.forEach(x => {
     if (x.type === "think") {
-      const tokBadge = x.tokens ? '<span class="trace-tok" title="' + x.tokens + ' tokens used">' + x.tokens + '</span>' : '';
-      body += '<div class="trace-think" title="' + (x.tokens || 0) + ' tokens">' + tokBadge + esc(x.text).replace(/\n/g, "<br>") + '</div>';
+      body += '<div class="trace-think">' + esc(x.text).replace(/\n/g, "<br>") + '</div>';
       return;
     }
     const a = x.args || {}, r = x.result || {};
@@ -1780,7 +1781,7 @@ function renderTrace(trace, live) {
   });
   if (!live && tools.length) {
     body += '<div class="trace-src"><b>' + tt("trace_sources", "Sources") + ':</b> sounds.json (' + (all ? all.length : 0) + ')' +
-      dirs.slice(0, 8).map(d => ' \u00b7 ' + esc(d)).join("") + (totalTok ? ' \u00b7 ' + totalTok + ' tokens' : '') + '</div>';
+      dirs.slice(0, 8).map(d => ' \u00b7 ' + esc(d)).join("") + '</div>';
   }
   return '<details class="trace"' + (live ? " open" : "") + '><summary>' + esc(title) + '</summary><div class="trace-body">' + body + '</div></details>';
 }

@@ -1665,3 +1665,15 @@ body[data-theme="light"]{
   background:rgba(255,255,255,.03);
 }
 .trace{border-color:var(--accent);}
+
+/* Token count only on header hover */
+.trace-hdr-tok{
+  opacity:0;
+  transition:opacity .15s;
+  font-weight:normal;
+  font-size:.92em;
+  color:var(--muted);
+}
+.trace>summary:hover .trace-hdr-tok{
+  opacity:1;
+}
