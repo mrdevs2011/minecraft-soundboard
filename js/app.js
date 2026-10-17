@@ -1467,13 +1467,13 @@ function stripPlayedTag(t) { return String(t || "").replace(/\s*\[played:[^\]]*\
 function playedNames(plays) { return (plays || []).slice(0, 3).map(x => String(x).replace(/\.ogg$/, "")); }
 
 function saveHist() {
-  try { localStorage.setItem("mcsnd_hist", JSON.stringify(hist.slice(-10))); } catch (e) {}
+  try { localStorage.setItem("mcsnd_hist", JSON.stringify(hist.slice(-6))); } catch (e) {}
 }
 function loadHist() {
   try {
     const h = JSON.parse(localStorage.getItem("mcsnd_hist") || "[]");
     hist = Array.isArray(h) ? h.filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string")
-      .map(x => ({ role: x.role, content: stripPlayedTag(x.content), played: Array.isArray(x.played) ? x.played.slice(0, 3) : undefined })).slice(-10) : [];
+      .map(x => ({ role: x.role, content: stripPlayedTag(x.content), played: Array.isArray(x.played) ? x.played.slice(0, 3) : undefined })).slice(-6) : [];
   } catch (e) { hist = []; }
 }
 function saveChatUI() {
@@ -1661,7 +1661,7 @@ async function aiPlan(msg, key) {
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
-      body: JSON.stringify({ model: MODEL, temperature: 0, max_tokens: 500,
+      body: JSON.stringify({ model: MODEL, temperature: 0, max_tokens: 220,
         messages: [{ role: "system", content: sys }, { role: "user", content: user }] }),
       signal: ctl.signal
     });
@@ -1735,22 +1735,22 @@ async function smartSearch(msg, key, limit) {
 /* ===== MCAI agent: works like grep. Local only (no internet): library tools + the model's own Minecraft knowledge ===== */
 const AGENT_TOOLS = [
   { type: "function", function: { name: "search_sounds",
-    description: "Search the Minecraft sound library (~5000 .ogg files), like grep. ALL words must appear in the file path (English words: chicken, lava, creeper, hurt, step...). Returns the total count and per-folder counts. With count_only=true it returns NO file paths (use it first). Then narrow with folder or more words, and finally call without count_only to get paths.",
+    description: "Grep Minecraft .ogg library. ALL words must match path. count_only=true first (counts only); then without it for paths.",
     parameters: { type: "object", properties: {
-      words: { type: "string", description: "space separated English words, all must match" },
-      folder: { type: "string", description: "optional path prefix, e.g. mob/chicken" },
-      count_only: { type: "boolean", description: "true = only counts, no paths" },
-      limit: { type: "integer", description: "max paths to return (1-12, default 8)" } }, required: ["words"] } } },
+      words: { type: "string", description: "space-separated English words" },
+      folder: { type: "string", description: "path prefix e.g. mob/chicken" },
+      count_only: { type: "boolean", description: "true=counts only" },
+      limit: { type: "integer", description: "max paths 1-12, default 8" } }, required: ["words"] } } },
   { type: "function", function: { name: "list_folder",
-    description: "List the subfolders (with counts) and some sample files of a library folder, e.g. mob or mob/chicken. Use it to discover real names.",
-    parameters: { type: "object", properties: { path: { type: "string", description: "folder path, empty for the root" } }, required: ["path"] } } },
+    description: "List subfolders+counts and sample files for a path (e.g. mob, mob/chicken).",
+    parameters: { type: "object", properties: { path: { type: "string", description: "folder path, empty=root" } }, required: ["path"] } } },
   { type: "function", function: { name: "grep_sounds",
-    description: "Regex grep over the full file paths of the library (case-insensitive), like grep -iE. Use alternatives to catch every naming: e.g. explode|blast|tnt|boom or (anvil|smith).*(use|land). Same output as search_sounds (counts, folders, paths).",
+    description: "Regex grep on full paths (case-insensitive). Use alts: explode|blast|tnt|boom.",
     parameters: { type: "object", properties: {
-      pattern: { type: "string", description: "JavaScript regex, matched against the path like mob/chicken/hurt1.ogg" },
-      folder: { type: "string", description: "optional path prefix" },
-      count_only: { type: "boolean", description: "true = only counts, no paths" },
-      limit: { type: "integer", description: "max paths (1-12, default 8)" } }, required: ["pattern"] } } }
+      pattern: { type: "string", description: "JS regex vs path" },
+      folder: { type: "string", description: "optional prefix" },
+      count_only: { type: "boolean", description: "true=counts only" },
+      limit: { type: "integer", description: "max paths 1-12" } }, required: ["pattern"] } } }
 ];
 
 const AGENT_ALIAS = {
@@ -2023,7 +2023,7 @@ function renderTrace(trace, live) {
 
 function histForModel() {
   return hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
-    const lim = i === hist.length - 1 ? 1500 : 400;
+    const lim = i === hist.length - 1 ? 700 : 220;
     const c = stripPlayedTag(h.content);
     return { role: h.role, content: c.length > lim ? c.slice(0, lim) + "..." : c };
   });
@@ -2036,27 +2036,24 @@ function recentPlayedNote() {
 
 async function runSoundAgent(msg, key, onStep) {
   const maxPlays = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/i.test(msg) ? 48 : 12;
-  const sys = "You are MCAI — a sharp, efficient, highly capable general AI assistant that lives inside MCSOUNDS (a library of ~5000 official Minecraft .ogg sounds). " +
-    "Always reply in the user's language. Plain text, no markdown. Be concise and smart. Do not ramble. " +
-    "You answer ANY question well: facts, religion, study, code, translation, advice, Minecraft, everyday chat — use your own knowledge. You cannot browse the live internet or current news; say so honestly when that matters. " +
-    "SOUND TOOLS are ONLY for Minecraft in-game sounds the user wants to hear. " +
-    "If the message is clearly NOT about playing/finding a Minecraft sound or music (e.g. dua, prayer, history, math, general talk) — answer directly from knowledge. Do NOT call tools. Do NOT say the library has no file. Do NOT use PLAY. " +
-    "Only when the user wants a Minecraft sound/music/disc/SFX: infer intent, strip request verbs, search with tools. " +
-    "Request verbs are NOT search words: Uzbek top = find, qo'y / chal / ber = play / give, eshit = hear; Russian найди / включи / дай. Never turn them into sound names (top is not stop). " +
-    "SEARCH (when needed): 1) English Minecraft terms from intent. 2) search_sounds count_only=true first. 3) If 0 try synonyms / list_folder. 4) Final search without count_only for paths. Use as many calls as needed (up to ~14). Never invent paths. " +
-    "Music intent → search music/ and records/ first, return a varied mix. " +
-    "Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/; music/; records/. " +
-    "Sound answer format: 1 short sentence, then PLAY: path1, path2, … (up to " + maxPlays + " paths). Non-sound answers: normal helpful reply, no PLAY, no library excuses. " +
-    "NEVER write bracket tags like [played: ...] or invent that you played something: sounds play ONLY through a PLAY: line whose paths came from your tool results. If the user asks to hear/play/give a sound you MUST search and end with PLAY:. " +
-    "Synonyms (the library uses game file names): bomb / explosion / TNT / detonation = explode, blast, tnt (random/explode1-4, entity/.../explode, sonic_boom for the Warden); boom = explode; firecracker = firework. Try these words before saying a sound does not exist. " +
-    "You work like a terminal: search_sounds = grep over file paths (it already fixes typos, plurals, Uzbek/Russian words and synonyms - read its mode field), grep_sounds = regex grep (use alternatives like explode|blast|tnt|boom), list_folder = ls. You have up to ~14 tool calls - USE them. NEVER tell the user a sound was not found or does not exist until you really searched: (1) several English synonyms, (2) grep_sounds with a regex of alternatives, (3) list_folder on the likely top folders (mob, entity, block, item, ambient, random, records, music, ui) and read the real names. If nothing exact exists, play the CLOSEST matches and say honestly that they are the closest. Giving up without PLAY after a sound request is forbidden. " +
+  const sys = "You are MCAI — sharp general AI inside MCSOUNDS (~5000 official Minecraft .ogg). " +
+    "Reply in the user's language. Plain text, no markdown. Be concise. " +
+    "Answer ANY question from knowledge (facts, study, code, chat, Minecraft). No live internet — say so when needed. " +
+    "SOUND TOOLS only when user wants to hear/find a Minecraft sound or music. Otherwise answer directly: no tools, no PLAY, no library excuses. " +
+    "Request verbs are NOT search words: UZ top/qo'y/chal/ber/eshit; RU найди/включи/дай; EN play/find/give/hear. " +
+    "When searching: 1) English game terms from intent 2) search_sounds count_only=true first 3) synonyms or list_folder if 0 4) final search for paths. Up to ~6 tool calls. Never invent paths. " +
+    "Music → music/ and records/ first, varied mix. Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/; music/; records/. " +
+    "Sound reply: 1 short sentence, then PLAY: path1, path2, … (up to " + maxPlays + " paths from tool results only). Non-sound: normal reply, no PLAY. " +
+    "NEVER write [played: ...] tags. PLAY: only with real tool paths. If user asks to hear a sound you MUST search and end with PLAY:. " +
+    "Synonyms: bomb/explosion/TNT/detonation → explode|blast|tnt (random/explode*, entity/.../explode, sonic_boom for Warden); boom→explode; firecracker→firework. " +
+    "Work like a terminal: search_sounds fixes typos/plurals/UZ-RU; grep_sounds for regex alts; list_folder = ls. Never say 'not found' until you tried synonyms + grep alts + list_folder on likely tops (mob,entity,block,item,ambient,random,records,music,ui). If nothing exact, PLAY closest and say so. " +
     "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") + recentPlayedNote();
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
   const trace = [];
   const note = () => { if (onStep) { try { onStep(trace); } catch (e) {} } };
   let nudges = 0;
-  for (let step = 0; step < 16; step++) {
+  for (let step = 0; step < 8; step++) {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 30000);
     let json;
@@ -2064,8 +2061,8 @@ async function runSoundAgent(msg, key, onStep) {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
-        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: 1200, tools: AGENT_TOOLS,
-          tool_choice: step >= 14 ? "none" : "auto", messages: msgs }),
+        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: step >= 6 ? 650 : 400, tools: AGENT_TOOLS,
+          tool_choice: step >= 6 ? "none" : "auto", messages: msgs }),
         signal: ctl.signal
       });
       if (!res.ok) return null;   // old pipeline takes over (also shows auth errors)
@@ -2083,7 +2080,7 @@ async function runSoundAgent(msg, key, onStep) {
     const visible = rawC.replace(/<think>[\s\S]*?<\/think>/g, "").trim();
     const th = thinkParts.join("\n").trim();
     if (th) { trace.push({ type: "think", text: th.slice(0, 900), tokens: stepTokens || 0 }); note(); }
-    if (m.tool_calls && m.tool_calls.length && step < 14) {
+    if (m.tool_calls && m.tool_calls.length && step < 6) {
       msgs.push({ role: "assistant", content: visible, tool_calls: m.tool_calls });
       m.tool_calls.forEach(tc => {
         let args = {};
@@ -2091,7 +2088,7 @@ async function runSoundAgent(msg, key, onStep) {
         const out = tc.function.name === "list_folder" ? agentList(args, seen)
           : tc.function.name === "search_sounds" ? agentSearch(args, seen)
           : tc.function.name === "grep_sounds" ? agentGrep(args, seen) : { error: "unknown tool" };
-        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 2400) });
+        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 1100) });
         trace.push({ type: "tool", name: tc.function.name, args: args, result: out });
         note();
       });
@@ -2104,7 +2101,7 @@ async function runSoundAgent(msg, key, onStep) {
     let text = stripPlayedTag(parsed.text || raw);
     const soundy = trace.some(x => x.type === "tool") || AGENT_WANT.test(msg);
     if (!plays.length && soundy && AGENT_GIVEUP.test(text)) {
-      if (nudges < 2 && step < 13) {   // the model wants to give up: back to the terminal first
+      if (nudges < 1 && step < 5) {   // one retry only — save tokens
         nudges++;
         msgs.push({ role: "assistant", content: raw });
         msgs.push({ role: "user", content: "STOP. Do not say it is missing yet. Work like a terminal and try again right now: 1) grep_sounds with a regex of alternatives (synonyms used in Minecraft file names, e.g. explode|blast|tnt|boom), 2) list_folder on the most likely top folders (mob, entity, block, item, ambient, random, records, music) and read the real subfolder names, 3) search_sounds with ONE short root word. When you find the closest files, end with PLAY: paths and say honestly they are the closest. Only after all of that may you say nothing exists." });
@@ -2152,8 +2149,8 @@ async function sendChat() {
   if (ag) {
     wait.remove();
     hist.push({ role: "user", content: msg });
-    hist.push({ role: "assistant", content: stripPlayedTag(ag.text).slice(0, 400), played: playedNames(ag.plays) });
-    if (hist.length > 10) hist = hist.slice(-10);
+    hist.push({ role: "assistant", content: stripPlayedTag(ag.text).slice(0, 280), played: playedNames(ag.plays) });
+    if (hist.length > 6) hist = hist.slice(-6);
     if (hist.length && hist[0].role === "assistant") hist.shift();
     saveHist();
     await typeAIResponse(ag.text, ag.plays, renderTrace(ag.trace || [], false));
@@ -2194,7 +2191,7 @@ async function sendChat() {
   const system = chatMode ? sysGeneral : sysSound;
 
   hist.push({ role: "user", content: msg });
-  if (hist.length > 10) hist = hist.slice(-10);
+  if (hist.length > 6) hist = hist.slice(-6);
   saveHist();
 
   try {
@@ -2206,14 +2203,14 @@ async function sendChat() {
         temperature: temp,
         max_tokens: maxTok,
         messages: [{ role: "system", content: system }].concat(hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
-          const lim = i === hist.length - 1 ? 1500 : 400;
+          const lim = i === hist.length - 1 ? 700 : 220;
           return { role: h.role, content: h.content.length > lim ? h.content.slice(0, lim) + "..." : h.content };
         }))
       })
     });
     let res = null, json = null;
     if (!res) {
-      res = await callGroq(MODEL, chatMode ? 0.6 : 0.3, chatMode ? 1500 : 900);
+      res = await callGroq(MODEL, chatMode ? 0.55 : 0.25, chatMode ? 900 : 550);
       json = await res.json();
     }
     wait.remove();
@@ -2242,8 +2239,8 @@ async function sendChat() {
     parsed.plays.forEach(p => _shown.add(p));
 
     const textPlain = stripPlayedTag(parsed.text || raw || "");
-    hist.push({ role: "assistant", content: stripPlayedTag(textPlain).slice(0, 400), played: playedNames(parsed.plays) });
-    if (hist.length > 10) hist = hist.slice(-10);
+    hist.push({ role: "assistant", content: stripPlayedTag(textPlain).slice(0, 280), played: playedNames(parsed.plays) });
+    if (hist.length > 6) hist = hist.slice(-6);
     if (hist.length && hist[0].role === "assistant") hist.shift();
     saveHist();
     await typeAIResponse(textPlain, parsed.plays);
