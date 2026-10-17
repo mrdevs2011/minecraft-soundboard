@@ -1626,6 +1626,8 @@ body[data-theme="light"]{
   .btn-menu{display:inline-flex!important}
   #btnLang{min-width:40px;width:auto;padding:0 8px}
   #btnLang span#langLabel{display:inline!important;color:inherit;font-size:12px}
+  #btnDesktop{min-width:40px;width:auto;padding:0 8px}
+  #btnDesktop span{display:inline!important;color:inherit;font-size:12px}
 }
 
 /* Download modal: status on the left, byte-based percent on the right */
