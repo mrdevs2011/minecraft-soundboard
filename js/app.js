@@ -1752,7 +1752,7 @@ function renderTrace(trace, live) {
     ? (tt("trace_working", "Working...") + (tools.length ? " (" + tools.length + ")" : ""))
     : (tt("trace_used", "Used sound library") + " (" + tools.length + " " + (tools.length === 1 ? tt("trace_step", "step") : tt("trace_steps", "steps")) + ")");
   const tokSpan = totalTok ? '<span class="trace-hdr-tok"> · ' + totalTok + ' tok</span>' : '';
-  const title = baseTitle + tokSpan;
+  const title = esc(baseTitle) + tokSpan;
   const code = o => {
     let t = JSON.stringify(o, null, 2) || "";
     if (t.length > 900) t = t.slice(0, 900) + "\n...";
@@ -1783,7 +1783,7 @@ function renderTrace(trace, live) {
     body += '<div class="trace-src"><b>' + tt("trace_sources", "Sources") + ':</b> sounds.json (' + (all ? all.length : 0) + ')' +
       dirs.slice(0, 8).map(d => ' \u00b7 ' + esc(d)).join("") + '</div>';
   }
-  return '<details class="trace"' + (live ? " open" : "") + '><summary>' + esc(title) + '</summary><div class="trace-body">' + body + '</div></details>';
+  return '<details class="trace"' + (live ? " open" : "") + '><summary>' + title + '</summary><div class="trace-body">' + body + '</div></details>';
 }
 
 function histForModel() {
