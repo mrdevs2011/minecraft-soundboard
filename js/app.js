@@ -659,7 +659,7 @@ async function creeperFuseAndBoom(headEl, opts) {
   headEl.classList.remove("fusing");
   const fill = $("splashFill");
   if (fill) fill.style.width = "100%";
-  await sleep(80);
+  await sleep(instant ? 20 : 40);
 
   await shatterCreeperPixels(headEl);
 }
@@ -2011,9 +2011,9 @@ function renderTrace(trace, live) {
 }
 
 function histForModel() {
-  const slice = hist.slice(-3);
+  const slice = hist.slice(-2);
   return slice.map((h, i) => {
-    const lim = i === slice.length - 1 ? 220 : 100;
+    const lim = i === slice.length - 1 ? 160 : 80;
     const c = stripPlayedTag(h.content);
     return { role: h.role, content: c.length > lim ? c.slice(0, lim) + "..." : c };
   });
@@ -2058,8 +2058,8 @@ const LOCAL_INTENT = [
   { re: /(musiqa|music|музыка)/i, folder: "music", words: [""] },
   { re: /(ghast|gast)/i, folder: "mob/ghast", words: ["ghast"] },
   { re: /(spider|o'?rgimchak|паук)/i, folder: "mob/spider", words: ["spider"] },
-  { re: /(wolf|it|sobaka|собака|bo'?ri)/i, folder: "mob/wolf", words: ["wolf"] },
-  { re: /(horse|ot|лошадь)/i, folder: "mob/horse", words: ["horse"] },
+  { re: /(wolf|sobaka|собака|bo'?ri|it\s+ovozi|it(?=\s|$))/i, folder: "mob/wolf", words: ["wolf"] },
+  { re: /(horse|лошадь|ot\s+ovozi)/i, folder: "mob/horse", words: ["horse"] },
   { re: /(bee|asalari|пчела)/i, folder: "mob/bee", words: ["bee"] },
   { re: /(axolotl)/i, folder: "mob/axolotl", words: ["axolotl"] },
   { re: /(dolphin|delfin)/i, folder: "mob/dolphin", words: ["dolphin"] },
@@ -2087,6 +2087,14 @@ function _replyFound(msg, picks, rows, meta) {
     plays: picks,
     trace: [{ type: "tool", name: "search_sounds", args: meta, result: { total: rows.length, files: picks, mode: meta.mode || "local" } }]
   };
+}
+
+function isSoundAsk(msg) {
+  const m = String(msg || "");
+  if (AGENT_WANT.test(m)) return true;
+  if (LOCAL_INTENT.some(x => x.re.test(m))) return true;
+  if (m.length <= 56 && _msgTokens(m).length && !/[?]/.test(m) && !/^(nima|what|how|why|kim|qanday|расскажи|объясни)/i.test(m.trim())) return true;
+  return false;
 }
 
 function localFastIntent(msg, maxPlays) {
@@ -2146,11 +2154,21 @@ async function runSoundAgent(msg, key, onStep) {
     if (onStep) try { onStep(local.trace || []); } catch (e) {}
     return local;
   }
-  const sys = "MCAI/MCSOUNDS. User language. Plain text. Short. " +
-    "Sound ask → search_sounds EN terms; reply 1 line + PLAY: real paths only (≤" + maxPlays + "). " +
-    "No invent paths. qilich/sword=sweep (entity/player/attack). TNT=random/explode. " +
-    "Chat (not sound) → answer, no tools/PLAY. No [played:] tags. " +
-    (currentPlayPath ? "Playing: " + currentPlayPath + ". " : "") + recentPlayedNote();
+  /* Sound ask with weak local miss → still try pure library before spending TPM */
+  if (isSoundAsk(msg)) {
+    const seen0 = new Set();
+    const tr0 = [];
+    const auto0 = agentAutoPick(msg, seen0, maxPlays, tr0);
+    if (auto0.length) {
+      if (onStep) try { onStep(tr0); } catch (e) {}
+      return { text: agentClosestText(msg), plays: auto0, trace: tr0, local: true };
+    }
+  }
+  const sys = "MCAI. User language. Short plain text. " +
+    (isSoundAsk(msg)
+      ? ("Sound: search_sounds EN terms → 1 line + PLAY: real paths only (≤" + maxPlays + "). Never invent paths.")
+      : "Chat only — no tools, no PLAY.") +
+    (currentPlayPath ? " Playing: " + currentPlayPath + "." : "");
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
   const trace = [];
@@ -2164,8 +2182,11 @@ async function runSoundAgent(msg, key, onStep) {
       const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
-        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: step >= 2 ? 200 : 160, tools: AGENT_TOOLS,
-          tool_choice: step >= 2 ? "none" : "auto", messages: msgs }),
+        body: JSON.stringify({ model: MODEL, temperature: isSoundAsk(msg) ? 0.2 : 0.5,
+          max_tokens: isSoundAsk(msg) ? (step >= 2 ? 180 : 140) : 280,
+          tools: isSoundAsk(msg) ? AGENT_TOOLS : undefined,
+          tool_choice: isSoundAsk(msg) ? (step >= 2 ? "none" : "auto") : undefined,
+          messages: msgs }),
         signal: ctl.signal
       });
       if (!res.ok) {
@@ -2235,6 +2256,20 @@ async function sendChat() {
   const key = getApiKey() || ($("groqKey") && $("groqKey").value.trim()) || "";
   const msg = $("chatInput").value.trim();
   if (!msg) { $("chatInput").value = ""; return; }
+  const maxPlays0 = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/i.test(msg) ? 48 : 12;
+  /* Instant local path — no API key, no TPM */
+  const local0 = localFastIntent(msg, maxPlays0) || localSmartSearch(msg, maxPlays0);
+  if (local0 && local0.plays && local0.plays.length) {
+    $("chatInput").value = "";
+    const hero0 = $("askHero"); if (hero0) hero0.remove();
+    appendBubble("user", esc(msg));
+    hist.push({ role: "user", content: msg });
+    hist.push({ role: "assistant", content: stripPlayedTag(local0.text).slice(0, 200), played: playedNames(local0.plays) });
+    if (hist.length > 4) hist = hist.slice(-4);
+    saveHist();
+    await typeAIResponse(local0.text, local0.plays, renderTrace(local0.trace || [], false), true);
+    return;
+  }
   if (!key) {
     const kb = appendBubble("sys", "Enter your API key using the key icon above");
     if (kb && kb.classList) kb.classList.add("key-hint");
@@ -2268,7 +2303,7 @@ async function sendChat() {
     if (hist.length > 6) hist = hist.slice(-6);
     if (hist.length && hist[0].role === "assistant") hist.shift();
     saveHist();
-    await typeAIResponse(ag.text, ag.plays, renderTrace(ag.trace || [], false));
+    await typeAIResponse(ag.text, ag.plays, renderTrace(ag.trace || [], false), !!ag.local || (ag.trace || []).some(t => t.args && t.args.local));
     $("chatSend").disabled = false;
     return;
   }
@@ -2280,29 +2315,8 @@ async function sendChat() {
 
   const chatMode = !!matches.chat;
   const preset = matches.strong ? pickDiverse(matches, maxPlays) : [];
-  const sysGeneral = "You are MCAI, a very smart, warm and friendly AI assistant inside MCSOUNDS (a library of about 5000 official Minecraft sounds). " +
-    "You are a general-purpose assistant: chat like a close friend, and answer any question well (facts, news, advice, study, code, translation, ideas, math, anything). " +
-    "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). " +
-    "You know Minecraft deeply (mobs, blocks, items, sounds, redstone, commands, versions, history) and you live inside this app. " +
-    (currentPlayPath ? "The user is currently playing the sound: " + currentPlayPath + ". " : "") +
-    "Be natural, helpful and accurate. Keep answers short when the question is simple and complete when it is deep. " +
-    "You work fully offline from your own Minecraft knowledge (no internet), so for current events say honestly that you cannot look them up; never make things up. " +
-    "Plain text only, no markdown symbols like ** or #; use short lines or simple dashes for lists. " +
-    "Today is " + new Date().toISOString().slice(0, 10) + ". " +
-    "If the user wanted a Minecraft sound and nothing was found, say so kindly and suggest how to describe it. Never output PLAY: lines.";
-  const sysSound = "You are MCAI — sharp, efficient, technical Minecraft sound expert inside MCSOUNDS (~5000 official .ogg). " +
-    "Always reply in the user's language (Uzbek / Russian / English…). Be concise. " +
-    "Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/ (instruments, not animals); music/ (songs); records/ (discs: pigstep, cat, 13, otherside, lava_chicken…). " +
-    "Task: pick the best varied matches from Candidates ONLY. Trust the candidates. For music requests prioritize music/ and records/ paths. " +
-    (matches.wantAll ? "User wants ALL — list as many as fit. " : "") +
-    "Never invent paths or sound descriptions. PLAY paths without [kind] tags. " +
-    "If nothing in candidates fits (outside song/meme), say so briefly and offer closest in-game alternatives. " +
-    "1 short natural sentence, then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first). No markdown. " +
-    (preset.length ? "These will play in order: " + preset.map(x => x.path + " [" + x.kind + "]").join(", ") + ". " : "") +
-    (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") +
-    (navPath.length ? "Current folder: " + navPath.join("/") + ". " : "") +
-    "Candidates:\n" + (matchList || "(none)") +
-    (mobList ? "\nAvailable mob folders under mob/: " + mobList : "");
+  const sysGeneral = "MCAI in MCSOUNDS. User language. Helpful, accurate, concise. Plain text, no markdown. Minecraft knowledge OK; no live internet. No PLAY: lines.";
+  const sysSound = "MCAI sound picker. User language. 1 short line then PLAY: paths from Candidates only (≤" + maxPlays + "). Never invent paths.\nCandidates:\n" + (matchList || "(none)");
   const system = chatMode ? sysGeneral : sysSound;
 
   hist.push({ role: "user", content: msg });
@@ -2389,7 +2403,7 @@ function scrollChatBottom() {
   setTimeout(go, 300);
 }
 
-async function typeAIResponse(textPlain, plays, traceHtml) {
+async function typeAIResponse(textPlain, plays, traceHtml, instant) {
   plays = plays || [];
   const hero = $("askHero");
   if (hero) hero.remove();
@@ -2408,17 +2422,21 @@ async function typeAIResponse(textPlain, plays, traceHtml) {
   $("chatLog").appendChild(d);
   $("chatLog").scrollTop = $("chatLog").scrollHeight;
 
-  const chars = Array.from(textPlain);
+  const chars = Array.from(textPlain || "");
   let shown = "";
-  const step = Math.max(1, Math.ceil(chars.length / 220));
-  for (let i = 0; i < chars.length; i += step) {
-    shown = chars.slice(0, i + step).join("");
-    textEl.innerHTML = esc(shown).replace(/\n/g, "<br>") + '<span class="cursor"></span>';
-    $("chatLog").scrollTop = $("chatLog").scrollHeight;
-    await sleep(16);
+  if (instant || chars.length < 40) {
+    shown = chars.join("");
+    textEl.innerHTML = esc(shown).replace(/\n/g, "<br>");
+  } else {
+    const step = Math.max(1, Math.ceil(chars.length / 120));
+    for (let i = 0; i < chars.length; i += step) {
+      shown = chars.slice(0, i + step).join("");
+      textEl.innerHTML = esc(shown).replace(/\n/g, "<br>") + '<span class="cursor"></span>';
+      $("chatLog").scrollTop = $("chatLog").scrollHeight;
+      await sleep(8);
+    }
+    textEl.innerHTML = esc(shown).replace(/\n/g, "<br>");
   }
-  textEl.innerHTML = esc(shown).replace(/\n/g, "<br>");
-
   if (plays.length) {
     const chips = document.createElement("div");
     chips.className = "chips";
