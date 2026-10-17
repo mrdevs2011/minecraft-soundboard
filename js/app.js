@@ -1461,13 +1461,19 @@ function pickDiverse(list, n) {
 }
 
 
+/* The "[played: ...]" tag is OUR note, never the model's: keep it out of the text the model sees (it copies it and
+   then writes it instead of really playing). Played paths live in h.played and go to the system prompt instead. */
+function stripPlayedTag(t) { return String(t || "").replace(/\s*\[played:[^\]]*\]/gi, "").trim(); }
+function playedNames(plays) { return (plays || []).slice(0, 3).map(x => String(x).replace(/\.ogg$/, "")); }
+
 function saveHist() {
   try { localStorage.setItem("mcsnd_hist", JSON.stringify(hist.slice(-10))); } catch (e) {}
 }
 function loadHist() {
   try {
     const h = JSON.parse(localStorage.getItem("mcsnd_hist") || "[]");
-    hist = Array.isArray(h) ? h.filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string").slice(-10) : [];
+    hist = Array.isArray(h) ? h.filter(x => x && (x.role === "user" || x.role === "assistant") && typeof x.content === "string")
+      .map(x => ({ role: x.role, content: stripPlayedTag(x.content), played: Array.isArray(x.played) ? x.played.slice(0, 3) : undefined })).slice(-10) : [];
   } catch (e) { hist = []; }
 }
 function saveChatUI() {
@@ -1740,6 +1746,12 @@ const AGENT_TOOLS = [
     parameters: { type: "object", properties: { path: { type: "string", description: "folder path, empty for the root" } }, required: ["path"] } } }
 ];
 
+const AGENT_ALIAS = {
+  bomb: ["explode", "blast", "tnt"], bombs: ["explode", "blast", "tnt"], explosion: ["explode", "blast"], explosions: ["explode", "blast"],
+  explosive: ["explode", "tnt"], detonate: ["explode"], detonation: ["explode"], dynamite: ["tnt", "explode"], tnt: ["tnt", "explode"],
+  boom: ["boom", "explode"], blast: ["blast", "explode"], firecracker: ["firework"], fireworks: ["firework"]
+};
+
 function agentSearch(a, seen) {
   const toks = String(a.words || "").toLowerCase().split(/[\s,]+/).filter(t => t.length > 1);
   const folder = String(a.folder || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
@@ -1750,10 +1762,16 @@ function agentSearch(a, seen) {
     const alt = toks.map(t => (t.length > 3 && t.endsWith("s") ? t.slice(0, -1) : t));
     if (alt.join(" ") !== toks.join(" ")) rows = pick(alt);
   }
+  let expanded = false;
+  if (!rows.length && toks.some(t => AGENT_ALIAS[t])) {   // bomb/explosion/TNT -> explode, blast ...
+    rows = qIndex().filter(r => (!folder || r.p.startsWith(folder)) && toks.every(t => (AGENT_ALIAS[t] || [t]).some(x => r.p.includes(x))));
+    expanded = rows.length > 0;
+  }
   const total = rows.length;
   const byF = {};
   rows.forEach(r => { const f = r.dirs.slice(0, 2).join("/") || "(root)"; byF[f] = (byF[f] || 0) + 1; });
   const out = { total: total, folders: Object.keys(byF).sort((x, y) => byF[y] - byF[x]).slice(0, 8).map(f => f + ": " + byF[f]) };
+  if (expanded) out.note = "matched via synonyms (explode/blast/tnt)";
   if (!total && toks.length > 1) {   // tell the model which word has hits, so it can retry smartly
     out.per_word = toks.map(t => t + ": " + qIndex().filter(r => r.p.includes(t)).length);
     out.hint = "no path has all words; try fewer or different words";
@@ -1842,8 +1860,14 @@ function renderTrace(trace, live) {
 function histForModel() {
   return hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
     const lim = i === hist.length - 1 ? 1500 : 400;
-    return { role: h.role, content: h.content.length > lim ? h.content.slice(0, lim) + "..." : h.content };
+    const c = stripPlayedTag(h.content);
+    return { role: h.role, content: c.length > lim ? c.slice(0, lim) + "..." : c };
   });
+}
+
+function recentPlayedNote() {
+  const last = hist.filter(h => h.role === "assistant" && h.played && h.played.length).slice(-1)[0];
+  return last ? "Last played in this chat: " + last.played.join(", ") + ". " : "";
 }
 
 async function runSoundAgent(msg, key, onStep) {
@@ -1854,11 +1878,14 @@ async function runSoundAgent(msg, key, onStep) {
     "SOUND TOOLS are ONLY for Minecraft in-game sounds the user wants to hear. " +
     "If the message is clearly NOT about playing/finding a Minecraft sound or music (e.g. dua, prayer, history, math, general talk) — answer directly from knowledge. Do NOT call tools. Do NOT say the library has no file. Do NOT use PLAY. " +
     "Only when the user wants a Minecraft sound/music/disc/SFX: infer intent, strip request verbs, search with tools. " +
+    "Request verbs are NOT search words: Uzbek top = find, qo'y / chal / ber = play / give, eshit = hear; Russian найди / включи / дай. Never turn them into sound names (top is not stop). " +
     "SEARCH (when needed): 1) English Minecraft terms from intent. 2) search_sounds count_only=true first. 3) If 0 try synonyms / list_folder. 4) Final search without count_only for paths. Max ~6 calls. Never invent paths. " +
     "Music intent → search music/ and records/ first, return a varied mix. " +
     "Library: mob/<name>/(say|hurt|death|step|idle|ambient); moody/; note/; music/; records/. " +
     "Sound answer format: 1 short sentence, then PLAY: path1, path2, … (up to " + maxPlays + " paths). Non-sound answers: normal helpful reply, no PLAY, no library excuses. " +
-    "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "");
+    "NEVER write bracket tags like [played: ...] or invent that you played something: sounds play ONLY through a PLAY: line whose paths came from your tool results. If the user asks to hear/play/give a sound you MUST search and end with PLAY:. " +
+    "Synonyms (the library uses game file names): bomb / explosion / TNT / detonation = explode, blast, tnt (random/explode1-4, entity/.../explode, sonic_boom for the Warden); boom = explode; firecracker = firework. Try these words before saying a sound does not exist. " +
+    "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") + recentPlayedNote();
   const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
   const seen = new Set();
   const trace = [];
@@ -1908,7 +1935,7 @@ async function runSoundAgent(msg, key, onStep) {
     const parsed = parseAI(raw);
     const plays = parsed.plays.filter(p => seen.has(p)).slice(0, maxPlays);
     plays.forEach(p => _shown.add(p));
-    return { text: (parsed.text || raw).trim(), plays: plays, trace: trace };
+    return { text: stripPlayedTag(parsed.text || raw), plays: plays, trace: trace };
   }
   return null;
 }
@@ -1946,8 +1973,7 @@ async function sendChat() {
   if (ag) {
     wait.remove();
     hist.push({ role: "user", content: msg });
-    hist.push({ role: "assistant", content: ag.text.slice(0, 400) +
-      (ag.plays.length ? " [played: " + ag.plays.slice(0, 3).map(x => x.replace(/\.ogg$/, "")).join(", ") + "]" : "") });
+    hist.push({ role: "assistant", content: stripPlayedTag(ag.text).slice(0, 400), played: playedNames(ag.plays) });
     if (hist.length > 10) hist = hist.slice(-10);
     if (hist.length && hist[0].role === "assistant") hist.shift();
     saveHist();
@@ -2036,9 +2062,8 @@ async function sendChat() {
     parsed.plays = chatMode ? [] : plays.slice(0, maxPlays);
     parsed.plays.forEach(p => _shown.add(p));
 
-    const textPlain = (parsed.text || raw || "").trim();
-    hist.push({ role: "assistant", content: textPlain.slice(0, 400) +
-      (parsed.plays.length ? " [played: " + parsed.plays.slice(0, 3).map(x => x.replace(/\.ogg$/, "")).join(", ") + "]" : "") });
+    const textPlain = stripPlayedTag(parsed.text || raw || "");
+    hist.push({ role: "assistant", content: stripPlayedTag(textPlain).slice(0, 400), played: playedNames(parsed.plays) });
     if (hist.length > 10) hist = hist.slice(-10);
     if (hist.length && hist[0].role === "assistant") hist.shift();
     saveHist();
