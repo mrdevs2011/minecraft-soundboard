@@ -1742,7 +1742,9 @@ function agentList(a, seen) {
 
 /* ===== agent trace panel (like Claude: collapsible steps, request/response code boxes, sources) ===== */
 function renderTrace(trace, live) {
-  if (!trace || !trace.length) return "";
+  if (!trace || !trace.length) {
+    return live ? '<details class="trace" open><summary>Working...</summary><div class="trace-body"><div class="trace-think">Thinking...</div></div></details>' : '';
+  }
   const tools = trace.filter(x => x.type === "tool");
   const totalTok = trace.reduce((s, x) => s + (x.tokens || 0), 0);
   const title = live
