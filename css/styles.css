@@ -1918,3 +1918,24 @@ body.chat-lock{
   background:transparent !important;
   box-shadow:none !important;
 }
+
+
+/* brand-text visible on tablet + phone (wordmark always on) */
+@media (max-width: 1100px) {
+  .brand-text {
+    display: block !important;
+    visibility: visible !important;
+    font-size: 15px;
+    letter-spacing: .06em;
+    white-space: nowrap;
+  }
+  .brand-col {
+    display: flex !important;
+  }
+}
+@media (max-width: 400px) {
+  .brand-text {
+    font-size: 13px;
+    letter-spacing: .04em;
+  }
+}
