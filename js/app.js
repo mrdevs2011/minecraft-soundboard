@@ -1676,6 +1676,122 @@ async function smartSearch(msg, key, limit) {
   return fb;
 }
 
+/* ===== MCAI agent: works like grep. Local only (no internet): library tools + the model's own Minecraft knowledge ===== */
+const AGENT_TOOLS = [
+  { type: "function", function: { name: "search_sounds",
+    description: "Search the Minecraft sound library (~5000 .ogg files), like grep. ALL words must appear in the file path (English words: chicken, lava, creeper, hurt, step...). Returns the total count and per-folder counts. With count_only=true it returns NO file paths (use it first). Then narrow with folder or more words, and finally call without count_only to get paths.",
+    parameters: { type: "object", properties: {
+      words: { type: "string", description: "space separated English words, all must match" },
+      folder: { type: "string", description: "optional path prefix, e.g. mob/chicken" },
+      count_only: { type: "boolean", description: "true = only counts, no paths" },
+      limit: { type: "integer", description: "max paths to return (1-12, default 8)" } }, required: ["words"] } } },
+  { type: "function", function: { name: "list_folder",
+    description: "List the subfolders (with counts) and some sample files of a library folder, e.g. mob or mob/chicken. Use it to discover real names.",
+    parameters: { type: "object", properties: { path: { type: "string", description: "folder path, empty for the root" } }, required: ["path"] } } }
+];
+
+function agentSearch(a, seen) {
+  const toks = String(a.words || "").toLowerCase().split(/[\s,]+/).filter(t => t.length > 1);
+  const folder = String(a.folder || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
+  if (!toks.length && !folder) return { error: "give words or folder" };
+  let rows = qIndex().filter(r => (!folder || r.p.startsWith(folder)) && toks.every(t => r.p.includes(t)));
+  const total = rows.length;
+  const byF = {};
+  rows.forEach(r => { const f = r.dirs.slice(0, 2).join("/") || "(root)"; byF[f] = (byF[f] || 0) + 1; });
+  const out = { total: total, folders: Object.keys(byF).sort((x, y) => byF[y] - byF[x]).slice(0, 8).map(f => f + ": " + byF[f]) };
+  if (!a.count_only && total) {
+    const fresh = rows.filter(r => !_shown.has(r.s.path));
+    if (fresh.length) rows = fresh;
+    const lim = Math.max(1, Math.min(12, parseInt(a.limit, 10) || 8));
+    const items = rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind }));
+    out.files = pickDiverse(items, lim).map(x => x.path);
+    out.files.forEach(f => seen.add(f));
+  }
+  return out;
+}
+
+function agentList(a, seen) {
+  const pth = String(a.path || "").toLowerCase().replace(/^\/+|\/+$/g, "").replace(/^sounds\//, "");
+  const depth = pth ? pth.split("/").length : 0;
+  const rows = qIndex().filter(r => !pth || r.p.startsWith(pth + "/"));
+  if (!rows.length) return { error: "no such folder" };
+  const subs = {}, kinds = {};
+  let direct = [];
+  rows.forEach(r => {
+    if (r.dirs.length > depth) subs[r.dirs[depth]] = (subs[r.dirs[depth]] || 0) + 1;
+    else { direct.push(r); kinds[r.kind] = (kinds[r.kind] || 0) + 1; }
+  });
+  const out = { path: pth || "/", subfolders: Object.keys(subs).sort((x, y) => subs[y] - subs[x]).slice(0, 25).map(f => f + ": " + subs[f]) };
+  if (direct.length) {
+    out.direct_files = direct.length;
+    out.kinds = Object.keys(kinds).sort((x, y) => kinds[y] - kinds[x]).slice(0, 8);
+    out.samples = direct.slice(0, 5).map(r => r.s.path);
+    out.samples.forEach(f => seen.add(f));
+  }
+  return out;
+}
+
+function histForModel() {
+  return hist.map((h, i) => {   // token saver: old turns trimmed, newest kept longer
+    const lim = i === hist.length - 1 ? 1500 : 400;
+    return { role: h.role, content: h.content.length > lim ? h.content.slice(0, lim) + "..." : h.content };
+  });
+}
+
+async function runSoundAgent(msg, key) {
+  const maxPlays = /(^|[^a-z])(barcha|hamma|hammasi|hammasini|all|every)([^a-z]|$)|(все|всех|всё)/i.test(msg) ? 48 : 12;
+  const sys = "You are MCAI, the Minecraft expert living inside MCSOUNDS, a library of about 5000 official in-game sound effects (.ogg). " +
+    "You work offline: only your own Minecraft knowledge and the library tools, no internet. " +
+    "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). Plain text, no markdown. " +
+    "Main job: find the exact Minecraft sounds the user wants. Other questions are welcome too (Minecraft first; anything else briefly and honestly, say so when unsure; you cannot look up current news). " +
+    "FINDING SOUNDS (work like grep): first decide the English Minecraft names (mob, block, item). 1) call search_sounds with count_only=true to see how many results and in which folders; " +
+    "2) if there are too many (over 40) narrow with folder or extra words (say = voice, hurt, death, step, idle, ambient, milk...), if there are 0 try synonyms or other words; " +
+    "3) call search_sounds again without count_only to get file paths. Use at most about 4 tool calls. Never invent paths: PLAY may contain only paths returned by tools. " +
+    "Layout: mob/<mob>/ has say (voice), hurt, death, step, idle/ambient; moody/ = newer variant sounds; note/ = note-block instruments (not animals); music/ = the game's own songs. " +
+    "The library has ONLY in-game sound effects: no outside songs, memes or movie audio (for example no lava chicken song). If asked for such a thing, say plainly it is not in the library and offer the closest in-game sounds. " +
+    "FINAL ANSWER for a sound request: 1-2 short friendly sentences about only what you really found (no file names, no technical tags), then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first, varied sound types). " +
+    "If nothing fits, say so honestly and suggest alternatives, with no PLAY line. For non-sound questions answer directly, without tools and without PLAY. " +
+    "Today is " + new Date().toISOString().slice(0, 10) + ". " + (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "");
+  const msgs = [{ role: "system", content: sys }].concat(histForModel()).concat([{ role: "user", content: msg }]);
+  const seen = new Set();
+  for (let step = 0; step < 6; step++) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 30000);
+    let json;
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+        body: JSON.stringify({ model: MODEL, temperature: 0.3, max_tokens: 1200, tools: AGENT_TOOLS,
+          tool_choice: step >= 5 ? "none" : "auto", messages: msgs }),
+        signal: ctl.signal
+      });
+      if (!res.ok) return null;   // old pipeline takes over (also shows auth errors)
+      json = await res.json();
+    } catch (e) { return null; } finally { clearTimeout(timer); }
+    const m = json.choices && json.choices[0] && json.choices[0].message;
+    if (!m) return null;
+    if (m.tool_calls && m.tool_calls.length && step < 5) {
+      msgs.push({ role: "assistant", content: m.content || "", tool_calls: m.tool_calls });
+      m.tool_calls.forEach(tc => {
+        let args = {};
+        try { args = JSON.parse(tc.function.arguments || "{}"); } catch (e) {}
+        const out = tc.function.name === "list_folder" ? agentList(args, seen)
+          : tc.function.name === "search_sounds" ? agentSearch(args, seen) : { error: "unknown tool" };
+        msgs.push({ role: "tool", tool_call_id: tc.id, content: JSON.stringify(out).slice(0, 1200) });
+      });
+      continue;
+    }
+    const raw = String(m.content || "").replace(/<think>[\s\S]*?<\/think>/g, "").trim();
+    if (!raw) return null;
+    const parsed = parseAI(raw);
+    const plays = parsed.plays.filter(p => seen.has(p)).slice(0, maxPlays);
+    plays.forEach(p => _shown.add(p));
+    return { text: (parsed.text || raw).trim(), plays: plays };
+  }
+  return null;
+}
+
 async function sendChat() {
   const key = getApiKey() || ($("groqKey") && $("groqKey").value.trim()) || "";
   const msg = $("chatInput").value.trim();
@@ -1693,6 +1809,21 @@ async function sendChat() {
   wait.classList.add("typing");
   $("chatSend").disabled = true;
 
+  let ag = null;
+  try { ag = await runSoundAgent(msg, key); } catch (e) { ag = null; }
+  if (ag) {
+    wait.remove();
+    hist.push({ role: "user", content: msg });
+    hist.push({ role: "assistant", content: ag.text.slice(0, 400) +
+      (ag.plays.length ? " [played: " + ag.plays.slice(0, 3).map(x => x.replace(/\.ogg$/, "")).join(", ") + "]" : "") });
+    if (hist.length > 10) hist = hist.slice(-10);
+    if (hist.length && hist[0].role === "assistant") hist.shift();
+    saveHist();
+    await typeAIResponse(ag.text, ag.plays);
+    $("chatSend").disabled = false;
+    return;
+  }
+
   const matches = await smartSearch(msg, key, 90);
   const maxPlays = matches.wantAll ? 48 : 12;
   const matchList = matches.slice(0, 40).map(m => m.path + (m.kind ? "  [" + m.kind + "]" : "")).join("\n");
@@ -1706,7 +1837,7 @@ async function sendChat() {
     "You know Minecraft deeply (mobs, blocks, items, sounds, redstone, commands, versions, history) and you live inside this app. " +
     (currentPlayPath ? "The user is currently playing the sound: " + currentPlayPath + ". " : "") +
     "Be natural, helpful and accurate. Keep answers short when the question is simple and complete when it is deep. " +
-    "Use web search when you need current or unknown facts, and never make things up; say honestly when you are not sure. " +
+    "You work fully offline from your own Minecraft knowledge (no internet), so for current events say honestly that you cannot look them up; never make things up. " +
     "Plain text only, no markdown symbols like ** or #; use short lines or simple dashes for lists. " +
     "Today is " + new Date().toISOString().slice(0, 10) + ". " +
     "If the user wanted a Minecraft sound and nothing was found, say so kindly and suggest how to describe it. Never output PLAY: lines.";
@@ -1747,13 +1878,6 @@ async function sendChat() {
       })
     });
     let res = null, json = null;
-    if (chatMode) {   // general questions: Groq compound model has built-in web search
-      try {
-        res = await callGroq("groq/compound-mini", 0.6, 1500);
-        json = await res.json();
-        if (!res.ok) res = null;
-      } catch (e) { res = null; }
-    }
     if (!res) {
       res = await callGroq(MODEL, chatMode ? 0.6 : 0.3, chatMode ? 1500 : 900);
       json = await res.json();
