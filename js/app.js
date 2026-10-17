@@ -1024,6 +1024,24 @@ function tick() {
   raf = requestAnimationFrame(tick);
 }
 
+let _ac = null;
+const VOL_BOOST = 4;   // Minecraft .ogg files are quiet: boost, limiter prevents clipping
+function attachBoost(a) {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!_ac) _ac = new AC();
+    if (_ac.state === "suspended") _ac.resume();
+    const node = _ac.createMediaElementSource(a);
+    const g = _ac.createGain();
+    g.gain.value = VOL_BOOST;
+    const lim = _ac.createDynamicsCompressor();
+    lim.threshold.value = -6; lim.knee.value = 0; lim.ratio.value = 20;
+    lim.attack.value = 0.003; lim.release.value = 0.1;
+    node.connect(g); g.connect(lim); lim.connect(_ac.destination);
+  } catch (e) {}
+}
+
 function play(path, c, el) {
   // Single-instance playback: invalidate any in-flight load/play
   const myGen = ++playGen;
@@ -1080,6 +1098,7 @@ function play(path, c, el) {
     } catch (e) {}
     a.src = src;
     audio = a;
+    attachBoost(a);
     a.addEventListener("loadedmetadata", () => {
       if (myGen !== playGen || audio !== a) return;
       setSpin(false, 100);
@@ -1663,13 +1682,16 @@ async function sendChat() {
 
   const matches = await smartSearch(msg, key, 90);
   const maxPlays = matches.wantAll ? 48 : 12;
-  const matchList = matches.map(m => m.path).join("\n");
+  const matchList = matches.map(m => m.path + (m.kind ? "  [" + m.kind + "]" : "")).join("\n");
   const mobList = matches.length ? "" : Array.from(new Set(all.filter(x => x.path.startsWith("mob/")).map(x => x.path.split("/")[1]))).join(", ");
 
   const chatMode = !!matches.chat;
+  const preset = matches.strong ? pickDiverse(matches, maxPlays) : [];
   const sysGeneral = "You are MCAI, a very smart, warm and friendly AI assistant inside MCSOUNDS (a library of about 5000 official Minecraft sounds). " +
     "You are a general-purpose assistant: chat like a close friend, and answer any question well (facts, news, advice, study, code, translation, ideas, math, anything). " +
     "Always reply in the exact language the user writes in (Uzbek, Russian, English, or any other). " +
+    "You know Minecraft deeply (mobs, blocks, items, sounds, redstone, commands, versions, history) and you live inside this app. " +
+    (currentPlayPath ? "The user is currently playing the sound: " + currentPlayPath + ". " : "") +
     "Be natural, helpful and accurate. Keep answers short when the question is simple and complete when it is deep. " +
     "Use web search when you need current or unknown facts, and never make things up; say honestly when you are not sure. " +
     "Plain text only, no markdown symbols like ** or #; use short lines or simple dashes for lists. " +
@@ -1682,6 +1704,9 @@ async function sendChat() {
     "Task: choose the best and most varied matches from Candidates ONLY, covering different sound types (voice, hurt, death, steps, ambient) and several variants. The candidates were pre-selected by a search planner and are real matches, so trust them; for vague or mood-based requests briefly say why the picks fit. " +
     (matches.wantAll ? "The user wants ALL of them, so list as many as fit. " : "") +
     "Never pick a candidate that matches only by a coincidence of name. Never invent paths. " +
+    "Only describe sound types that really appear in the candidate names or [kind] tags (never claim meow, purr, hiss etc. unless such files are listed); never invent sound descriptions. Paths in PLAY must be written without the [kind] tag. " +
+    (preset.length ? "These exact sounds will be played in this order, so describe exactly them: " + preset.map(x => x.path + " [" + x.kind + "]").join(", ") + ". " : "") +
+    (currentPlayPath ? "Now playing: " + currentPlayPath + ". " : "") +
     "Format: 1-2 short sentences saying what you found and what the sound types are, then ONE line: PLAY: path1, path2, ... (up to " + maxPlays + " paths, best first). No markdown, no SEARCH. " +
     (navPath.length ? "Current folder: " + navPath.join("/") + ". " : "") +
     "Candidates:\n" + (matchList || "(none)") +
@@ -1731,6 +1756,7 @@ async function sendChat() {
     const parsed = parseAI(raw);
 
     const cand = new Set(matches.map(m => m.path));
+    parsed.plays = parsed.plays.map(p => p.replace(/\s*\[.*$/, "").trim());
     let plays = cand.size ? parsed.plays.filter(p => cand.has(p)) : parsed.plays;
     if (matches.strong) {
       const eng = pickDiverse(matches, maxPlays).map(x => x.path);
