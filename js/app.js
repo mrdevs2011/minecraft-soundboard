@@ -1875,6 +1875,8 @@ async function sendChat() {
   }
   localStorage.setItem("groq_api_key", key);
   $("chatInput").value = "";
+  const hero = $("askHero");
+  if (hero) hero.remove();
   appendBubble("user", esc(msg));
   const wait = appendBubble("sys", '<span class="mc-dots" aria-label="thinking"><span></span><span></span><span></span></span>');
   wait.classList.add("typing");
