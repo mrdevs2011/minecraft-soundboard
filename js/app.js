@@ -1348,7 +1348,8 @@ function qIndex() {
   if (_qIdx && _qIdx.src === all) return _qIdx.rows;
   const inv = new Map();          // word -> row indices (scale-safe: O(1) lookup)
   const pathSet = new Set();
-  const entities = new Set();     // mob/block entity names under top folders
+  const entities = new Set();
+  const discs = new Set();     // mob/block entity names under top folders
   const rows = all.map((s, i) => {
     const p = s.path.toLowerCase();
     pathSet.add(s.path);
@@ -1372,9 +1373,14 @@ function qIndex() {
     if (dirs.length >= 2 && (dirs[0] === "mob" || dirs[0] === "block" || dirs[0] === "entity" || dirs[0] === "item")) {
       entities.add(dirs[1]);
     }
+    if (dirs[0] === "records" && words.length) {
+      discs.add(words.join("_"));
+      words.forEach(w => discs.add(w));
+      discs.add(file.replace(/\.ogg$/, ""));
+    }
     return { s: s, p: p, dirs: dirs, dirWords: dirWords, words: words, kind: kind };
   });
-  _qIdx = { src: all, rows: rows, inv: inv, pathSet: pathSet, entities: entities };
+  _qIdx = { src: all, rows: rows, inv: inv, pathSet: pathSet, entities: entities, discs: discs };
   return rows;
 }
 function qPathOk(p) {
@@ -2129,25 +2135,27 @@ function recentPlayedNote() {
 }
 
 
-/* Zero-API: intent map + token expand — instant, accurate, no TPM */
+/* Zero-API adaptive resolver — instant, accurate, scale-safe, no TPM */
 const LOCAL_INTENT = [
-  /* MUSIC / DISCS first — never lose to mob names (lava_chicken ≠ chicken mob) */
   { re: /lava[_\s-]*chicken|chicken[_\s-]*lava/i, folder: "records", words: ["lava", "chicken"] },
-  { re: /pigstep/i, folder: "records", words: ["pigstep"] },
-  { re: /otherside/i, folder: "records", words: ["otherside"] },
-  { re: /mellohi/i, folder: "records", words: ["mellohi"] },
-  { re: /cat\.ogg|(records?\/)?cat.*(music|disk|disc|record)/i, folder: "records", words: ["cat"] },
-  { re: /(13|eleven|11).*(music|disk|disc|record)|music.*(13|11)/i, folder: "records", words: ["13"] },
-  { re: /(musiqa|music|музыка|plastinka|пластинка|disk|disc|records?)/i, folder: "records", words: [""] },
+  { re: /pigstep/i, folder: "records", words: ["pigstep"] },
+  { re: /otherside/i, folder: "records", words: ["otherside"] },
+  { re: /mellohi/i, folder: "records", words: ["mellohi"] },
+  { re: /precipice/i, folder: "records", words: ["precipice"] },
+  { re: /\brelic\b/i, folder: "records", words: ["relic"] },
+  { re: /(musiqa|music|музыка|plastinka|пластинка|\bdisk\b|\bdisc\b|\brecords?\b)/i, folder: "records", words: [""] },
   { re: /(qilich|sword|меч|sweep)/i, folder: "entity/player/attack", words: ["sweep"] },
   { re: /(krit|crit|critical)/i, folder: "entity/player/attack", words: ["crit"] },
   { re: /(knockback|ortga\s*ite)/i, folder: "entity/player/attack", words: ["knockback"] },
   { re: /(tnt|dinamit|bomb|portla|portlash|взрыв|бомб|explode)/i, folder: "random", words: ["explode"] },
   { re: /(fuse|fitil)/i, folder: "random", words: ["fuse"] },
-  { re: /(mushuk|cat|кошка|кот)/i, folder: "mob/cat", words: ["cat"] },
-  { re: /(tovuq|chicken|курица)/i, folder: "mob/chicken", words: ["chicken"] },
+  { re: /(mushuk|кошка|кот)(?!.*music)/i, folder: "mob/cat", words: ["cat"] },
+  { re: /\bcat\b(?!.*(music|disk|disc|record|musiqa))/i, folder: "mob/cat", words: ["cat"] },
+  { re: /(tovuq|курица)(?!.*music)/i, folder: "mob/chicken", words: ["chicken"] },
+  { re: /\bchicken\b(?!.*(music|disk|disc|record|lava|musiqa))/i, folder: "mob/chicken", words: ["chicken"] },
   { re: /(sigir|cow|корова)/i, folder: "mob/cow", words: ["cow"] },
-  { re: /(cho'?chqa|pig|свинья)/i, folder: "mob/pig", words: ["pig"] },
+  { re: /(cho'?chqa|свинья)/i, folder: "mob/pig", words: ["pig"] },
+  { re: /\bpig\b(?!.*(music|step|disk|disc|record))/i, folder: "mob/pig", words: ["pig"] },
   { re: /(kreeper|creeper|krepper|крипер)/i, folder: "mob/creeper", words: ["creeper"] },
   { re: /(zombi|zombie|зомби)/i, folder: "mob/zombie", words: ["zombie"] },
   { re: /(skelet|skeleton|скелет)/i, folder: "mob/skeleton", words: ["skeleton"] },
@@ -2159,17 +2167,17 @@ const LOCAL_INTENT = [
   { re: /(shield|qalqon)/i, folder: "item/shield", words: ["shield"] },
   { re: /(crossbow|arbalet)/i, folder: "item/crossbow", words: ["crossbow"] },
   { re: /(level\s*up|levelup)/i, folder: "random", words: ["levelup"] },
-  { re: /\banvil\b|anvil/i, folder: "random", words: ["anvil"] },
+  { re: /anvil/i, folder: "random", words: ["anvil"] },
   { re: /(chest|sandiq|сундук)/i, folder: "random", words: ["chest"] },
   { re: /(door|eshik|дверь)/i, folder: "random", words: ["door"] },
   { re: /(burp|kesirish)/i, folder: "random", words: ["burp"] },
   { re: /(splash|sepish)/i, folder: "random", words: ["splash"] },
   { re: /(portal|портал)/i, folder: "portal", words: ["portal"] },
   { re: /(note\s*block|nota)/i, folder: "note", words: ["note"] },
-      { re: /(ghast|gast)/i, folder: "mob/ghast", words: ["ghast"] },
+  { re: /(ghast|gast)/i, folder: "mob/ghast", words: ["ghast"] },
   { re: /(spider|o'?rgimchak|паук)/i, folder: "mob/spider", words: ["spider"] },
-  { re: /(wolf|sobaka|собака|bo'?ri|it\s+ovozi|it(?=\s|$))/i, folder: "mob/wolf", words: ["wolf"] },
-  { re: /(horse|лошадь|ot\s+ovozi)/i, folder: "mob/horse", words: ["horse"] },
+  { re: /(wolf|sobaka|собака|bo'?ri)/i, folder: "mob/wolf", words: ["wolf"] },
+  { re: /(horse|лошадь)/i, folder: "mob/horse", words: ["horse"] },
   { re: /(bee|asalari|пчела)/i, folder: "mob/bee", words: ["bee"] },
   { re: /(axolotl)/i, folder: "mob/axolotl", words: ["axolotl"] },
   { re: /(dolphin|delfin)/i, folder: "mob/dolphin", words: ["dolphin"] },
@@ -2181,13 +2189,15 @@ const LOCAL_INTENT = [
   { re: /(blaze)/i, folder: "mob/blaze", words: ["blaze"] },
   { re: /(wither)/i, folder: "mob/wither", words: ["wither"] },
   { re: /(dragon|ajdar|дракон)/i, folder: "mob/enderdragon", words: ["enderdragon"] },
-  { re: /(lava|лава)/i, folder: "liquid", words: ["lava"] },
+  { re: /(lava|лава)(?!.*chicken)/i, folder: "liquid", words: ["lava"] },
   { re: /(water|suv|вода)/i, folder: "liquid", words: ["water"] },
   { re: /(thunder|momaqaldiroq|гром)/i, folder: "ambient/weather", words: ["thunder"] },
   { re: /(rain|yomg'?ir|дождь)/i, folder: "ambient/weather", words: ["rain"] },
 ];
 
 function _replyFound(msg, picks, rows, meta) {
+  picks = onlyRealPaths(picks || []);
+  if (!picks.length) return null;
   const name = picks[0].split("/").pop();
   const text = /[а-яё]/i.test(msg) ? ("Нашёл: " + name)
     : (/[a-züʻ'‘]/i.test(msg) && !/\b(the|play|find|sound|what|how)\b/i.test(msg)
@@ -2195,7 +2205,8 @@ function _replyFound(msg, picks, rows, meta) {
   return {
     text: text,
     plays: picks,
-    trace: [{ type: "tool", name: "search_sounds", args: meta, result: { total: rows.length, files: picks, mode: meta.mode || "local" } }]
+    local: true,
+    trace: [{ type: "tool", name: "search_sounds", args: meta, result: { total: (rows && rows.length) || picks.length, files: picks, mode: (meta && meta.mode) || "local" } }]
   };
 }
 
@@ -2205,6 +2216,10 @@ function isSoundAsk(msg) {
   if (LOCAL_INTENT.some(x => x.re.test(m))) return true;
   if (m.length <= 56 && _msgTokens(m).length && !/[?]/.test(m) && !/^(nima|what|how|why|kim|qanday|расскажи|объясни)/i.test(m.trim())) return true;
   return false;
+}
+
+function wantMusicAsk(m) {
+  return /(music|musiqa|музыка|disk|disc|record|plastinka|пластинка)/i.test(m);
 }
 
 function localFastIntent(msg, maxPlays) {
@@ -2223,64 +2238,81 @@ function localFastIntent(msg, maxPlays) {
     }
     if (!rows.length) continue;
     const picks = pickDiverse(rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
-    if (!picks.length) continue;
-    return _replyFound(m, picks, rows, { words: (it.words || []).join(" "), folder: it.folder, local: true, mode: "intent" });
+    const out = _replyFound(m, picks, rows, { words: (it.words || []).join(" "), folder: it.folder, local: true, mode: "intent" });
+    if (out) return out;
   }
   return null;
 }
 
-/** Expand user tokens → library search without API (fast + accurate) */
+/** Adaptive: discs from live library → music → entities → full search */
 function localSmartSearch(msg, maxPlays) {
   const m = String(msg || "");
   const toks = _msgTokens(m);
   if (!toks.length) return null;
   const lim = Math.min(8, maxPlays || 8);
   qIndex();
-  /* Music/disc words win over mob names ("lava chicken music" → records/lava_chicken) */
-  const wantMusic = /(music|musiqa|музыка|disk|disc|record|plastinka|пластинка)/i.test(m);
-  if (wantMusic || /lava[_\s-]*chicken|chicken[_\s-]*lava|pigstep|otherside/i.test(m)) {
+  const music = wantMusicAsk(m);
+
+  // 1) Live disc names (records/*) — adaptive to library, zero hardcode drift
+  const discHits = [];
+  (_qIdx.discs || new Set()).forEach(d => {
+    if (d.length < 2) return;
+    const parts = d.split("_");
+    if (parts.length > 1 && parts.every(p => new RegExp("\\b" + p.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "\\b", "i").test(m))) {
+      discHits.push(d);
+    } else if (parts.length === 1 && new RegExp("\\b" + d.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "\\b", "i").test(m) && (music || d.length > 4)) {
+      discHits.push(d);
+    }
+  });
+  // prefer longest disc name (lava_chicken over chicken)
+  discHits.sort((a, b) => b.length - a.length);
+  if (discHits.length) {
+    const name = discHits[0];
+    const parts = name.split("_").filter(Boolean);
+    let foundD = parts.length > 1 ? agentFind(parts, "records") : agentFind([name], "records");
+    if (!foundD.rows.length) foundD = agentFind([name], "");
+    if (foundD.rows.length) {
+      const picks = pickDiverse(foundD.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
+      const out = _replyFound(m, picks, foundD.rows, { words: name, folder: "records", local: true, mode: "disc:" + name });
+      if (out) return out;
+    }
+  }
+
+  // 2) Explicit music ask → records then music folders
+  if (music) {
     const musicToks = toks.filter(t => !/^(music|musiqa|disk|disc|record|plastinka)$/i.test(t));
     const tryWords = musicToks.length ? musicToks : toks;
     let foundM = agentFind(tryWords, "records");
     if (!foundM.rows.length) foundM = agentFind(tryWords, "music");
     if (!foundM.rows.length && tryWords.length > 1) {
-      // join compound: lava+chicken → search lava_chicken via postings
-      const joined = tryWords.join("_");
-      foundM = agentFind([joined], "records");
-      if (!foundM.rows.length) foundM = agentFind([joined], "");
-    }
-    if (!foundM.rows.length) {
-      // each token in records
-      for (let ti = 0; ti < tryWords.length && !foundM.rows.length; ti++) {
-        foundM = agentFind([tryWords[ti]], "records");
-      }
+      foundM = agentFind([tryWords.join("_")], "records");
     }
     if (foundM.rows.length) {
       const picks = pickDiverse(foundM.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
-      if (picks.length) return _replyFound(m, onlyRealPaths(picks), foundM.rows, { words: tryWords.join(" "), folder: "records|music", local: true, mode: "music" });
+      const out = _replyFound(m, picks, foundM.rows, { words: tryWords.join(" "), folder: "records|music", local: true, mode: "music" });
+      if (out) return out;
     }
   }
-  // Prefer known entity names from the live library (all ~5k, zero extra weight)
+
+  // 3) Known entities (skip chicken/cat/pig when music context)
   for (let ti = 0; ti < toks.length; ti++) {
-    const t = toks[ti];
-    const al = _alts(t, false);
+    const al = _alts(toks[ti], false);
     for (let ai = 0; ai < al.length; ai++) {
-      if (_qIdx.entities.has(al[ai])) {
-        if (wantMusic && (al[ai] === "chicken" || al[ai] === "cat" || al[ai] === "pig")) continue; // disc names, not mobs
-        const folder = ("mob/" + al[ai]);
-        let foundE = agentFind([al[ai]], "mob");
-        if (!foundE.rows.length) foundE = agentFind([al[ai]], "");
-        if (foundE.rows.length) {
-          const picks = pickDiverse(foundE.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
-          if (picks.length) return _replyFound(m, onlyRealPaths(picks), foundE.rows, { words: al[ai], local: true, mode: "entity:" + al[ai] });
-        }
+      if (!_qIdx.entities.has(al[ai])) continue;
+      if (music && (al[ai] === "chicken" || al[ai] === "cat" || al[ai] === "pig")) continue;
+      let foundE = agentFind([al[ai]], "mob");
+      if (!foundE.rows.length) foundE = agentFind([al[ai]], "");
+      if (foundE.rows.length) {
+        const picks = pickDiverse(foundE.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
+        const out = _replyFound(m, picks, foundE.rows, { words: al[ai], local: true, mode: "entity:" + al[ai] });
+        if (out) return out;
       }
     }
   }
-  // try full token set
+
+  // 4) Full / partial token search
   let found = agentFind(toks, "");
   if (!found.rows.length && toks.length > 1) {
-    // rarest single-token wins
     let best = { rows: [], n: 0 };
     toks.forEach(t => {
       const f = agentFind([t], "");
@@ -2289,13 +2321,11 @@ function localSmartSearch(msg, maxPlays) {
     if (best.rows.length) found = { rows: best.rows, mode: "token:" + (best.t || "") };
   }
   if (!found.rows.length) return null;
-  // only skip API when match is strong enough or message looks like a sound ask
   const soundy = AGENT_WANT.test(m) || m.length < 48 || LOCAL_INTENT.some(x => x.re.test(m));
-  const strong = /exact|synonym|translation|intent|token:/i.test(found.mode || "") || found.rows.length <= 40;
+  const strong = /exact|synonym|translation|intent|token:|disc:|music|entity:/i.test(found.mode || "") || found.rows.length <= 40;
   if (!soundy && !strong) return null;
   if (!soundy && found.rows.length > 80) return null;
   const picks = pickDiverse(found.rows.map(r => ({ path: r.s.path, g: r.dirs.slice(0, 2).join("/"), kind: r.kind })), lim).map(x => x.path);
-  if (!picks.length) return null;
   return _replyFound(m, picks, found.rows, { words: toks.join(" "), local: true, mode: found.mode || "smart" });
 }
 
