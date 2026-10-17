@@ -489,6 +489,8 @@ async function saveApiKeyFromInput() {
     localStorage.setItem("groq_api_key", k);
     if (st) { st.textContent = t("saved"); st.className = "key-status ok"; }
     syncKeyUI({ success: true });
+    document.querySelectorAll(".key-hint").forEach(el => el.remove());   // key is valid: stop talking about the key
+    setTimeout(() => { const kp = $("keyPop"); if (kp) kp.classList.remove("open"); }, 350);   // auto-close modal
     const hero = $("askHero");
     if (hero) {
       const sub = hero.querySelector(".ask-sub");
@@ -1679,7 +1681,8 @@ async function sendChat() {
   const msg = $("chatInput").value.trim();
   if (!msg) return;
   if (!key) {
-    appendBubble("sys", "Enter your API key using the key icon above");
+    const kb = appendBubble("sys", "Enter your API key using the key icon above");
+    if (kb && kb.classList) kb.classList.add("key-hint");
     $("keyPop").classList.add("open");
     return;
   }
